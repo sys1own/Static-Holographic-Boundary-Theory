@@ -1,0 +1,410 @@
+solver:
+  rtol:
+    value: 1.0e-10
+    classification: Empirical Matching Ansatz
+  atol:
+    value: 1.0e-12
+    classification: Empirical Matching Ansatz
+  method:
+    value: Radau
+    classification: Empirical Matching Ansatz
+  fallback_methods:
+    value:
+    - BDF
+    - RK45
+    classification: Empirical Matching Ansatz
+  finite_diff_step:
+    value: 1.0e-06
+    classification: Empirical Matching Ansatz
+  jacobian_relative_step:
+    value: 1.0e-06
+    classification: Empirical Matching Ansatz
+  parametric_covariance_mc_samples:
+    value: 128
+    classification: Empirical Matching Ansatz
+  quad_epsabs:
+    value: 1.0e-12
+    classification: Empirical Matching Ansatz
+  quad_epsrel:
+    value: 1.0e-12
+    classification: Empirical Matching Ansatz
+numerical_guard:
+  singularity_threshold:
+    value: 1.0e-12
+    classification: Empirical Matching Ansatz
+  zero_magnitude_threshold:
+    value: 1.0e-14
+    classification: Empirical Matching Ansatz
+  norm_floor:
+    value: 1.0e-30
+    classification: Empirical Matching Ansatz
+  perturbative_condition_limit:
+    value: 1.0e10
+    classification: Empirical Matching Ansatz
+presentation:
+  latex_table_style:
+    value: grid
+    classification: Empirical Matching Ansatz
+majorana:
+  lobster_grid_points:
+    value: 20
+    classification: Empirical Matching Ansatz
+physical_constants:
+  planck_mass_ev:
+    value: 1.22089e28
+    classification: Empirical Matching Ansatz
+  planck_length_m:
+    value: 1.616255e-35
+    classification: Empirical Matching Ansatz
+  light_speed_m_per_s:
+    value: 299792458.0
+    classification: Empirical Matching Ansatz
+  mpc_in_meters:
+    value: 3.085677581491367e22
+    classification: Empirical Matching Ansatz
+  planck2018_h0_km_s_mpc:
+    value: 67.36
+    classification: Empirical Matching Ansatz
+  planck2018_h0_sigma_km_s_mpc:
+    value: 0.54
+    classification: Empirical Matching Ansatz
+  planck2018_omega_lambda:
+    value: 0.6847
+    classification: Empirical Matching Ansatz
+  planck2018_omega_lambda_sigma:
+    value: 0.0073
+    classification: Empirical Matching Ansatz
+  planck2018_alpha_em_inv_mz:
+    value: 127.955
+    classification: Empirical Matching Ansatz
+  planck2018_sin2_theta_w_mz:
+    value: 0.23122
+    classification: Empirical Matching Ansatz
+  planck2018_alpha_s_mz:
+    value: 0.1179
+    classification: Empirical Matching Ansatz
+model:
+  geometric_kappa:
+    value: 1.0
+    classification: Empirical Matching Ansatz
+  parent_level:
+    value: 312
+    classification: Topological Necessity
+  lepton_fixed_point_index:
+    value: 6
+    classification: Topological Necessity
+  quark_fixed_point_index:
+    value: 13
+    classification: Topological Necessity
+  dirac_higgs_benchmark_mass_gev:
+    value: 1.0e15
+    classification: Topological Necessity
+benchmarks:
+  sm_gut_yukawa:
+    electron:
+      value: 5.190588235294118e-06
+      classification: Empirical Matching Ansatz
+    muon:
+      value: 0.0010694117647058823
+      classification: Empirical Matching Ansatz
+    top:
+      value: 0.63
+      classification: Empirical Matching Ansatz
+    bottom:
+      value: 0.055
+      classification: Empirical Matching Ansatz
+    charm:
+      value: 0.0031
+      classification: Empirical Matching Ansatz
+    strange:
+      value: 0.00055
+      classification: Empirical Matching Ansatz
+    tau:
+      value: 0.018
+      classification: Empirical Matching Ansatz
+  sm_mz_yukawa:
+    electron:
+      value: 2.941e-06
+      classification: Empirical Matching Ansatz
+    muon:
+      value: 0.000606
+      classification: Empirical Matching Ansatz
+    top:
+      value: 0.94
+      classification: Empirical Matching Ansatz
+    bottom:
+      value: 0.024
+      classification: Empirical Matching Ansatz
+    charm:
+      value: 0.0073
+      classification: Empirical Matching Ansatz
+    strange:
+      value: 0.00056
+      classification: Empirical Matching Ansatz
+    tau:
+      value: 0.0102
+      classification: Empirical Matching Ansatz
+scales:
+  gut_scale_gev:
+    value: 2.0e16
+    classification: Empirical Matching Ansatz
+  mz_scale_gev:
+    value: 91.1876
+    classification: Empirical Matching Ansatz
+  top_pole_mass_gev:
+    value: 173.0
+    classification: Empirical Matching Ansatz
+  higgs_pole_mass_gev:
+    value: 125.0
+    classification: Empirical Matching Ansatz
+uncertainties:
+  pdg_top_pole_mass_central_gev:
+    value: 172.57
+    classification: Empirical Matching Ansatz
+  pdg_top_pole_mass_sigma_gev:
+    value: 0.29
+    classification: Empirical Matching Ansatz
+  alpha_s_mz_sigma:
+    value: 0.0009
+    classification: Empirical Matching Ansatz
+  theoretical_matching_uncertainty_fraction:
+    value: 0.05
+    classification: Empirical Matching Ansatz
+  parametric_transport_covariance_fraction:
+    value: 0.0
+    classification: Empirical Matching Ansatz
+reporting:
+  topological_quantum_number_dof_subtraction:
+    value: 0
+    classification: Empirical Matching Ansatz
+  threshold_matching_dof_subtraction:
+    value: 0
+    classification: Empirical Matching Ansatz
+group_theory:
+  su2_dimension:
+    value: 3
+    classification: Topological Necessity
+  su3_dimension:
+    value: 8
+    classification: Topological Necessity
+  so10_dimension:
+    value: 45
+    classification: Topological Necessity
+  su2_dual_coxeter:
+    value: 2
+    classification: Topological Necessity
+  su3_dual_coxeter:
+    value: 3
+    classification: Topological Necessity
+  so10_dual_coxeter:
+    value: 8
+    classification: Topological Necessity
+  so10_to_su2_embedding_index:
+    value: 1
+    classification: Topological Necessity
+  so10_to_su3_embedding_index:
+    value: 1
+    classification: Topological Necessity
+  so10_rank:
+    value: 5
+    classification: Topological Necessity
+  su3_rank:
+    value: 2
+    classification: Topological Necessity
+model_constants:
+  sm_running_content:
+    value: SM
+    classification: Empirical Matching Ansatz
+  rhn_threshold_matching_angle_shifts_deg:
+    value:
+    - 0.0
+    - 0.0
+    - 0.0
+    classification: Empirical Matching Ansatz
+  rhn_threshold_matching_delta_shift_deg:
+    value: 0.0
+    classification: Empirical Matching Ansatz
+  rhn_threshold_matching_mass_shift_fraction:
+    value: 0.0
+    classification: Empirical Matching Ansatz
+  low_su3_weights:
+    value:
+    - - 0
+      - 0
+    - - 1
+      - 0
+    - - 0
+      - 1
+    classification: Topological Necessity
+  strict_support_penalty:
+    value: .inf
+    classification: Topological Necessity
+  bulk_spacetime_dimension:
+    value: 4
+    classification: Topological Necessity
+  majorana_higgs_representation:
+    value: 126_H
+    classification: Topological Necessity
+  so10_higgs_10_dynkin_labels:
+    value:
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    classification: Topological Necessity
+  so10_higgs_126_dynkin_labels:
+    value:
+    - 0
+    - 0
+    - 0
+    - 0
+    - 2
+    classification: Topological Necessity
+  so10_higgs_210_dynkin_labels:
+    value:
+    - 0
+    - 0
+    - 0
+    - 1
+    - 1
+    classification: Topological Necessity
+  so10_spinor_16_dynkin_labels:
+    value:
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    classification: Topological Necessity
+  visible_hypercharge_central_charge:
+    value: 1.0
+    classification: Empirical Matching Ansatz
+  so10_clebsch_10:
+    value: 1.7320508075688772
+    classification: Empirical Matching Ansatz
+  sm_majorana_c_e:
+    value: -1.5
+    classification: Empirical Matching Ansatz
+runtime_knobs:
+  transport_mc_min_stability_yield:
+    value: 0.95
+    classification: Empirical Matching Ansatz
+  transport_mc_caveat_yield:
+    value: 0.99
+    classification: Empirical Matching Ansatz
+  transport_singularity_chi2_penalty:
+    value: 1000000.0
+    classification: Empirical Matching Ansatz
+  default_random_seed:
+    value: 312
+    classification: Empirical Matching Ansatz
+  condition_aware_tolerance_multiplier:
+    value: 10.0
+    classification: Empirical Matching Ansatz
+  global_lepton_level_range:
+    value:
+    - 2
+    - 100
+    classification: Empirical Matching Ansatz
+  global_quark_level_range:
+    value:
+    - 2
+    - 100
+    classification: Empirical Matching Ansatz
+  followup_lepton_half_window:
+    value: 20
+    classification: Empirical Matching Ansatz
+  followup_quark_half_window:
+    value: 6
+    classification: Empirical Matching Ansatz
+  followup_chi2_reference_dof:
+    value: 8
+    classification: Empirical Matching Ansatz
+  followup_chi2_survival_probability:
+    value: 0.9973
+    classification: Empirical Matching Ansatz
+  ckm_phase_tilt_invariance_tolerance:
+    value: 1.0e-12
+    classification: Empirical Matching Ansatz
+  mass_ratio_stability_factor:
+    value: 5.0
+    classification: Empirical Matching Ansatz
+  vev_alignment_sweep_sample_count:
+    value: 1000
+    classification: Empirical Matching Ansatz
+  seed_audit_sample_count:
+    value: 10
+    classification: Empirical Matching Ansatz
+  discrete_selection_constraint_count:
+    value: 3
+    classification: Empirical Matching Ansatz
+  relaxed_neighbor_tilt_deg:
+    value: 0.05
+    classification: Empirical Matching Ansatz
+  support_tau_imag:
+    value: 12.0
+    classification: Empirical Matching Ansatz
+  support_phi_samples:
+    value: 2048
+    classification: Empirical Matching Ansatz
+  default_bitcount_fractional_variation:
+    value: 0.1
+    classification: Empirical Matching Ansatz
+  kappa_scan_values:
+    value:
+    - 0.8
+    - 0.9
+    - 1.0
+    - 1.1
+    - 1.2
+    classification: Empirical Matching Ansatz
+  legacy_shortcut_max_sigma_shift:
+    value: 0.25
+    classification: Empirical Matching Ansatz
+  matrix_svd_threshold_rule:
+    value: sigma_max * eps * max(M, N)
+    classification: Empirical Matching Ansatz
+experimental:
+  releases:
+    nufit_release:
+      value: NuFIT 5.3 (2024), normal ordering with SK atmospheric data
+      classification: Empirical Matching Ansatz
+    nufit_reference:
+      value: NuFIT 5.3 (2024) normal-ordering reference intervals with SK atmospheric
+        data
+      classification: Empirical Matching Ansatz
+    pdg_release:
+      value: PDG 2024 CKM review benchmark tables
+      classification: Empirical Matching Ansatz
+    pdg_reference:
+      value: 'Particle Data Group 2024 review benchmark tables: Sec. 12 (CKM quark-mixing
+        matrix), Sec. 67 (V(ud), V(us), Cabibbo angle, and CKM unitarity), Sec. 75
+        (Semileptonic b-hadron decays, determination of V(cb), V(ub)), and Sec. 76
+        (CKM angles from B hadrons, determination of)'
+      classification: Empirical Matching Ansatz
+  data_sources:
+    nufit_normal_ordering:
+      value: ../data/nufit_5_3.json
+      classification: Empirical Matching Ansatz
+  quark_1sigma:
+    vus:
+      value:
+      - 0.22346
+      - 0.22516
+      classification: Empirical Matching Ansatz
+    vcb:
+      value:
+      - 0.0399
+      - 0.0423
+      classification: Empirical Matching Ansatz
+    vub:
+      value:
+      - 0.00362
+      - 0.00402
+      classification: Empirical Matching Ansatz
+  ckm_gamma_experimental_input_deg:
+    value:
+    - 62.7
+    - 68.7
+    classification: Empirical Matching Ansatz
