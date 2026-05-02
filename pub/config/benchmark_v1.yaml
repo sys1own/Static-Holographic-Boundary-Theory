@@ -15,11 +15,6 @@ solver:
   method:
     value: Radau
     classification: Empirical Matching Ansatz
-  fallback_methods:
-    value:
-    - BDF
-    - RK45
-    classification: Empirical Matching Ansatz
   finite_diff_step:
     value: 1.0e-06
     classification: Empirical Matching Ansatz
@@ -92,7 +87,7 @@ physical_constants:
     classification: Empirical Matching Ansatz
 model:
   geometric_kappa:
-    value: 1.0
+    value: 0.9887710512663789
     classification: Empirical Matching Ansatz
   parent_level:
     value: 312
@@ -173,9 +168,6 @@ uncertainties:
     classification: Empirical Matching Ansatz
   alpha_s_mz_sigma:
     value: 0.0009
-    classification: Empirical Matching Ansatz
-  theoretical_matching_uncertainty_fraction:
-    value: 0.05
     classification: Empirical Matching Ansatz
   parametric_transport_covariance_fraction:
     value: 0.0
