@@ -7,7 +7,9 @@ from dataclasses import dataclass
 from decimal import Decimal, ROUND_FLOOR, localcontext
 from fractions import Fraction
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
+
+import mpmath
 
 if __package__ in (None, ""):
     import sys
@@ -23,6 +25,7 @@ PI = Decimal("3.14159265358979323846264338327950288419716939937510")
 HBAR_EV_SECONDS = Decimal("6.582119569e-16")
 MINKOWSKI_DIAGONAL = (Decimal("-1"), Decimal("1"), Decimal("1"), Decimal("1"))
 DEFAULT_PRECISION = 200
+DEFAULT_MPMATH_DPS = 250
 FALLBACK_C_DARK_COMPLETION = Fraction(1197103, 362670)
 
 
@@ -130,6 +133,24 @@ class GravitySideRigidityReport:
     reviewer_trap: ReviewerTrapAudit
 
 
+@dataclass(frozen=True)
+class HighPrecisionUnitySnapshot:
+    mpmath_dps: int
+    c_dark_fraction: Fraction
+    c_dark: Any
+    branch_planck_mass_ev: Any
+    g_topological_ev_minus2: Any
+    eight_pi_g_effective_ev_minus2: Any
+    g_effective_ev_minus2: Any
+    lightest_mass_ev: Any
+    lambda_lhs_ev2: Any
+    lambda_rhs_topological_ev2: Any
+    lambda_rhs_noether_bridged_ev2: Any
+    epsilon_lambda: Any
+    epsilon_lambda_noether_bridged: Any
+    register_noise_floor: Any
+
+
 def _decimal(value: Decimal | Fraction | float | int | str) -> Decimal:
     if isinstance(value, Decimal):
         return value
@@ -140,6 +161,21 @@ def _decimal(value: Decimal | Fraction | float | int | str) -> Decimal:
 
 def _fraction_to_decimal(value: Fraction) -> Decimal:
     return Decimal(value.numerator) / Decimal(value.denominator)
+
+
+def _mp(value: Decimal | Fraction | float | int | str) -> mpmath.mpf:
+    if isinstance(value, Fraction):
+        return mpmath.mpf(value.numerator) / mpmath.mpf(value.denominator)
+    return mpmath.mpf(str(value))
+
+
+def _mp_to_decimal(value: mpmath.mpf, *, precision: int = DEFAULT_PRECISION) -> Decimal:
+    digits = max(int(precision), DEFAULT_MPMATH_DPS)
+    return Decimal(mpmath.nstr(value, n=digits))
+
+
+def _resolved_mpmath_dps(value: int) -> int:
+    return max(int(value), DEFAULT_MPMATH_DPS)
 
 
 def _format_fraction(value: Fraction) -> str:
@@ -166,7 +202,9 @@ def _meter_to_ev_inverse() -> Decimal:
 
 
 def branch_planck_mass_ev() -> Decimal:
-    return (HBAR_EV_SECONDS * _decimal(LIGHT_SPEED_M_PER_S)) / _decimal(PLANCK_LENGTH_M)
+    with mpmath.workdps(DEFAULT_MPMATH_DPS):
+        value = (_mp(HBAR_EV_SECONDS) * _mp(LIGHT_SPEED_M_PER_S)) / _mp(PLANCK_LENGTH_M)
+    return _mp_to_decimal(value)
 
 
 def lambda_si_m2_to_ev2(lambda_si_m2: Decimal) -> Decimal:
@@ -191,13 +229,111 @@ def load_c_dark_completion_fraction() -> Fraction:
     return Fraction(int(match.group(1)), int(match.group(2)))
 
 
+def _high_precision_newton_lock_values(
+    *,
+    c_dark_fraction: Fraction | None = None,
+    mpmath_dps: int = DEFAULT_MPMATH_DPS,
+) -> dict[str, mpmath.mpf]:
+    resolved_fraction = FALLBACK_C_DARK_COMPLETION if c_dark_fraction is None else c_dark_fraction
+    with mpmath.workdps(_resolved_mpmath_dps(mpmath_dps)):
+        c_dark = _mp(resolved_fraction)
+        planck_mass = (_mp(HBAR_EV_SECONDS) * _mp(LIGHT_SPEED_M_PER_S)) / _mp(PLANCK_LENGTH_M)
+        g_topological = mpmath.mpf("1") / (planck_mass * planck_mass)
+        eight_pi_g_effective = mpmath.mpf("12") / (c_dark * planck_mass * planck_mass)
+        g_effective = eight_pi_g_effective / (mpmath.mpf("8") * mpmath.pi)
+        return {
+            "c_dark": c_dark,
+            "planck_mass_ev": planck_mass,
+            "g_topological_ev_minus2": g_topological,
+            "eight_pi_g_effective_ev_minus2": eight_pi_g_effective,
+            "g_effective_ev_minus2": g_effective,
+            "topological_from_effective_factor": g_topological / g_effective,
+            "effective_from_topological_factor": g_effective / g_topological,
+        }
+
+
+def high_precision_unity_of_scale_snapshot(
+    *,
+    bit_count: Decimal | Fraction | float | int | str = HOLOGRAPHIC_BITS,
+    kappa_d5: Decimal | Fraction | float | int | str,
+    c_dark_fraction: Fraction | None = None,
+    lambda_obs_si_m2: Decimal | Fraction | float | int | str = PLANCK2018_LAMBDA_SI_M2,
+    mpmath_dps: int = DEFAULT_MPMATH_DPS,
+) -> HighPrecisionUnitySnapshot:
+    resolved_fraction = FALLBACK_C_DARK_COMPLETION if c_dark_fraction is None else c_dark_fraction
+    with mpmath.workdps(_resolved_mpmath_dps(mpmath_dps)):
+        gravity_lock = _high_precision_newton_lock_values(
+            c_dark_fraction=resolved_fraction,
+            mpmath_dps=_resolved_mpmath_dps(mpmath_dps),
+        )
+        resolved_bit_count = _mp(bit_count)
+        if resolved_bit_count <= 0:
+            raise ValueError("Holographic bit count must be positive.")
+        resolved_kappa = _mp(kappa_d5)
+        lambda_lhs_ev2 = _mp(lambda_obs_si_m2) * (_mp(HBAR_EV_SECONDS) * _mp(LIGHT_SPEED_M_PER_S)) ** 2
+        lightest_mass_ev = resolved_kappa * gravity_lock["planck_mass_ev"] * mpmath.power(resolved_bit_count, mpmath.mpf("-0.25"))
+        lambda_rhs_topological = (
+            mpmath.mpf("3")
+            * mpmath.pi
+            * gravity_lock["g_topological_ev_minus2"]
+            * (lightest_mass_ev**4)
+            / (resolved_kappa**4)
+        )
+        lambda_rhs_noether_bridged = (
+            mpmath.mpf("2")
+            * mpmath.pi
+            * mpmath.pi
+            * gravity_lock["c_dark"]
+            * gravity_lock["g_effective_ev_minus2"]
+            * (lightest_mass_ev**4)
+            / (resolved_kappa**4)
+        )
+        epsilon_lambda = abs(mpmath.mpf("1") - (lambda_lhs_ev2 / lambda_rhs_topological))
+        epsilon_lambda_noether_bridged = abs(mpmath.mpf("1") - (lambda_lhs_ev2 / lambda_rhs_noether_bridged))
+        register_noise_floor = mpmath.mpf("1") / resolved_bit_count
+    return HighPrecisionUnitySnapshot(
+        mpmath_dps=_resolved_mpmath_dps(mpmath_dps),
+        c_dark_fraction=resolved_fraction,
+        c_dark=gravity_lock["c_dark"],
+        branch_planck_mass_ev=gravity_lock["planck_mass_ev"],
+        g_topological_ev_minus2=gravity_lock["g_topological_ev_minus2"],
+        eight_pi_g_effective_ev_minus2=gravity_lock["eight_pi_g_effective_ev_minus2"],
+        g_effective_ev_minus2=gravity_lock["g_effective_ev_minus2"],
+        lightest_mass_ev=lightest_mass_ev,
+        lambda_lhs_ev2=lambda_lhs_ev2,
+        lambda_rhs_topological_ev2=lambda_rhs_topological,
+        lambda_rhs_noether_bridged_ev2=lambda_rhs_noether_bridged,
+        epsilon_lambda=epsilon_lambda,
+        epsilon_lambda_noether_bridged=epsilon_lambda_noether_bridged,
+        register_noise_floor=register_noise_floor,
+    )
+
+
+def exact_unity_of_scale_residue(
+    *,
+    bit_count: Decimal | Fraction | float | int | str = HOLOGRAPHIC_BITS,
+    kappa_d5: Decimal | Fraction | float | int | str,
+    c_dark_fraction: Fraction | None = None,
+    lambda_obs_si_m2: Decimal | Fraction | float | int | str = PLANCK2018_LAMBDA_SI_M2,
+    mpmath_dps: int = DEFAULT_MPMATH_DPS,
+) -> tuple[float, float]:
+    snapshot = high_precision_unity_of_scale_snapshot(
+        bit_count=bit_count,
+        kappa_d5=kappa_d5,
+        c_dark_fraction=c_dark_fraction,
+        lambda_obs_si_m2=lambda_obs_si_m2,
+        mpmath_dps=mpmath_dps,
+    )
+    return float(snapshot.epsilon_lambda), float(snapshot.register_noise_floor)
+
+
 def derive_kappa_d5(*, lepton_level: int = LEPTON_LEVEL, precision: int = DEFAULT_PRECISION) -> Decimal:
-    with localcontext() as context:
-        context.prec = precision
-        area_ratio = (Decimal(160) / Decimal(1521)) * Decimal(10).sqrt()
-        beta = _decimal(0.5 * math.log(algebra.su2_total_quantum_dimension(int(lepton_level))))
-        spinor_retention = (Decimal(347) - Decimal(8) * beta * beta) / Decimal(351)
-        return ((Decimal(16) / Decimal(5)) * area_ratio * spinor_retention).sqrt()
+    with mpmath.workdps(_resolved_mpmath_dps(precision)):
+        area_ratio = (mpmath.mpf("160") / mpmath.mpf("1521")) * mpmath.sqrt(mpmath.mpf("10"))
+        beta = mpmath.mpf("0.5") * mpmath.log(_mp(algebra.su2_total_quantum_dimension(int(lepton_level))))
+        spinor_retention = (mpmath.mpf("347") - mpmath.mpf("8") * beta * beta) / mpmath.mpf("351")
+        kappa = mpmath.sqrt((mpmath.mpf("16") / mpmath.mpf("5")) * area_ratio * spinor_retention)
+    return _mp_to_decimal(kappa, precision=precision)
 
 
 def _distance_to_integer_fraction(value: Fraction) -> Fraction:
@@ -222,42 +358,37 @@ def framing_defect(parent_level: int, lepton_level: int, quark_level: int) -> Fr
 
 def newton_constant_lock(*, c_dark_fraction: Fraction | None = None, precision: int = DEFAULT_PRECISION) -> NewtonLockAudit:
     resolved_fraction = FALLBACK_C_DARK_COMPLETION if c_dark_fraction is None else c_dark_fraction
-    with localcontext() as context:
-        context.prec = precision
-        c_dark = _fraction_to_decimal(resolved_fraction)
-        planck_mass = branch_planck_mass_ev()
-        g_topological = Decimal("1") / (planck_mass * planck_mass)
-        eight_pi_g_effective = Decimal(12) / (c_dark * planck_mass * planck_mass)
-        g_effective = eight_pi_g_effective / (Decimal(8) * PI)
-        topological_from_effective = g_topological / g_effective
-        effective_from_topological = g_effective / g_topological
+    gravity_lock = _high_precision_newton_lock_values(
+        c_dark_fraction=resolved_fraction,
+        mpmath_dps=_resolved_mpmath_dps(precision),
+    )
     return NewtonLockAudit(
         c_dark_fraction=resolved_fraction,
-        c_dark=c_dark,
-        planck_mass_ev=planck_mass,
-        eight_pi_g_effective_ev_minus2=eight_pi_g_effective,
-        g_effective_ev_minus2=g_effective,
-        g_topological_ev_minus2=g_topological,
-        topological_from_effective_factor=topological_from_effective,
-        effective_from_topological_factor=effective_from_topological,
+        c_dark=_mp_to_decimal(gravity_lock["c_dark"], precision=precision),
+        planck_mass_ev=_mp_to_decimal(gravity_lock["planck_mass_ev"], precision=precision),
+        eight_pi_g_effective_ev_minus2=_mp_to_decimal(gravity_lock["eight_pi_g_effective_ev_minus2"], precision=precision),
+        g_effective_ev_minus2=_mp_to_decimal(gravity_lock["g_effective_ev_minus2"], precision=precision),
+        g_topological_ev_minus2=_mp_to_decimal(gravity_lock["g_topological_ev_minus2"], precision=precision),
+        topological_from_effective_factor=_mp_to_decimal(gravity_lock["topological_from_effective_factor"], precision=precision),
+        effective_from_topological_factor=_mp_to_decimal(gravity_lock["effective_from_topological_factor"], precision=precision),
     )
 
 
 def saturation_audit(*, lambda_obs_si_m2: Decimal | None = None, precision: int = DEFAULT_PRECISION) -> SaturationAudit:
     resolved_lambda = _decimal(PLANCK2018_LAMBDA_SI_M2) if lambda_obs_si_m2 is None else lambda_obs_si_m2
-    with localcontext() as context:
-        context.prec = precision
-        bit_count = (Decimal(3) * PI) / (_decimal(PLANCK_LENGTH_M) ** 2 * resolved_lambda)
-        configured_bits = _decimal(HOLOGRAPHIC_BITS)
-        relative_mismatch = abs(bit_count / configured_bits - Decimal(1)) if configured_bits != 0 else Decimal("Infinity")
-        lambda_ev2 = lambda_si_m2_to_ev2(resolved_lambda)
+    with mpmath.workdps(_resolved_mpmath_dps(precision)):
+        resolved_lambda_mp = _mp(resolved_lambda)
+        bit_count = (mpmath.mpf("3") * mpmath.pi) / (_mp(PLANCK_LENGTH_M) ** 2 * resolved_lambda_mp)
+        configured_bits = _mp(HOLOGRAPHIC_BITS)
+        relative_mismatch = abs(bit_count / configured_bits - mpmath.mpf("1")) if configured_bits != 0 else mpmath.inf
+        lambda_ev2 = resolved_lambda_mp * (_mp(HBAR_EV_SECONDS) * _mp(LIGHT_SPEED_M_PER_S)) ** 2
     return SaturationAudit(
         lambda_obs_si_m2=resolved_lambda,
-        lambda_obs_ev2=lambda_ev2,
-        holographic_bits_from_lambda=bit_count,
-        configured_holographic_bits=configured_bits,
-        register_noise_floor=Decimal(1) / bit_count,
-        relative_mismatch=relative_mismatch,
+        lambda_obs_ev2=_mp_to_decimal(lambda_ev2, precision=precision),
+        holographic_bits_from_lambda=_mp_to_decimal(bit_count, precision=precision),
+        configured_holographic_bits=_mp_to_decimal(configured_bits, precision=precision),
+        register_noise_floor=_mp_to_decimal(mpmath.mpf("1") / bit_count, precision=precision),
+        relative_mismatch=_mp_to_decimal(relative_mismatch, precision=precision),
     )
 
 
@@ -268,40 +399,24 @@ def unity_of_scale_audit(
     saturation: SaturationAudit,
     precision: int = DEFAULT_PRECISION,
 ) -> UnityOfScaleAudit:
-    with localcontext() as context:
-        context.prec = precision
-        bit_count = saturation.holographic_bits_from_lambda
-        lightest_mass_ev = kappa_d5 * newton_lock_audit.planck_mass_ev * (bit_count ** Decimal("-0.25"))
-        lambda_lhs_ev2 = saturation.lambda_obs_ev2
-        lambda_rhs_topological = (
-            Decimal(3)
-            * PI
-            * newton_lock_audit.g_topological_ev_minus2
-            * (lightest_mass_ev**4)
-            / (kappa_d5**4)
-        )
-        lambda_rhs_noether_bridged = (
-            Decimal(2)
-            * PI
-            * PI
-            * newton_lock_audit.c_dark
-            * newton_lock_audit.g_effective_ev_minus2
-            * (lightest_mass_ev**4)
-            / (kappa_d5**4)
-        )
-        epsilon_lambda = abs(Decimal(1) - (lambda_lhs_ev2 / lambda_rhs_topological))
-        epsilon_lambda_noether_bridged = abs(Decimal(1) - (lambda_lhs_ev2 / lambda_rhs_noether_bridged))
+    snapshot = high_precision_unity_of_scale_snapshot(
+        bit_count=saturation.holographic_bits_from_lambda,
+        kappa_d5=kappa_d5,
+        c_dark_fraction=newton_lock_audit.c_dark_fraction,
+        lambda_obs_si_m2=saturation.lambda_obs_si_m2,
+        mpmath_dps=_resolved_mpmath_dps(precision),
+    )
     return UnityOfScaleAudit(
         kappa_d5=kappa_d5,
-        lightest_mass_ev=lightest_mass_ev,
-        lightest_mass_mev=Decimal(1000) * lightest_mass_ev,
-        lambda_lhs_ev2=lambda_lhs_ev2,
+        lightest_mass_ev=_mp_to_decimal(snapshot.lightest_mass_ev, precision=precision),
+        lightest_mass_mev=_mp_to_decimal(mpmath.mpf("1000") * snapshot.lightest_mass_ev, precision=precision),
+        lambda_lhs_ev2=_mp_to_decimal(snapshot.lambda_lhs_ev2, precision=precision),
         lambda_lhs_si_m2=saturation.lambda_obs_si_m2,
-        lambda_rhs_topological_ev2=lambda_rhs_topological,
-        lambda_rhs_noether_bridged_ev2=lambda_rhs_noether_bridged,
-        epsilon_lambda=epsilon_lambda,
-        epsilon_lambda_noether_bridged=epsilon_lambda_noether_bridged,
-        register_noise_floor=saturation.register_noise_floor,
+        lambda_rhs_topological_ev2=_mp_to_decimal(snapshot.lambda_rhs_topological_ev2, precision=precision),
+        lambda_rhs_noether_bridged_ev2=_mp_to_decimal(snapshot.lambda_rhs_noether_bridged_ev2, precision=precision),
+        epsilon_lambda=_mp_to_decimal(snapshot.epsilon_lambda, precision=precision),
+        epsilon_lambda_noether_bridged=_mp_to_decimal(snapshot.epsilon_lambda_noether_bridged, precision=precision),
+        register_noise_floor=_mp_to_decimal(snapshot.register_noise_floor, precision=precision),
     )
 
 
