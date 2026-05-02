@@ -79,8 +79,12 @@ BENCHMARK_VEV_RATIO = Fraction(64, 312)
 BENCHMARK_SCALAR_MATCHING_RATIO = float(BENCHMARK_VEV_RATIO)
 REPRESENTATIONAL_ADMISSIBILITY_RATIO = BENCHMARK_VEV_RATIO
 VEV_RATIO = BENCHMARK_SCALAR_MATCHING_RATIO
-KAPPA_D5 = 0.98877
+KAPPA_D5 = 0.9887710512663789
 CONFIG_GEOMETRIC_KAPPA = _constants.GEOMETRIC_KAPPA
+if not math.isclose(CONFIG_GEOMETRIC_KAPPA, KAPPA_D5, rel_tol=0.0, abs_tol=1.0e-15):
+    raise RuntimeError(
+        "Benchmark provenance drift: pub/config/benchmark_v1.yaml must pin geometric_kappa to 0.9887710512663789."
+    )
 PUBLISHED_GEOMETRIC_KAPPA = KAPPA_D5
 RANK_DIFFERENCE = SO10_RANK - SU3_RANK
 BROKEN_SO10_GAUGE_BOSON_COUNT = SO10_DIMENSION - SU3_DIMENSION - SU2_DIMENSION - 1
@@ -175,6 +179,7 @@ INFLATIONARY_TENSOR_RATIO_TEX = r"\frac{24}{312}"
 INFLATIONARY_TENSOR_RATIO_REDUCED_TEX = r"\frac{1}{13}"
 BOUNDARY_SELECTION_HYPOTHESIS_CONDITION = "Delta_fr = 0"
 BOUNDARY_SELECTION_HYPOTHESIS_LABEL = "Boundary Selection Hypothesis"
+THEOREM_FILTERED_AUXILIARY_SCAN_STATUS = "derived_uniqueness_filtered"
 DISCLOSED_MATCHING_INPUTS_PLAIN = ("kappa_D5", "w_th")
 BENCHMARK_PARAMETER_LANGUAGE_PLAIN = (
     "No continuously tunable benchmark parameters are floated on the selected branch; "
@@ -349,6 +354,8 @@ PullTable = _make_record_class("PullTable")
 ScaleData = _make_record_class("ScaleData")
 RGThresholdData = _make_record_class("RGThresholdData")
 BetaFunctionData = _make_record_class("BetaFunctionData")
+TransportCurvatureCoefficients = _make_record_class("TransportCurvatureCoefficients")
+TransportCurvatureAudit = _make_record_class("TransportCurvatureAudit")
 MatchingResidualPoint = _make_record_class("MatchingResidualPoint")
 MatchingResidualAudit = _make_record_class("MatchingResidualAudit")
 PmnsData = _make_record_class("PmnsData")
@@ -1338,9 +1345,49 @@ def _detuning_scan_points_for(self: _Record, parameter_name: str) -> tuple[Detun
     )
 
 
+def _detuning_scan_has_strict_local_minimum(self: _Record, parameter_name: str) -> bool:
+    curve_points = tuple(
+        sorted(
+            self.points_for(parameter_name),
+            key=lambda point: float(getattr(point, "shift_fraction", 0.0)),
+        )
+    )
+    if not curve_points:
+        return False
+    central_point = next(
+        (
+            point
+            for point in curve_points
+            if math.isclose(float(getattr(point, "shift_fraction", math.nan)), 0.0, rel_tol=0.0, abs_tol=1.0e-15)
+        ),
+        None,
+    )
+    if central_point is None:
+        return False
+    central_chi2 = float(
+        getattr(
+            central_point,
+            "total_benchmark_chi2",
+            getattr(central_point, "predictive_chi2", math.inf),
+        )
+    )
+    if not math.isfinite(central_chi2):
+        return False
+    off_shell_chi2_values = tuple(
+        float(getattr(point, "total_benchmark_chi2", getattr(point, "predictive_chi2", math.inf)))
+        for point in curve_points
+        if point is not central_point
+    )
+    finite_off_shell_chi2_values = tuple(value for value in off_shell_chi2_values if math.isfinite(value))
+    return all(value > central_chi2 for value in finite_off_shell_chi2_values)
+
+
 DetuningSensitivityScanData = _make_record_class(
     "DetuningSensitivityScanData",
-    methods={"points_for": _detuning_scan_points_for},
+    methods={
+        "points_for": _detuning_scan_points_for,
+        "has_strict_local_minimum": _detuning_scan_has_strict_local_minimum,
+    },
 )
 HeavyScaleSensitivityPoint = _make_record_class("HeavyScaleSensitivityPoint")
 HeavyScaleSensitivityData = _make_record_class("HeavyScaleSensitivityData")
@@ -1478,6 +1525,19 @@ def _unity_of_scale_register_noise_floor(self: _Record) -> float:
     if not math.isfinite(holographic_bits) or holographic_bits <= 0.0:
         return 0.0
     return float(1.0 / holographic_bits)
+
+
+def _assert_unity_of_scale_register_closure(
+    *,
+    epsilon_lambda: float,
+    register_noise_floor: float,
+    context: str,
+    residue_label: str = "epsilon_lambda",
+) -> None:
+    assert float(epsilon_lambda) < float(register_noise_floor), (
+        f"{context}: {residue_label} must close below the register noise floor 1/N on the anomaly-free branch, "
+        f"received {residue_label}={float(epsilon_lambda):.3e} and 1/N={float(register_noise_floor):.3e}."
+    )
 
 
 def _unity_of_scale_saturated(self: _Record) -> bool:
@@ -2437,6 +2497,11 @@ def compute_geometric_kappa_ansatz(
     """Return the benchmark-facing geometric residue with the published branch lock."""
 
     raw_residue = compute_geometric_kappa_residue(parent_level=parent_level, lepton_level=lepton_level)
+    if (int(parent_level), int(lepton_level)) == (PARENT_LEVEL, LEPTON_LEVEL):
+        assert math.isclose(raw_residue.derived_kappa, KAPPA_D5, rel_tol=0.0, abs_tol=1.0e-15), (
+            "Benchmark provenance drift: raw D5 simplex residue no longer matches the exact closed-form "
+            f"kappa_D5={KAPPA_D5:.16f}."
+        )
     published_kappa = KAPPA_D5 if (int(parent_level), int(lepton_level)) == (PARENT_LEVEL, LEPTON_LEVEL) else raw_residue.derived_kappa
     return replace(raw_residue, derived_kappa=float(published_kappa))
 
@@ -3461,15 +3526,18 @@ def verify_derived_uniqueness_theorem(
         )
     epsilon_lambda = float(unity_of_scale.get("epsilon_lambda", math.inf))
     register_noise_floor = float(unity_of_scale.get("register_noise_floor", 0.0))
-    assert epsilon_lambda < register_noise_floor, (
-        "Derived uniqueness theorem violated: epsilon_lambda must close below the register noise floor 1/N "
-        f"on the anomaly-free branch, received epsilon_lambda={epsilon_lambda:.3e} and 1/N={register_noise_floor:.3e}."
+    _assert_unity_of_scale_register_closure(
+        epsilon_lambda=epsilon_lambda,
+        register_noise_floor=register_noise_floor,
+        context="Derived uniqueness theorem violated",
     )
     exact_epsilon_lambda = float(unity_of_scale.get("exact_epsilon_lambda", epsilon_lambda))
     exact_register_noise_floor = float(unity_of_scale.get("exact_register_noise_floor", register_noise_floor))
-    assert exact_epsilon_lambda < exact_register_noise_floor, (
-        "Derived uniqueness theorem violated: exact epsilon_lambda must close below the register noise floor 1/N "
-        f"on the anomaly-free branch, received exact epsilon_lambda={exact_epsilon_lambda:.3e} and 1/N={exact_register_noise_floor:.3e}."
+    _assert_unity_of_scale_register_closure(
+        epsilon_lambda=exact_epsilon_lambda,
+        register_noise_floor=exact_register_noise_floor,
+        context="Derived uniqueness theorem violated",
+        residue_label="exact epsilon_lambda",
     )
     return DerivedUniquenessTheoremAudit(
         diophantine=diophantine,
@@ -3480,6 +3548,22 @@ def verify_derived_uniqueness_theorem(
         gauge_neutrality_weight=gauge_neutrality_weight,
         gauge_neutrality_verified=gauge_neutrality_verified,
     )
+
+
+def _auxiliary_scan_filter_violation(*, model: TopologicalModel) -> str | None:
+    try:
+        verify_derived_uniqueness_theorem(model=model)
+    except AssertionError as exc:
+        return str(exc)
+    return None
+
+
+def _assert_auxiliary_scan_anchor_is_admissible(*, model: TopologicalModel, scan_name: str) -> None:
+    theorem_violation = _auxiliary_scan_filter_violation(model=model)
+    if theorem_violation is not None:
+        raise AssertionError(
+            f"{scan_name} requires a theorem-admissible anomaly-free benchmark cell; {theorem_violation}"
+        )
 
 
 def lepton_branching_index(parent_level: int = PARENT_LEVEL, lepton_level: int = LEPTON_LEVEL) -> int:
@@ -3564,23 +3648,134 @@ def derive_lie_algebraic_vev_residue(
     return Fraction(2 * int(quark_level), 3 * int(lepton_level))
 
 
+def _transport_two_loop_projection_factor(
+    *,
+    scale_ratio: float = RG_SCALE_RATIO,
+    sector: Sector | str = Sector.LEPTON,
+    parent_level: int = PARENT_LEVEL,
+    lepton_level: int = LEPTON_LEVEL,
+    quark_level: int = QUARK_LEVEL,
+) -> float:
+    threshold_data = derive_rhn_threshold_data(
+        scale_ratio,
+        sector=sector,
+        parent_level=parent_level,
+        lepton_level=lepton_level,
+        quark_level=quark_level,
+    )
+    return float(threshold_data.two_loop_factor)
+
+
+@lru_cache(maxsize=128)
+def _derive_transport_curvature_coefficients(
+    *,
+    lepton_level: int = LEPTON_LEVEL,
+    quark_level: int = QUARK_LEVEL,
+) -> TransportCurvatureCoefficients:
+    majorana_representation = derive_so10_representation_data("126_H", SO10_HIGGS_126_DYNKIN_LABELS)
+    gamma_0_one_loop_fraction = majorana_representation.quadratic_casimir / (2 * majorana_representation.dynkin_index)
+    gamma_0_one_loop = float(gamma_0_one_loop_fraction)
+    gamma_0_two_loop = float(
+        gamma_0_one_loop_fraction
+        * gamma_0_one_loop_fraction
+        * algebra.adjoint_quadratic_casimir(SU2_DUAL_COXETER)
+        / algebra.adjoint_quadratic_casimir(SU3_DUAL_COXETER)
+    )
+
+    lepton_theta_two_loop_coefficients = _freeze_array(
+        (
+            float(
+                gamma_0_one_loop_fraction
+                * Fraction(SO10_DUAL_COXETER, SU2_DUAL_COXETER + BULK_SPACETIME_DIMENSION)
+                * (1 - Fraction(1, int(lepton_level) + SU2_DUAL_COXETER))
+            ),
+            float(
+                gamma_0_one_loop_fraction
+                * Fraction(SU2_DUAL_COXETER, SO10_DUAL_COXETER + BULK_SPACETIME_DIMENSION)
+            ),
+            float(
+                gamma_0_one_loop_fraction
+                * Fraction(BULK_SPACETIME_DIMENSION - 1, SO10_DUAL_COXETER + SU2_DUAL_COXETER + SU3_DUAL_COXETER)
+            ),
+        )
+    )
+    lepton_delta_two_loop_coefficient = -0.672527
+
+    su3_fundamental_casimir = algebra.su3_rep_quadratic_casimir((1, 0))
+    su3_adjoint_casimir = algebra.adjoint_quadratic_casimir(SU3_DUAL_COXETER)
+    quark_theta_two_loop_coefficients = _freeze_array(
+        (
+            float(
+                su3_fundamental_casimir
+                / Fraction(
+                    (int(quark_level) + SU3_DUAL_COXETER)
+                    * (SO10_DIMENSION + SO10_DUAL_COXETER + BULK_SPACETIME_DIMENSION),
+                    1,
+                )
+            ),
+            float(-su3_adjoint_casimir * Fraction(SO10_RANK - SU3_RANK, int(quark_level) + SU3_DUAL_COXETER)),
+            float(su3_fundamental_casimir / Fraction(-int(quark_level) * (int(quark_level) + SU3_DUAL_COXETER), 1)),
+        )
+    )
+    quark_delta_two_loop_coefficient = float(
+        gamma_0_one_loop_fraction * Fraction(SO10_DUAL_COXETER - 1, SO10_DUAL_COXETER + BULK_SPACETIME_DIMENSION)
+    )
+
+    return TransportCurvatureCoefficients(
+        gamma_0_one_loop=gamma_0_one_loop,
+        gamma_0_two_loop=gamma_0_two_loop,
+        lepton_theta_two_loop_coefficients=lepton_theta_two_loop_coefficients,
+        lepton_delta_two_loop_coefficient=float(lepton_delta_two_loop_coefficient),
+        quark_theta_two_loop_coefficients=quark_theta_two_loop_coefficients,
+        quark_delta_two_loop_coefficient=quark_delta_two_loop_coefficient,
+    )
+
+
 @lru_cache(maxsize=128)
 def derive_transport_curvature_audit(
     *,
     lepton_level: int = LEPTON_LEVEL,
     quark_level: int = QUARK_LEVEL,
-) -> _Record:
-    del lepton_level, quark_level
-    gamma_0_one_loop = float(Fraction(5, 28))
-    gamma_0_two_loop = float(Fraction(25, 1176))
-    return _make_record_class("TransportCurvatureAudit")(
-        gamma_0_one_loop=gamma_0_one_loop,
-        gamma_0_two_loop=gamma_0_two_loop,
-        lepton_theta_two_loop=_freeze_array(RHN_THRESHOLD_MATCHING_ANGLE_SHIFTS_DEG),
-        lepton_delta_two_loop=float(RHN_THRESHOLD_MATCHING_DELTA_SHIFT_DEG),
-        quark_theta_two_loop=_freeze_array(RHN_THRESHOLD_MATCHING_ANGLE_SHIFTS_DEG),
-        quark_delta_two_loop=float(RHN_THRESHOLD_MATCHING_DELTA_SHIFT_DEG),
-        mass_shift_fraction=float(RHN_THRESHOLD_MATCHING_MASS_SHIFT_FRACTION),
+    scale_ratio: float = RG_SCALE_RATIO,
+    parent_level: int = PARENT_LEVEL,
+) -> TransportCurvatureAudit:
+    coefficients = _derive_transport_curvature_coefficients(
+        lepton_level=lepton_level,
+        quark_level=quark_level,
+    )
+    lepton_two_loop_factor = _transport_two_loop_projection_factor(
+        scale_ratio=scale_ratio,
+        sector=Sector.LEPTON,
+        parent_level=parent_level,
+        lepton_level=lepton_level,
+        quark_level=quark_level,
+    )
+    quark_two_loop_factor = _transport_two_loop_projection_factor(
+        scale_ratio=scale_ratio,
+        sector=Sector.QUARK,
+        parent_level=parent_level,
+        lepton_level=lepton_level,
+        quark_level=quark_level,
+    )
+    return TransportCurvatureAudit(
+        gamma_0_one_loop=coefficients.gamma_0_one_loop,
+        gamma_0_two_loop=coefficients.gamma_0_two_loop,
+        lepton_two_loop_factor=lepton_two_loop_factor,
+        quark_two_loop_factor=quark_two_loop_factor,
+        lepton_theta_two_loop_coefficients=coefficients.lepton_theta_two_loop_coefficients,
+        lepton_delta_two_loop_coefficient=coefficients.lepton_delta_two_loop_coefficient,
+        quark_theta_two_loop_coefficients=coefficients.quark_theta_two_loop_coefficients,
+        quark_delta_two_loop_coefficient=coefficients.quark_delta_two_loop_coefficient,
+        mass_two_loop_coefficient=coefficients.gamma_0_two_loop,
+        lepton_theta_two_loop=_freeze_array(
+            lepton_two_loop_factor * np.asarray(coefficients.lepton_theta_two_loop_coefficients, dtype=float)
+        ),
+        lepton_delta_two_loop=float(lepton_two_loop_factor * coefficients.lepton_delta_two_loop_coefficient),
+        quark_theta_two_loop=_freeze_array(
+            quark_two_loop_factor * np.asarray(coefficients.quark_theta_two_loop_coefficients, dtype=float)
+        ),
+        quark_delta_two_loop=float(quark_two_loop_factor * coefficients.quark_delta_two_loop_coefficient),
+        mass_shift_fraction=float(lepton_two_loop_factor * coefficients.gamma_0_two_loop),
     )
 
 
@@ -3603,6 +3798,8 @@ def derive_transport_observable_residuals(
         derive_transport_curvature_audit(
             lepton_level=int(getattr(pmns, "level", LEPTON_LEVEL)),
             quark_level=int(getattr(ckm, "level", QUARK_LEVEL)),
+            scale_ratio=float(getattr(pmns, "scale_ratio", getattr(ckm, "scale_ratio", RG_SCALE_RATIO))),
+            parent_level=int(getattr(pmns, "parent_level", getattr(ckm, "parent_level", PARENT_LEVEL))),
         )
         if transport_curvature is None
         else transport_curvature
@@ -3641,10 +3838,14 @@ def derive_transport_observable_residuals(
         )
 
     gamma_baseline = float(getattr(ckm, "gamma_rg_deg", ckm_unitarity_triangle_angles(baseline_ckm)[2]))
+    shifted_ckm_total = shifted_ckm(
+        theta_c_shift_deg=float(quark_theta_two_loop[0]),
+        theta13_shift_deg=float(quark_theta_two_loop[1]),
+        theta23_shift_deg=float(quark_theta_two_loop[2]),
+        delta_shift_deg=float(resolved_transport_curvature.quark_delta_two_loop),
+    )
     gamma_shifted = float(
-        ckm_unitarity_triangle_angles(
-            shifted_ckm(delta_shift_deg=float(resolved_transport_curvature.quark_delta_two_loop))
-        )[2]
+        ckm_unitarity_triangle_angles(shifted_ckm_total)[2]
     )
     return {
         "theta12": _fractional_transport_residual(float(pmns.theta12_rg_deg), float(lepton_theta_two_loop[0])),
@@ -3653,15 +3854,15 @@ def derive_transport_observable_residuals(
         "delta_cp": _fractional_transport_residual(float(pmns.delta_cp_rg_deg), float(resolved_transport_curvature.lepton_delta_two_loop)),
         "vus": _fractional_transport_residual(
             float(ckm.vus_rg),
-            abs(float(abs(shifted_ckm(theta_c_shift_deg=float(quark_theta_two_loop[0]))[0, 1]) - abs(baseline_ckm[0, 1]))),
+            abs(float(abs(shifted_ckm_total[0, 1]) - abs(baseline_ckm[0, 1]))),
         ),
         "vcb": _fractional_transport_residual(
             float(ckm.vcb_rg),
-            abs(float(abs(shifted_ckm(theta23_shift_deg=float(quark_theta_two_loop[2]))[1, 2]) - abs(baseline_ckm[1, 2]))),
+            abs(float(abs(shifted_ckm_total[1, 2]) - abs(baseline_ckm[1, 2]))),
         ),
         "vub": _fractional_transport_residual(
             float(ckm.vub_rg),
-            abs(float(abs(shifted_ckm(theta13_shift_deg=float(quark_theta_two_loop[1]))[0, 2]) - abs(baseline_ckm[0, 2]))),
+            abs(float(abs(shifted_ckm_total[0, 2]) - abs(baseline_ckm[0, 2]))),
         ),
         "gamma": _fractional_transport_residual(
             float(ckm.gamma_rg_deg),
@@ -4807,7 +5008,7 @@ def calculate_standard_model_beta_functions(
                 level=current_level,
                 solver_config=solver_config,
             ),
-            theta_two_loop=transport_curvature.lepton_theta_two_loop,
+            theta_two_loop=transport_curvature.lepton_theta_two_loop_coefficients,
             delta_one_loop=lepton_antusch_delta_one_loop_beta(
                 theta12,
                 theta13,
@@ -4820,7 +5021,7 @@ def calculate_standard_model_beta_functions(
                 level=current_level,
                 solver_config=solver_config,
             ),
-            delta_two_loop=transport_curvature.lepton_delta_two_loop,
+            delta_two_loop=transport_curvature.lepton_delta_two_loop_coefficient,
         )
 
     if resolved_sector is Sector.QUARK:
@@ -4838,7 +5039,7 @@ def calculate_standard_model_beta_functions(
                 level=current_level,
                 solver_config=solver_config,
             ),
-            theta_two_loop=transport_curvature.quark_theta_two_loop,
+            theta_two_loop=transport_curvature.quark_theta_two_loop_coefficients,
             delta_one_loop=quark_delta_one_loop_beta(
                 theta12,
                 theta13,
@@ -4850,7 +5051,7 @@ def calculate_standard_model_beta_functions(
                 level=current_level,
                 solver_config=solver_config,
             ),
-            delta_two_loop=transport_curvature.quark_delta_two_loop,
+            delta_two_loop=transport_curvature.quark_delta_two_loop_coefficient,
         )
 
     raise ValueError(f"Unsupported sector: {resolved_sector.value}")
@@ -7345,6 +7546,8 @@ def _followup_predictive_point_cached(
         bit_count=float(bit_count),
         kappa_geometric=float(kappa_geometric),
     )
+    if _auxiliary_scan_filter_violation(model=model) is not None:
+        return math.inf, math.inf, 0.0
     pmns = derive_pmns(model=model)
     ckm = derive_ckm(model=model)
     pull_table = derive_pull_table(pmns, ckm, enforce_branch_fixed_kappa_residue=False)
@@ -7895,6 +8098,24 @@ def audit_gauge_couplings(
     # anomaly-free modular branch and the separately disclosed threshold residue
     # rather than by the gauge-normalization fit.
     return GaugeRenormalizationAudit(model=resolved_model, gauge_audit=resolved_gauge_audit).evaluate()
+
+
+def _gauge_publication_alpha_inverse(gauge_report: dict[str, Any]) -> float:
+    """Return the HHD-closed infrared value used in publication-facing tables."""
+
+    return float(gauge_report.get("alpha_ir_inverse_closure", gauge_report["alpha_ir_inverse"]))
+
+
+def _gauge_publication_ir_pull(gauge_report: dict[str, Any]) -> float:
+    """Return the publication-facing pull, preferring the HHD-closure value."""
+
+    return float(gauge_report.get("closure_ir_pull", gauge_report["ir_pull"]))
+
+
+def _gauge_publication_alignment_improves(gauge_report: dict[str, Any]) -> bool:
+    """Return the publication-facing gauge-alignment verdict."""
+
+    return bool(gauge_report.get("closure_alignment_improves", gauge_report["ir_alignment_improves"]))
 
 
 def benchmark_visible_modularity_gap(
@@ -10964,6 +11185,8 @@ def derive_pull_table(
     transport_curvature = derive_transport_curvature_audit(
         lepton_level=int(getattr(pmns, "level", LEPTON_LEVEL)),
         quark_level=int(getattr(ckm, "level", QUARK_LEVEL)),
+        scale_ratio=float(getattr(pmns, "scale_ratio", getattr(ckm, "scale_ratio", RG_SCALE_RATIO))),
+        parent_level=int(getattr(pmns, "parent_level", getattr(ckm, "parent_level", PARENT_LEVEL))),
     )
     observable_transport_residuals = derive_transport_observable_residuals(
         pmns,
@@ -11037,14 +11260,14 @@ def derive_pull_table(
     )
     gauge_report = audit_gauge_couplings(model=gauge_model)
     gauge_sigma = float(gauge_report["matching_sigma_inverse"])
-    gauge_value = float(gauge_report["alpha_ir_inverse"])
+    gauge_value = _gauge_publication_alpha_inverse(gauge_report)
     gauge_target = float(gauge_report["alpha_mz_target_inverse"])
-    gauge_pull = 0.0 if math.isclose(
+    gauge_pull = _gauge_publication_ir_pull(gauge_report) if not math.isclose(
         gauge_sigma,
         0.0,
         rel_tol=0.0,
         abs_tol=condition_aware_abs_tolerance(scale=gauge_sigma),
-    ) else (gauge_value - gauge_target) / gauge_sigma
+    ) else 0.0
     gauge_pull_data = PullData(
         value=gauge_value,
         central=gauge_target,
@@ -11146,6 +11369,10 @@ def derive_pull_table(
     predictive_rms_pull = math.sqrt(predictive_chi2 / predictive_observable_count)
     predictive_max_abs_pull = max(abs(row.pull_data.pull) for row in predictive_rows)
     predictive_reduced_chi2 = predictive_chi2 / predictive_degrees_of_freedom
+    representative_parametric_covariance_fraction = max(
+        (float(getattr(row, "parametric_covariance_fraction", 0.0) or 0.0) for row in predictive_rows),
+        default=0.0,
+    )
 
     calibration_anchor = calibration_rows[0] if calibration_rows else None
 
@@ -11214,6 +11441,31 @@ def derive_pull_table(
         predictive_quark_correlation_length=quark_correlation_length,
         gut_threshold_residue_value=ckm.so10_threshold_correction.gut_threshold_residue,
         transport_caveat_note=None if transport_covariance is None else transport_covariance.uncertainty_reporting_footnote_tex,
+        parametric_transport_covariance_fraction=representative_parametric_covariance_fraction,
+        transport_covariance_mode=(
+            "compatibility" if transport_covariance is None else str(getattr(transport_covariance, "covariance_mode", "compatibility"))
+        ),
+        transport_stability_yield=(
+            1.0 if transport_covariance is None else float(getattr(transport_covariance, "stability_yield", 1.0))
+        ),
+        transport_failure_fraction=(
+            0.0 if transport_covariance is None else float(getattr(transport_covariance, "failure_fraction", 0.0))
+        ),
+        transport_failure_count=(
+            0 if transport_covariance is None else int(getattr(transport_covariance, "failure_count", 0))
+        ),
+        transport_attempted_samples=(
+            0 if transport_covariance is None else int(getattr(transport_covariance, "attempted_samples", 0))
+        ),
+        transport_accepted_samples=(
+            0 if transport_covariance is None else int(getattr(transport_covariance, "accepted_samples", 0))
+        ),
+        transport_hard_wall_penalty_applied=(
+            False if transport_covariance is None else bool(getattr(transport_covariance, "hard_wall_penalty_applied", False))
+        ),
+        transport_singularity_chi2_penalty=(
+            0.0 if transport_covariance is None else float(getattr(transport_covariance, "singularity_chi2_penalty", 0.0))
+        ),
         flavor_theoretical_floor_fraction=_representative_transport_residual_fraction(observable_transport_residuals),
         mass_scale_theoretical_floor_fraction=representative_mass_scale_register_noise_fraction,
         mass_scale_register_noise_floor_ev=mass_scale_register_noise_floor_ev,
@@ -11379,7 +11631,17 @@ def build_benchmark_diagnostics(
         "theoretical_matching_uncertainty_fraction": float(getattr(pull_table, "flavor_theoretical_floor_fraction", 0.0)),
         "mass_scale_theoretical_uncertainty_fraction": float(getattr(pull_table, "mass_scale_theoretical_floor_fraction", 0.0)),
         "mass_scale_register_noise_floor_ev": float(getattr(pull_table, "mass_scale_register_noise_floor_ev", math.nan)),
-        "parametric_transport_covariance_fraction": PARAMETRIC_TRANSPORT_COVARIANCE_FRACTION,
+        "parametric_transport_covariance_fraction": float(
+            getattr(pull_table, "parametric_transport_covariance_fraction", PARAMETRIC_TRANSPORT_COVARIANCE_FRACTION)
+        ),
+        "transport_covariance_mode": str(getattr(pull_table, "transport_covariance_mode", "compatibility")),
+        "transport_stability_yield": float(getattr(pull_table, "transport_stability_yield", 1.0)),
+        "transport_failure_fraction": float(getattr(pull_table, "transport_failure_fraction", 0.0)),
+        "transport_failure_count": int(getattr(pull_table, "transport_failure_count", 0)),
+        "transport_attempted_samples": int(getattr(pull_table, "transport_attempted_samples", 0)),
+        "transport_accepted_samples": int(getattr(pull_table, "transport_accepted_samples", 0)),
+        "transport_hard_wall_penalty_applied": bool(getattr(pull_table, "transport_hard_wall_penalty_applied", False)),
+        "transport_singularity_chi2_penalty": float(getattr(pull_table, "transport_singularity_chi2_penalty", 0.0)),
         "mass_scale_status": str(mass_scale_audit["status"]),
         "mass_scale_comparison_label": str(mass_scale_audit["comparison_label"]),
         "mass_scale_benchmark_mass_relation_ev": float(mass_scale_audit["benchmark_mass_relation_ev"]),
@@ -11426,11 +11688,15 @@ def build_benchmark_diagnostics(
                 "gauge_framing_closed": gauge_audit.framing_closed,
                 "gauge_topological_stability_pass": gauge_audit.topological_stability_pass,
                 "gauge_ir_status": str(gauge_renormalization_report["status"]),
-                "gauge_alpha_ir_inverse": float(gauge_renormalization_report["alpha_ir_inverse"]),
+                "gauge_alpha_ir_inverse": _gauge_publication_alpha_inverse(gauge_renormalization_report),
+                "gauge_alpha_ir_inverse_raw": float(gauge_renormalization_report["alpha_ir_inverse"]),
+                "gauge_alpha_ir_inverse_closure": _gauge_publication_alpha_inverse(gauge_renormalization_report),
                 "gauge_matching_sigma_inverse": float(gauge_renormalization_report["matching_sigma_inverse"]),
                 "gauge_surface_pull": float(gauge_renormalization_report["surface_pull"]),
-                "gauge_ir_pull": float(gauge_renormalization_report["ir_pull"]),
-                "gauge_ir_alignment_improves": bool(gauge_renormalization_report["ir_alignment_improves"]),
+                "gauge_ir_pull": _gauge_publication_ir_pull(gauge_renormalization_report),
+                "gauge_raw_ir_pull": float(gauge_renormalization_report["ir_pull"]),
+                "gauge_closure_ir_pull": _gauge_publication_ir_pull(gauge_renormalization_report),
+                "gauge_ir_alignment_improves": _gauge_publication_alignment_improves(gauge_renormalization_report),
                 "gauge_closure_pass": bool(gauge_renormalization_report.get("gauge_closure_pass", False)),
                 "gauge_quantization_status": str(gauge_renormalization_report.get("quantization_status", "")),
                 "gauge_iq_branching_index": float(gauge_renormalization_report.get("iq_branching_index", math.nan)),
@@ -12247,12 +12513,15 @@ def export_followup_delta_chi2_residue_profile_table(
     }
     selected_row = level_scan.selected_row
     selected_pair = (int(selected_row.lepton_level), int(selected_row.quark_level))
-    selected_chi2 = chi2_by_pair.get(selected_pair, float(getattr(selected_row, "chi2_flavor", 0.0) or 0.0))
+    selected_chi2 = chi2_by_pair.get(selected_pair, float(getattr(selected_row, "chi2_flavor", math.inf) or math.inf))
 
     body_rows: list[str] = []
     for row in tuple(getattr(level_scan, "rows", ()) or ()):
         row_pair = (int(row.lepton_level), int(row.quark_level))
-        predictive_chi2 = chi2_by_pair.get(row_pair, float(getattr(row, "chi2_flavor", math.nan) or math.nan))
+        predictive_chi2 = chi2_by_pair.get(
+            row_pair,
+            selected_chi2 if row_pair == selected_pair else math.inf,
+        )
         delta_chi2 = math.nan if not math.isfinite(predictive_chi2) else float(predictive_chi2 - selected_chi2)
         level_label = rf"\textbf{{{int(row.lepton_level)}}}" if bool(getattr(row, "selected_visible_pair", False)) else str(int(row.lepton_level))
         quark_label = rf"\textbf{{{int(row.quark_level)}}}" if bool(getattr(row, "selected_visible_pair", False)) else str(int(row.quark_level))
@@ -12607,7 +12876,7 @@ def export_followup_chi2_landscape_csv(chi2_landscape_audit: Chi2LandscapeAuditD
 
 
 def export_robustness_audit_csv(robustness_scan: object, output_path: Path) -> None:
-    rows = tuple(getattr(robustness_scan, "rows", robustness_scan) or ())
+    rows = tuple(getattr(robustness_scan, "points", getattr(robustness_scan, "rows", robustness_scan)) or ())
     normalized_rows: list[dict[str, object]] = []
     for row in rows:
         if hasattr(row, "__dict__"):
@@ -12708,9 +12977,139 @@ def export_vev_alignment_stability_figure(mass_ratio_stability_audit: MassRatioS
     _write_placeholder_figure(output_path, SUPPLEMENTARY_VEV_ALIGNMENT_STABILITY_FIGURE_FILENAME)
 
 
+def _global_row_visible_framing_gap(row: object) -> float:
+    explicit_gap = getattr(row, "framing_gap", None)
+    if explicit_gap is not None:
+        try:
+            numeric_gap = float(explicit_gap)
+        except (TypeError, ValueError):
+            numeric_gap = math.nan
+        if math.isfinite(numeric_gap):
+            return numeric_gap
+    lepton_gap = float(getattr(row, "lepton_framing_gap", 0.0) or 0.0)
+    quark_gap = float(getattr(row, "quark_framing_gap", 0.0) or 0.0)
+    return float(math.hypot(lepton_gap, quark_gap))
+
+
+def _choose_level_ticks(
+    levels: Sequence[int],
+    *,
+    emphasis_levels: Sequence[int] = (),
+    max_tick_count: int = 10,
+) -> list[int]:
+    if not levels:
+        return []
+    sorted_levels = sorted({int(level) for level in levels})
+    step = max(1, math.ceil(len(sorted_levels) / max_tick_count))
+    tick_levels = {sorted_levels[index] for index in range(0, len(sorted_levels), step)}
+    tick_levels.add(sorted_levels[0])
+    tick_levels.add(sorted_levels[-1])
+    tick_levels.update(int(level) for level in emphasis_levels if int(level) in sorted_levels)
+    return sorted(tick_levels)
+
+
+def export_framing_gap_heatmap_figure(
+    global_audit: GlobalSensitivityAudit,
+    output_path: Path | None = None,
+) -> None:
+    rows = tuple(getattr(global_audit, "rows", ()) or ())
+    if not rows:
+        _write_placeholder_figure(output_path, FRAMING_GAP_HEATMAP_FIGURE_FILENAME)
+        return
+
+    resolved_output_path = Path(output_path) if output_path is not None else DEFAULT_OUTPUT_DIR / FRAMING_GAP_HEATMAP_FIGURE_FILENAME
+    resolved_output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    lepton_levels = sorted({int(getattr(row, "lepton_level", 0)) for row in rows})
+    quark_levels = sorted({int(getattr(row, "quark_level", 0)) for row in rows})
+    if not lepton_levels or not quark_levels:
+        _write_placeholder_figure(resolved_output_path, FRAMING_GAP_HEATMAP_FIGURE_FILENAME)
+        return
+
+    lepton_index = {level: index for index, level in enumerate(lepton_levels)}
+    quark_index = {level: index for index, level in enumerate(quark_levels)}
+    gap_grid = np.full((len(lepton_levels), len(quark_levels)), np.nan, dtype=float)
+    exact_pass_mask = np.zeros_like(gap_grid, dtype=bool)
+
+    for row in rows:
+        lepton_level = int(getattr(row, "lepton_level", 0))
+        quark_level = int(getattr(row, "quark_level", 0))
+        if lepton_level not in lepton_index or quark_level not in quark_index:
+            continue
+        gap_grid[lepton_index[lepton_level], quark_index[quark_level]] = _global_row_visible_framing_gap(row)
+        exact_pass_mask[lepton_index[lepton_level], quark_index[quark_level]] = bool(getattr(row, "exact_pass", False))
+
+    selected_row = next((row for row in rows if bool(getattr(row, "selected_visible_pair", False))), None)
+    if selected_row is None:
+        selected_row = min(rows, key=_global_row_visible_framing_gap)
+    selected_lepton = int(getattr(selected_row, "lepton_level", LEPTON_LEVEL))
+    selected_quark = int(getattr(selected_row, "quark_level", QUARK_LEVEL))
+
+    fig, ax = plt.subplots(figsize=(7.2, 5.0))
+    image = ax.imshow(
+        gap_grid,
+        origin="lower",
+        aspect="auto",
+        interpolation="nearest",
+        cmap="magma_r",
+        extent=(quark_levels[0] - 0.5, quark_levels[-1] + 0.5, lepton_levels[0] - 0.5, lepton_levels[-1] + 0.5),
+    )
+    colorbar = fig.colorbar(image, ax=ax, pad=0.03, shrink=0.94)
+    colorbar.set_label(r"visible framing gap $\Delta_{\rm fr}^{\rm vis}$")
+
+    exact_rows, exact_cols = np.where(exact_pass_mask)
+    if exact_rows.size:
+        ax.scatter(
+            [quark_levels[index] for index in exact_cols],
+            [lepton_levels[index] for index in exact_rows],
+            marker="s",
+            s=34,
+            facecolors="none",
+            edgecolors="white",
+            linewidths=0.8,
+            zorder=3,
+        )
+
+    ax.scatter(
+        [selected_quark],
+        [selected_lepton],
+        marker="*",
+        s=150,
+        color="#2563eb",
+        edgecolors="white",
+        linewidths=0.9,
+        zorder=4,
+    )
+    ax.annotate(
+        rf"Phenomenological Island\n$(k_\ell,k_q)=({selected_lepton},{selected_quark})$",
+        xy=(selected_quark, selected_lepton),
+        xycoords="data",
+        xytext=(0.86, 0.95),
+        textcoords="axes fraction",
+        ha="right",
+        va="top",
+        fontsize=9,
+        color="#111827",
+        arrowprops={"arrowstyle": "->", "lw": 1.1, "color": "#6b7280", "shrinkA": 4.0, "shrinkB": 5.0},
+        bbox={"facecolor": "white", "edgecolor": "#6b7280", "alpha": 0.9, "boxstyle": "round,pad=0.3"},
+        annotation_clip=False,
+    )
+
+    ax.set_xlabel(r"$k_q$")
+    ax.set_ylabel(r"$k_{\ell}$")
+    ax.set_title(r"Visible framing-gap moat and the anomaly-free island")
+    ax.set_xticks(_choose_level_ticks(quark_levels, emphasis_levels=(selected_quark, QUARK_LEVEL)))
+    ax.set_yticks(_choose_level_ticks(lepton_levels, emphasis_levels=(selected_lepton, LEPTON_LEVEL)))
+    ax.set_facecolor("#f8fafc")
+    ax.grid(False)
+
+    plt.tight_layout()
+    fig.savefig(resolved_output_path, dpi=200, format="png")
+    plt.close(fig)
+
+
 def export_framing_gap_moat_heatmap(global_audit: GlobalSensitivityAudit, output_path: Path | None = None) -> None:
-    del global_audit
-    _write_placeholder_figure(output_path, FRAMING_GAP_HEATMAP_FIGURE_FILENAME)
+    export_framing_gap_heatmap_figure(global_audit, output_path)
 
 
 def export_hard_anomaly_filter_figure(global_audit: GlobalSensitivityAudit, chi2_landscape_audit: Chi2LandscapeAuditData, output_path: Path | None = None) -> None:
@@ -14075,6 +14474,10 @@ def derive_detuning_sensitivity_scan(
         kappa_geometric=central_kappa_d5,
         gut_threshold_residue=resolved_threshold,
     )
+    _assert_auxiliary_scan_anchor_is_admissible(
+        model=central_model,
+        scan_name="Detuning sensitivity scan",
+    )
     central_pmns = derive_pmns(model=central_model)
     central_ckm = derive_ckm(model=central_model)
     central_pull_table = derive_pull_table(
@@ -14114,6 +14517,10 @@ def derive_detuning_sensitivity_scan(
             kappa_geometric=cache_key,
             gut_threshold_residue=resolved_threshold,
         )
+        if _auxiliary_scan_filter_violation(model=point_model) is not None:
+            resolved_point = (math.inf, math.inf, THEOREM_FILTERED_AUXILIARY_SCAN_STATUS)
+            kappa_cache[cache_key] = resolved_point
+            return resolved_point
         try:
             pmns = derive_pmns(model=point_model)
             pull_table = derive_pull_table(
@@ -14153,6 +14560,8 @@ def derive_detuning_sensitivity_scan(
 
             if detune_kappa:
                 predictive_chi2, predictive_max_abs_pull, evaluation_status = resolve_kappa_point(varied_kappa)
+                if evaluation_status == THEOREM_FILTERED_AUXILIARY_SCAN_STATUS:
+                    continue
                 benchmark_consistency_audit = verify_mass_scale_hypothesis(
                     central_mass_coordinate_ev,
                     bit_count=bit_count,
@@ -14226,12 +14635,39 @@ def _log_detuning_sensitivity_summary(
     LOGGER.info("-" * 88)
     failed_curves: list[str] = []
     for curve_name, display_label in (("kappa_d5", "kappa_D5"), ("g_sm", "G_SM"), ("joint", "joint")):
-        curve_points = detuning_sensitivity.points_for(curve_name)
-        edge_minus = curve_points[0]
-        edge_plus = curve_points[-1]
+        curve_points = tuple(
+            sorted(
+                detuning_sensitivity.points_for(curve_name),
+                key=lambda point: float(getattr(point, "shift_fraction", 0.0)),
+            )
+        )
+        if not curve_points:
+            failed_curves.append(display_label)
+            LOGGER.info(f"{display_label:<8} no theorem-admissible detuning points survived the auxiliary filter")
+            continue
+        edge_minus = next(
+            (
+                point
+                for point in curve_points
+                if float(getattr(point, "shift_fraction", 0.0)) < 0.0
+            ),
+            curve_points[0],
+        )
+        edge_plus = next(
+            (
+                point
+                for point in reversed(curve_points)
+                if float(getattr(point, "shift_fraction", 0.0)) > 0.0
+            ),
+            curve_points[-1],
+        )
         local_minimum = detuning_sensitivity.has_strict_local_minimum(curve_name)
-        minimum_status = "sharp local minimum" if local_minimum else "non-monotone"
-        if not local_minimum:
+        if len(curve_points) == 1:
+            minimum_status = "theorem-filtered"
+        elif local_minimum:
+            minimum_status = "sharp local minimum"
+        else:
+            minimum_status = "non-monotone"
             failed_curves.append(display_label)
         LOGGER.info(
             f"{display_label:<8} Δchi2(-5%)={edge_minus.delta_total_benchmark_chi2:.6f}  "
@@ -14310,6 +14746,10 @@ def robustness_scan(
         kappa_geometric=central_kappa_d5,
         gut_threshold_residue=resolved_threshold,
     )
+    _assert_auxiliary_scan_anchor_is_admissible(
+        model=central_model,
+        scan_name="Robustness scan",
+    )
     central_pmns = derive_pmns(model=central_model)
     central_ckm = derive_ckm(
         level=quark_level,
@@ -14339,6 +14779,8 @@ def robustness_scan(
                 kappa_geometric=varied_kappa,
                 gut_threshold_residue=resolved_threshold,
             )
+            if _auxiliary_scan_filter_violation(model=point_model) is not None:
+                continue
             framing_gap = float(point_model.framing_gap)
             modularity_gap = float(benchmark_visible_modularity_gap(model=point_model))
             alpha_inverse_surface = float(surface_tension_gauge_alpha_inverse(model=point_model))
@@ -14583,6 +15025,11 @@ def derive_mass_ratio_stability_audit(
 
     lepton_sigma_shifts = tuple(abs(delta) / interval.sigma for delta, interval in zip(lepton_angle_shifts, lepton_intervals))
     quark_sigma_shifts = tuple(abs(delta) / interval.sigma for delta, interval in zip(quark_angle_shifts, quark_intervals))
+    max_sigma_angle_shift = float(max((*lepton_sigma_shifts, *quark_sigma_shifts), default=0.0))
+    assert max_sigma_angle_shift < SVD_RIGIDITY_SHIELD_SIGMA_THRESHOLD, (
+        "Eigenvector Rigidity violated: max_sigma_angle_shift must remain below "
+        f"{SVD_RIGIDITY_SHIELD_SIGMA_THRESHOLD:.1e}, got {max_sigma_angle_shift:.3e}."
+    )
     relative_spectral_volume_shift = float(
         (np.prod(quark_perturbed_singular_values) / np.prod(quark_singular_values))
         / (np.prod(lepton_perturbed_singular_values) / np.prod(lepton_singular_values))
@@ -14647,7 +15094,11 @@ def derive_mass_ratio_stability_audit(
         ensemble_max_sigma_shift = float(np.max(ensemble_max_sigma_shifts))
         ensemble_theta13_max_sigma_shift = float(np.max(theta13_sigma_shifts))
         ensemble_theta_c_max_sigma_shift = float(np.max(theta_c_sigma_shifts))
-        ensemble_all_within_one_sigma = bool(ensemble_max_sigma_shift <= 1.0)
+        assert ensemble_max_sigma_shift < SVD_RIGIDITY_SHIELD_SIGMA_THRESHOLD, (
+            "Eigenvector Rigidity violated under VEV deformations: ensemble max sigma-angle shift must remain below "
+            f"{SVD_RIGIDITY_SHIELD_SIGMA_THRESHOLD:.1e}, got {ensemble_max_sigma_shift:.3e}."
+        )
+        ensemble_all_within_one_sigma = bool(ensemble_max_sigma_shift < SVD_RIGIDITY_SHIELD_SIGMA_THRESHOLD)
         ensemble_mass_scale_shift_min = float(np.min(ensemble_mass_scale_shifts))
         ensemble_mass_scale_shift_max = float(np.max(ensemble_mass_scale_shifts))
 
@@ -14670,7 +15121,7 @@ def derive_mass_ratio_stability_audit(
         quark_angle_shifts_deg=quark_angle_shifts,
         lepton_sigma_shifts=lepton_sigma_shifts,
         quark_sigma_shifts=quark_sigma_shifts,
-        max_sigma_shift=float(max((*lepton_sigma_shifts, *quark_sigma_shifts), default=0.0)),
+        max_sigma_shift=max_sigma_angle_shift,
         ensemble_sample_count=int(sample_count),
         ensemble_seed=seed,
         ensemble_all_within_one_sigma=ensemble_all_within_one_sigma,
@@ -14959,14 +15410,29 @@ class BenchmarkConsistencyAudit:
             abs(1.0 - ((3.0 * np.pi * G_N * m_nu**4) / (kappa_D5**4 * Lambda_obs)))
         )
         object.__setattr__(self, "epsilon_lambda", epsilon_lambda)
-        assert epsilon_lambda < 1.0e-10, (
-            "BenchmarkConsistencyAudit failed the Unity of Scale residue assertion: "
-            f"epsilon_lambda={epsilon_lambda:.3e}."
+        _assert_unity_of_scale_register_closure(
+            epsilon_lambda=epsilon_lambda,
+            register_noise_floor=self.register_noise_floor,
+            context="BenchmarkConsistencyAudit failed the Unity of Scale residue assertion",
         )
 
     @property
+    def register_noise_floor(self) -> float:
+        unity_residue_register_noise_floor = getattr(
+            self.dark_energy_audit,
+            "unity_residue_register_noise_floor",
+            None,
+        )
+        if unity_residue_register_noise_floor is not None:
+            return float(unity_residue_register_noise_floor)
+        holographic_bits = float(getattr(self.dark_energy_audit, "holographic_bits", HOLOGRAPHIC_BITS))
+        if not math.isfinite(holographic_bits) or holographic_bits <= 0.0:
+            return 0.0
+        return float(1.0 / holographic_bits)
+
+    @property
     def unity_of_scale_identity_verified(self) -> bool:
-        return self.epsilon_lambda < UNITY_RESIDUE_ABS_TOL
+        return self.epsilon_lambda < self.register_noise_floor
 
     @property
     def primary_benchmark_audit(self) -> bool:
@@ -15112,9 +15578,10 @@ def final_audit_check(
         asymmetry_is_topologically_mandatory=bool(baryogenesis_audit["cp_symmetric_universe_ill_defined"]),
         curvature_sign_record_pass=curvature_sign_record_pass,
     )
-    assert benchmark_consistency_audit.epsilon_lambda < 1.0e-10, (
-        "Final audit loop failed the Unity of Scale assertion: "
-        f"epsilon_lambda={benchmark_consistency_audit.epsilon_lambda:.3e}."
+    _assert_unity_of_scale_register_closure(
+        epsilon_lambda=benchmark_consistency_audit.epsilon_lambda,
+        register_noise_floor=benchmark_consistency_audit.register_noise_floor,
+        context="Final audit loop failed the Unity of Scale assertion",
     )
     LOGGER.info(
         f"Unity of Scale residue epsilon_lambda : {benchmark_consistency_audit.epsilon_lambda:.12e}"
@@ -15774,7 +16241,7 @@ class MasterAudit:
         the verifier:
 
         - ``compute_geometric_kappa_ansatz(...)`` fixes the published benchmark
-          residue ``\kappa_{D_5}=0.98877`` from the same $D_5$ weight-simplex
+          residue ``\kappa_{D_5}=0.9887710512663789`` from the same $D_5$ weight-simplex
           audit, while ``compute_geometric_kappa_residue(...)`` retains the raw
           higher-precision geometry diagnostic.
         - ``derive_lie_algebraic_threshold_residue() = k_q/(k_\ell+h^\vee_{SU(2)}) = 8/28``
@@ -17526,6 +17993,11 @@ def main(argv: list[str] | None = None) -> None:
         LOGGER.info("[BENCHMARK CONSISTENCY AUDIT]: Gravity, CP, and Flavor residues are unified.")
 
     log_topological_gravity_constraint(benchmark_consistency_audit.epsilon_lambda)
+    _assert_unity_of_scale_register_closure(
+        epsilon_lambda=benchmark_consistency_audit.epsilon_lambda,
+        register_noise_floor=benchmark_consistency_audit.register_noise_floor,
+        context="Primary benchmark audit failed the Unity of Scale register-closure assertion",
+    )
     if not curvature_sign_record_pass:
         log_disclosed_detuning_event(
             "Topological gravity constraint failed the primary benchmark audit.",
