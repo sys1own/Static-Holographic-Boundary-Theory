@@ -1,13 +1,13 @@
 # Static Holographic Boundary Theory (SHBT)
 
-Static Holographic Boundary Theory is a formal flavor construction built on the fixed-parent $SO(10)_{312}$ boundary benchmark. In this repository, Standard Model flavor observables are treated as mandatory residues of 4D gravity on a finite-capacity horizon rather than as coefficients to be optimized by a detached fit sector.
+SHBT is a formal flavor construction built on the fixed-parent $SO(10)_{312}$ boundary benchmark. This repository treats Standard Model flavor observables as mandatory residues of 4D gravity on a finite-capacity horizon rather than as coefficients to be optimized by a detached fit sector.
 
 ## Project Overview
 
-SHBT provides a mathematically rigid benchmark for Standard Model flavor data derived from the fixed-parent $SO(10)_{312}$ boundary construction. Unlike models organized around numerical optimization, the benchmark branch $(26,8,312)$ is retained by the **Derived Uniqueness Theorem**, operationally audited through the framing-closure condition
+SHBT provides a mathematically rigid benchmark for Standard Model flavor data derived from the fixed-parent $SO(10)_{312}$ boundary construction. Unlike models organized around numerical optimization, the benchmark branch $(26, 8, 312)$ is retained by the **Derived Uniqueness Theorem**, operationally audited through the framing-closure condition
 
 $$
-\Delta_{fr}=0.
+\Delta_{\text{fr}} = 0
 $$
 
 Within the retained one-copy branch, modular closure, boundary neutrality, and finite-capacity holography are solved together. The result is a benchmark in which the displayed observables are structural outputs of anomaly-free boundary data.
