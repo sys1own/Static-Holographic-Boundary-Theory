@@ -32,6 +32,7 @@ from . import audit_generator as _audit_generator
 from . import constants as _constants
 from . import engine as publication_engine
 from . import export as _export_mod
+from . import noether_bridge as _noether_bridge
 from . import physics_engine
 from . import reporting as presentation_reporting
 from . import reporting_engine
@@ -91,13 +92,7 @@ def derive_su2_total_dim(level: int) -> float:
 def _benchmark_decimal_geometric_kappa() -> float:
     """Return the benchmark ``kappa_D5`` using high-precision decimal arithmetic."""
 
-    with localcontext() as ctx:
-        ctx.prec = 50
-        area_ratio = (Decimal(160) / Decimal(1521)) * Decimal(10).sqrt()
-        beta = Decimal(str(0.5 * math.log(derive_su2_total_dim(LEPTON_LEVEL))))
-        spinor_retention = (Decimal(347) - Decimal(8) * beta * beta) / Decimal(351)
-        kappa_d5 = ((Decimal(16) / Decimal(5)) * area_ratio * spinor_retention).sqrt()
-    return float(kappa_d5)
+    return float(_noether_bridge.derive_kappa_d5(lepton_level=LEPTON_LEVEL, precision=50))
 
 
 def _rk45_timeout_scope(seconds: float | None):
@@ -275,6 +270,8 @@ publication_export = SimpleNamespace(
     write_json_artifact=_export_mod.write_json_artifact,
 )
 
+GRAVITY_SIDE_RIGIDITY_REPORT_FILENAME = "gravity_side_rigidity_report.txt"
+
 
 def configure_reporting(*, quiet: bool = False, log_file: Path | None = None) -> None:
     """Configure package-local logging without mutating the root logger."""
@@ -306,7 +303,10 @@ def configure_reporting(*, quiet: bool = False, log_file: Path | None = None) ->
     _configure_logger(logging.getLogger("pub"))
     _configure_logger(LOGGER)
 
-REQUIRED_OUTPUT_ARTIFACTS = (PHYSICS_CONSTANTS_FILENAME,)
+REQUIRED_OUTPUT_ARTIFACTS = (
+    PHYSICS_CONSTANTS_FILENAME,
+    GRAVITY_SIDE_RIGIDITY_REPORT_FILENAME,
+)
 REQUIRED_PHYSICS_CONSTANT_MACROS = ("PlanckMassEv",)
 FORBIDDEN_PHYSICS_CONSTANT_MACROS = ()
 REQUIRED_TN_CONSTANT_MACROS: tuple[str, ...] = ()
@@ -2657,9 +2657,10 @@ def topological_mass_coordinate_ev(
 ) -> float:
     r"""Return the welded neutrino mass coordinate ``m_\nu=\kappa_{D_5}M_PN^{-1/4}``."""
 
-    if bit_count <= 0.0:
-        raise ValueError("Holographic bit count must be positive.")
-    return float(kappa_geometric * PLANCK_MASS_EV * bit_count ** (-0.25))
+    return theorem_topological_mass_coordinate_ev(
+        bit_count=bit_count,
+        kappa_geometric=kappa_geometric,
+    )
 
 
 def _matching_pull(predicted_value: float, comparison_value: float, sigma_value: float) -> float:
@@ -3293,7 +3294,7 @@ def derive_matching_residual_audit(
 def lambda_si_m2_to_ev2(lambda_si_m2: float) -> float:
     r"""Convert an SI cosmological constant in ``m^{-2}`` to natural ``eV^2`` units."""
 
-    return float(lambda_si_m2 * (HBAR_EV_SECONDS * LIGHT_SPEED_M_PER_S) ** 2)
+    return float(_noether_bridge.lambda_si_m2_to_ev2(Decimal(str(lambda_si_m2))))
 
 
 def calculate_lloyds_limit_bound(
@@ -3357,8 +3358,7 @@ def newton_constant_ev_minus2() -> float:
 def topological_planck_mass_ev() -> float:
     r"""Return the branch Planck mass inferred from ``L_P`` in the theorem normalization."""
 
-    meter_to_ev_inverse = 1.0 / (HBAR_EV_SECONDS * LIGHT_SPEED_M_PER_S)
-    return float(1.0 / (PLANCK_LENGTH_M * meter_to_ev_inverse))
+    return float(_noether_bridge.branch_planck_mass_ev())
 
 
 def topological_newton_coordinate_ev_minus2(*, branch_planck_mass_ev: float | None = None) -> float:
@@ -3950,23 +3950,22 @@ def _representative_transport_residual_fraction(observable_residuals: Mapping[st
 
 
 def _derive_exact_unity_of_scale_register_closure(*, model: TopologicalModel) -> tuple[float, float]:
-    """Return the theorem-exact ``epsilon_lambda`` closure using high-precision branch arithmetic."""
+    """Return the theorem-exact ``epsilon_lambda`` closure using the shared bridge primitives."""
 
     resolved_model = _coerce_topological_model(model=model)
     with localcontext() as context:
-        context.prec = 200
+        context.prec = max(200, _noether_bridge.DEFAULT_PRECISION)
         bit_count = Decimal(str(float(resolved_model.bit_count)))
         if bit_count <= 0:
             raise ValueError("Holographic bit count must be positive.")
         kappa_d5 = Decimal(str(float(resolved_model.kappa_geometric)))
-        branch_planck_mass_ev = Decimal(str(topological_planck_mass_ev()))
-        pi_decimal = Decimal(str(math.pi))
+        branch_planck_mass_ev = _noether_bridge.branch_planck_mass_ev()
         branch_newton_constant_ev_minus2 = Decimal("1") / (branch_planck_mass_ev * branch_planck_mass_ev)
         topological_mass_coordinate_ev = kappa_d5 * branch_planck_mass_ev * (bit_count ** Decimal("-0.25"))
-        lambda_exact_ev2 = Decimal("3") * pi_decimal * (branch_planck_mass_ev * branch_planck_mass_ev) / bit_count
+        lambda_exact_ev2 = Decimal("3") * _noether_bridge.PI * (branch_planck_mass_ev * branch_planck_mass_ev) / bit_count
         rhs_exact_ev2 = (
             Decimal("3")
-            * pi_decimal
+            * _noether_bridge.PI
             * branch_newton_constant_ev_minus2
             * (topological_mass_coordinate_ev**4)
             / (kappa_d5**4)
@@ -12795,6 +12794,38 @@ def _write_text_artifact(output_path: Path, text: str) -> str:
     return final_text.rstrip("\n")
 
 
+def derive_gravity_side_rigidity_report(
+    *,
+    model: TopologicalModel | None = None,
+    precision: int = _noether_bridge.DEFAULT_PRECISION,
+) -> _noether_bridge.GravitySideRigidityReport:
+    """Return the shared gravity-side Newton-lock / reviewer-trap audit."""
+
+    resolved_model = DEFAULT_TOPOLOGICAL_VACUUM if model is None else _coerce_topological_model(model=model)
+    return _noether_bridge.build_gravity_side_rigidity_report(
+        parent_level=resolved_model.parent_level,
+        lepton_level=resolved_model.lepton_level,
+        quark_level=resolved_model.quark_level,
+        precision=precision,
+    )
+
+
+def write_gravity_side_rigidity_report(
+    output_dir: Path | str,
+    *,
+    model: TopologicalModel | None = None,
+    precision: int = _noether_bridge.DEFAULT_PRECISION,
+) -> str:
+    """Write the standardized gravity-side rigidity report exported by ``pub/noether_bridge.py``."""
+
+    resolved_output_dir = _resolved_output_dir(output_dir)
+    report = derive_gravity_side_rigidity_report(model=model, precision=precision)
+    return _write_text_artifact(
+        resolved_output_dir / GRAVITY_SIDE_RIGIDITY_REPORT_FILENAME,
+        _noether_bridge.render_report(report),
+    )
+
+
 def _write_placeholder_figure(output_path: Path | None, filename: str) -> Path:
     resolved_output_path = Path(output_path) if output_path is not None else DEFAULT_OUTPUT_DIR / filename
     resolved_output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -13422,6 +13453,10 @@ def write_generated_tables(
     write_holographic_curvature_audit(
         model=resolved_vacuum,
         output_dir=resolved_output_dir,
+    )
+    write_gravity_side_rigidity_report(
+        resolved_output_dir,
+        model=resolved_vacuum,
     )
     matching_residual_audit = derive_matching_residual_audit(
         pmns=pmns,
