@@ -21,11 +21,38 @@ def _coerce_float(config: dict[str, Any], key: str) -> float:
     return float(config[key])
 
 
+def _coerce_optional_float(config: dict[str, Any], key: str, default: float) -> float:
+    value = config.get(key, default)
+    return float(default if value is None else value)
+
+
 def _coerce_int(config: dict[str, Any], key: str) -> int:
     value = config[key]
     if isinstance(value, bool):
         raise TypeError(f"Configuration value '{key}' must be an integer, not a boolean")
     return int(value)
+
+
+def _coerce_optional_int(config: dict[str, Any], key: str, default: int) -> int:
+    value = config.get(key, default)
+    if isinstance(value, bool):
+        raise TypeError(f"Configuration value '{key}' must be an integer, not a boolean")
+    return int(default if value is None else value)
+
+
+def _coerce_bool(config: dict[str, Any], key: str, default: bool) -> bool:
+    value = config.get(key, default)
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if lowered in {"1", "true", "yes", "on"}:
+            return True
+        if lowered in {"0", "false", "no", "off"}:
+            return False
+    if isinstance(value, (int, float)):
+        return bool(value)
+    raise TypeError(f"Configuration value '{key}' must be interpretable as a boolean")
 
 
 def _coerce_str_sequence(config: dict[str, Any], key: str) -> tuple[str, ...]:
@@ -68,6 +95,10 @@ class PhysicalSingularityException(RuntimeError):
 
 class PerturbativeBreakdownException(RuntimeError):
     """Raised when a boundary kernel exceeds the declared perturbative condition limit."""
+
+
+class SolverException(RuntimeError):
+    """Raised when the verifier is not pinned to strict Radau IIA convergence."""
 
 
 @dataclass(frozen=True)
@@ -231,32 +262,60 @@ class SolverConfig:
     rtol: float = _coerce_float(_SOLVER_CONFIG, "rtol")
     atol: float = _coerce_float(_SOLVER_CONFIG, "atol")
     method: str = str(_SOLVER_CONFIG["method"])
-    fallback_methods: tuple[str, ...] = field(default_factory=lambda: _coerce_str_sequence(_SOLVER_CONFIG, "fallback_methods"))
     finite_diff_step: float = _coerce_float(_SOLVER_CONFIG, "finite_diff_step")
     jacobian_relative_step: float = _coerce_float(_SOLVER_CONFIG, "jacobian_relative_step")
     parametric_covariance_mc_samples: int = _coerce_int(_SOLVER_CONFIG, "parametric_covariance_mc_samples")
     quad_epsabs: float = _coerce_float(_SOLVER_CONFIG, "quad_epsabs")
     quad_epsrel: float = _coerce_float(_SOLVER_CONFIG, "quad_epsrel")
+    linear_algebra_backend: str = str(_SOLVER_CONFIG.get("linear_algebra_backend", "auto"))
+    backend_priority: tuple[str, ...] = _coerce_str_sequence(_SOLVER_CONFIG, "backend_priority") or ("cuda", "tensorcore", "cpu")
+    deterministic_float64: bool = _coerce_bool(_SOLVER_CONFIG, "deterministic_float64", True)
+    arbitrary_precision_dps: int = _coerce_optional_int(_SOLVER_CONFIG, "arbitrary_precision_dps", 250)
+    unity_noise_floor_target: float = _coerce_optional_float(_SOLVER_CONFIG, "unity_noise_floor_target", 1.0e-123)
     stability_guard: NumericalStabilityGuard = field(default_factory=NumericalStabilityGuard)
+
+    def __post_init__(self) -> None:
+        normalized_method = str(self.method).strip()
+        normalized_backend = str(self.linear_algebra_backend).strip().lower() or "auto"
+        normalized_priority = tuple(str(entry).strip().lower() for entry in self.backend_priority if str(entry).strip())
+        if normalized_method != "Radau":
+            raise SolverException(f"SolverConfig is pinned to method='Radau'; got {self.method!r}.")
+        if not math.isfinite(self.rtol) or self.rtol <= 0.0:
+            raise SolverException(f"SolverConfig requires a positive finite rtol; got {self.rtol!r}.")
+        if not math.isfinite(self.atol) or self.atol <= 0.0 or self.atol > 1.0e-12:
+            raise SolverException(
+                f"SolverConfig requires a positive finite atol <= 1e-12 for strict Radau verification; got {self.atol!r}."
+            )
+        if not normalized_priority:
+            raise SolverException("SolverConfig requires at least one linear-algebra backend priority entry.")
+        if self.arbitrary_precision_dps < 250:
+            raise SolverException(
+                f"SolverConfig requires arbitrary_precision_dps >= 250 for theorem-level gravity checks; got {self.arbitrary_precision_dps!r}."
+            )
+        if not math.isfinite(self.unity_noise_floor_target) or self.unity_noise_floor_target <= 0.0 or self.unity_noise_floor_target > 1.0e-123:
+            raise SolverException(
+                "SolverConfig requires unity_noise_floor_target to be a positive finite floor no larger than 1e-123; "
+                f"got {self.unity_noise_floor_target!r}."
+            )
+        object.__setattr__(self, "method", normalized_method)
+        object.__setattr__(self, "linear_algebra_backend", normalized_backend)
+        object.__setattr__(self, "backend_priority", normalized_priority)
 
     @property
     def method_ladder(self) -> tuple[str, ...]:
-        resolved_methods: list[str] = []
-        seen_methods: set[str] = set()
-        for method in (self.method, *self.fallback_methods):
-            normalized_method = str(method).strip()
-            if not normalized_method or normalized_method in seen_methods:
-                continue
-            seen_methods.add(normalized_method)
-            resolved_methods.append(normalized_method)
-        return tuple(resolved_methods)
+        return (self.method,)
+
+    @property
+    def prioritizes_accelerator(self) -> bool:
+        accelerator_tokens = {"cuda", "gpu", "tensorcore", "tensor", "jax", "torch"}
+        return any(token in accelerator_tokens for token in self.backend_priority)
 
 
 DEFAULT_SOLVER_CONFIG = SolverConfig()
 
 
 def solver_method_ladder(solver_config: SolverConfig = DEFAULT_SOLVER_CONFIG) -> tuple[str, ...]:
-    """Return the configured primary solver followed by distinct fallbacks."""
+    """Return the verifier's strictly pinned Radau IIA method tuple."""
 
     return solver_config.method_ladder
 
@@ -283,6 +342,7 @@ __all__ = [
     "PhysicalSingularityException",
     "PhysicsDomainWarning",
     "Sector",
+    "SolverException",
     "SolverConfig",
     "solver_method_ladder",
     "solver_isclose",
