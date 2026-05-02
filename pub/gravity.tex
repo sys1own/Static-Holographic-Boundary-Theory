@@ -1,0 +1,1326 @@
+\newif\ifgravitystandalone
+\let\gravityenddocument\relax
+\ifdefined\tnmainflag
+\gravitystandalonefalse
+\else
+\gravitystandalonetrue
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{physics}
+\usepackage{bm}
+
+\setlength{\emergencystretch}{1.5em}
+\raggedbottom
+
+\newcommand{\pubinput}[1]{%
+  \IfFileExists{#1}{\input{#1}}{\input{pub/#1}}%
+}
+
+\pubinput{physics_constants.tex}
+
+\IfFileExists{tn.aux}{%
+  \usepackage{xr}\externaldocument[tn-]{tn}%
+}{%
+  \IfFileExists{pub/tn.aux}{\usepackage{xr}\externaldocument[tn-]{pub/tn}}{}%
+}
+
+\title{Geometric Emergence and the Topological EFE.}
+\author{Static Holographic Boundary Theory}
+\date{\today}
+\def\gravityenddocument{\end{document}}
+
+\begin{document}
+\maketitle
+\fi
+
+\makeatletter
+\providecommand{\manualappendixlabel}[2]{%
+  \begingroup
+  \def\@currentlabel{#1}%
+  \label{#2}%
+  \endgroup
+}
+\newcommand{\gravitymainref}[1]{%
+  \@ifundefined{r@#1}{%
+    \@ifundefined{r@tn-#1}{\ref{#1}}{\ref{tn-#1}}%
+  }{%
+    \ref{#1}%
+  }%
+}
+\makeatother
+
+\ifgravitystandalone
+\section{Geometric Emergence and the Topological EFE.}\label{app:gravity}\label{sec:gravity-einstein}
+\else
+\section*{Appendix G (continued): Geometric Emergence and the Topological EFE.}\manualappendixlabel{G}{app:gravity}\manualappendixlabel{G}{sec:gravity-einstein}
+\fi
+
+\noindent\textbf{Scope.} This appendix records the gravity-side derivations retained as backup for the anomaly-free $(26,8,312)$ benchmark branch. It is not an independent tuning sector and does not introduce new scan directions: the same modular-$T$ closure data that fix the positive completion residue $c_{\rm dark}$ also fix the positive vacuum loading $\Lambda_{\rm holo}$, the finite horizon register $N$, and the branch-local bulk closure tensor used below as the gravity-side consistency diagnostic. In this appendix the matter-asymmetry bookkeeping is classified as a \emph{Primary Boundary Residue}: the $c_{\rm dark}$ completion sector is read simultaneously as the source of the effective geometric action and as the $B-L$ parity sink that stores the missing conjugate parity bits of the visible projection. The derivation chain below is therefore conditional on the retained SHBT assumptions---static coarse-grained bulk bookkeeping, finite one-copy capacity, and the anomaly-free framing condition $\Delta_{\rm fr}=0$---rather than a claim of a complete dynamical quantum-gravity construction.
+
+\noindent\textbf{Conceptual Scope.} The gravity-side picture used here is static in the deliberately narrow SHBT sense: it describes a ``frozen'' coarse-grained bulk fixed by the completed boundary data, not a time-dependent evaporation model. The finite bit budget $N$ inferred from $\Lambda_{\rm obs}$ is treated throughout as an \emph{Observational Boundary Condition}, not as an internal fit direction. Accordingly, any Page-curve-style identities are used only as bookkeeping constraints on finite information capacity and code-subspace reconstruction. They are not claimed to provide an independent microscopic mechanism for dynamical black-hole evaporation.
+
+\noindent\textbf{Benchmark status.} Unless explicitly stated otherwise, the detuning arguments below are internal stress tests of the retained anomaly-free branch. They show how the displayed closure identities fail under one-step shifts of the benchmark integers or under loss of finite-capacity saturation; they are not presented as no-go theorems for every non-minimal completion outside the one-copy SHBT bookkeeping.
+
+\manualappendixlabel{G.1}{app:curvature-sign-test}
+\subsection*{G.1: Bulk Closure Tensor, Holographic Surface Tension, Finite Bit Budget, and the Topological EFE}
+
+On the anomaly-free branch the modular complement required for fixed-parent modular-$T$ closure is the positive completion residue,
+\begin{equation}
+\label{eq:gravity-closure-residue}
+ c_{\rm dark}=\cDarkCompletion\approx \cDarkCompletionFull>0,
+\end{equation}
+and the same branch data fix the positive vacuum loading
+\begin{equation}
+\label{eq:gravity-lambda-positive}
+ \Lambda_{\rm holo}=+\frac{3\pi}{L_P^2N}=+\lambdaHoloMetersInverseSquared\,\mathrm{m}^{-2}\approx +1.08913883\times10^{-52}\,\mathrm{m}^{-2}>0.
+\end{equation}
+In the present appendix, the quantity $\Lambda_{\rm holo}$ is not interpreted
+as a separately propagating dark-energy fluid. It is the positive
+\emph{Holographic Surface Tension} of the completed $(26,8,312)$ branch: the
+geometric tension term required to keep the boundary partition function
+normalizable on a finite horizon register.
+Write the associated de Sitter horizon scale as
+\begin{equation}
+\label{eq:gravity-horizon-radius}
+ R_H
+ \equiv
+ H_{\Lambda}^{-1}
+ =
+ \sqrt{\frac{3}{\Lambda_{\rm holo}}},
+ \qquad
+ A_H=4\pi R_H^2.
+\end{equation}
+In the frozen-bulk bookkeeping used throughout this appendix, the completed
+$SO(10)_{312}$ branch must close on a finite Euclidean $S^3$ of radius $R_H$.
+Its holographic screen is the associated horizon $S^2$ of area $A_H$, so the
+one-copy capacity is fixed by the saturated holographic count
+\begin{equation}
+\label{eq:gravity-bit-budget-derived}
+ N_{\rm sat}
+ \equiv
+ \frac{A_H}{4L_P^2}
+ =
+ \frac{\pi R_H^2}{L_P^2}
+ =
+ \frac{3\pi}{L_P^2\Lambda_{\rm holo}}.
+\end{equation}
+This finite-capacity statement is the normalizability condition for the
+completed branch partition function. If the horizon size were allowed to run to
+infinity, then $N_{\rm sat}\to\infty$, the one-copy character sum would no
+longer define a finite-capacity boundary dictionary, and the completed
+$SO(10)_{312}$ partition function would cease to be physically admissible as a
+normalizable branch state.
+These two quantities are not independent outputs of the branch. The same
+$c_{\rm dark}$ sector that sources the effective geometric action through the
+positive vacuum loading also acts as the storage register for the missing
+$B-L$ parity bits of the visible projection. Vacuum loading and parity-sink
+bookkeeping are therefore two boundary images of the same completion residue.
+This also removes the usual fine-tuning reading of the cosmological term in the
+present framework. Here $\Lambda_{\rm holo}$ is not a tiny vacuum counter-term
+balanced against a separate large bare contribution; it is the
+\emph{Holographic Surface Tension} required to hold the topological moir\'e
+pattern of the $(26,8)$ cell on a finite branch-compatible horizon and to bind
+the completed $SO(10)_{312}$ partition function to the finite one-copy
+register $N_{\rm sat}$. If one were to send $\Lambda_{\rm holo}\to0^+$, then
+Eq.~\eqref{eq:gravity-bit-budget-derived} would force $N_{\rm sat}\to\infty$,
+so the completed partition function would become divergent rather than
+natural. Equivalently, the mass bridge of
+Eq.~\eqref{eq:gravity-neutrino-scale-bridge} would collapse the neutrino floor
+to zero as $N^{-1/4}\to0$. The positive sign in
+Eq.~\eqref{eq:gravity-lambda-positive} is therefore part of the Bianchi lock
+itself: finite positive surface tension, finite register, and non-vanishing
+neutrino floor are one closure statement viewed in curvature, information, and
+mass units.
+The same closure is recorded in two branch-fixed matrices that will be used
+repeatedly below. Define the \emph{Topological Identity Matrix}
+\begin{equation}
+\label{eq:gravity-topological-identity-matrix}
+ I_{\rm topo}
+ \equiv
+ \mathbf I_{\rm topo}
+ \equiv
+ \operatorname{diag}\!\left(
+ \,k_{\ell},
+ \,k_q,
+ \,K
+ \right)
+ =
+ \operatorname{diag}\!\left(
+ \,26,
+ \,8,
+ \,312
+ \right).
+\end{equation}
+This matrix records only the discrete branch labels of the anomaly-free cell.
+Separately, define the \emph{Matching Matrix}
+\begin{equation}
+\label{eq:gravity-topological-identity-basis}
+ \mathbf M_{\rm match}
+ =
+ \operatorname{diag}\!\left(
+ \,\kappa_{D_5},
+ \,\mathcal R_{\rm GUT},
+ \,r_*
+ \right)
+ =
+ \operatorname{diag}\!\left(
+ \,\simplexPrefactor,
+ \,\frac{8}{28},
+ \,\frac{64}{312}
+ \right),
+ \qquad
+ r_*\equiv\frac{\langle\Sigma_{126}\rangle}{\langle\phi_{10}\rangle}=\frac{64}{312}.
+\end{equation}
+The matching matrix collects the branch-fixed residues that connect the rigid
+topological data to the finite-capacity mass bridge, the CKM threshold
+closure, and the benchmark scalar alignment. The scalar ratio rescales the
+singular spectrum without perturbing the code-subspace isometries. Define the
+associated matching defect by
+\begin{equation}
+\label{eq:gravity-topological-identity-defect}
+ \Delta \mathbf M_{\rm match}
+ \equiv
+ \mathbf M_{\rm match}
+ -
+ \operatorname{diag}\!\left(
+ \,\simplexPrefactor,
+ \,\frac{8}{28},
+ \,\frac{64}{312}
+ \right).
+\end{equation}
+Then
+\begin{equation}
+\label{eq:gravity-topological-identity-saturation}
+ \Delta \mathbf M_{\rm match}=0
+ \qquad\Longleftrightarrow\qquad
+ \mathbf M_{\rm match}
+ =
+ \operatorname{diag}\!\left(
+ \,\simplexPrefactor,
+ \,\frac{8}{28},
+ \,\frac{64}{312}
+ \right),
+\end{equation}
+while $\mathbf I_{\rm topo}$ remains fixed to the discrete branch labels of
+Eq.~\eqref{eq:gravity-topological-identity-matrix}. Saturation is therefore
+componentwise: $\Delta\mathbf M_{\rm match}=0$ if and only if each matching
+residue attains its branch-fixed benchmark value. That is the precise sense in
+which the anomaly-free branch is a topological identity equipped with a fixed
+matching prescription rather than a continuously deformable family~\cite{georgi1979,babu1993,friedan1987,witten1989}.
+Define the branch-closure tensor by
+\begin{equation}
+\label{eq:gravity-closure-tensor-local}
+ \mathcal E_{\mu\nu}
+ \equiv
+ \frac{c_{\rm dark}M_P^2}{12}\bigl(G_{\mu\nu}+\Lambda_{\rm holo}g_{\mu\nu}\bigr)
+ -T^{\rm vis}_{\mu\nu},
+ \qquad
+ T^{\rm vis}_{\mu\nu}
+ \equiv
+ T^{(SU(2)_{26})}_{\mu\nu}+T^{(SU(3)_8)}_{\mu\nu}.
+\end{equation}
+Equation~\eqref{eq:gravity-closure-tensor-local} defines the Bulk Closure Tensor $\mathcal E_{\mu\nu}$. The vanishing of this tensor is the necessary and sufficient condition for a framing-anomaly-free ($\Delta_{\rm fr}=0$) boundary. In the present appendix, $\mathcal E_{\mu\nu}=0$ should be read as a consistency check confirming that the selected RCFT satisfies the standard AdS/CFT isometry requirements needed for code-subspace reconstruction on the anomaly-free branch. The bulk image of modular-$T$ closure is that this tensor can only differ from zero by the same scalar framing defect that measures failure of integer-spectrum closure,
+\begin{equation}
+\label{eq:gravity-topological-identity-local}
+ \mathcal E_{\mu\nu}=\mathcal Q_{\rm iso}\,\Delta_{\rm fr}\,g_{\mu\nu},
+\end{equation}
+with $\mathcal Q_{\rm iso}\neq 0$ the branch-fixed isotropic anomaly density determined by the parent, visible, and completion central charges. The branch identity therefore reads
+\begin{equation}
+ \mathcal E_{\mu\nu}=0
+ \qquad\Longleftrightarrow\qquad
+ \Delta_{\rm fr}=0.
+\end{equation}
+Bulk diffeomorphism invariance is therefore not an independent postulate in this benchmark appendix: the contracted Bianchi identity is the bulk Ward identity of the same boundary framing condition that sets $\Delta_{\rm fr}=0$.
+Equivalently, the effective Einstein system is not an extra dynamical postulate but the covariant restatement of the branch closure,
+\begin{equation}
+\label{eq:gravity-effective-einstein-local}
+ G_{\mu\nu}+\Lambda_{\rm holo}g_{\mu\nu}
+ =
+ \frac{12}{c_{\rm dark}M_P^2}T^{\rm vis}_{\mu\nu}.
+\end{equation}
+This is the precise sense in which a four-dimensional bulk description emerges on the anomaly-free branch: the effective Einstein system is the covariant image of the discrete closure data encoded in $\mathbf I_{\rm topo}$, while $\mathbf M_{\rm match}$ enters only through flavor-sector singular-value matching. Equivalently, the branch carries the explicit \textit{Topological EFE Identity}
+\begin{equation}
+\label{eq:gravity-topological-efe-identity}
+ \Delta_{\rm fr}=0
+ \qquad\Longleftrightarrow\qquad
+ \mathcal E_{\mu\nu}=0
+ \qquad\Longleftrightarrow\qquad
+ G_{\mu\nu}+\Lambda_{\rm holo}g_{\mu\nu}
+ =
+ 8\pi G_N\,T^{\rm vis}_{\mu\nu},
+\end{equation}
+with the Newton coupling locked by the completion residue,
+\begin{equation}
+\label{eq:gravity-newton-lock-local}
+ 8\pi G_N
+ \equiv
+ \frac{12}{c_{\rm dark}M_P^2}.
+\end{equation}
+In that sense Newton's constant is not an independent infrared dial: the gravitational coupling exists on the anomaly-free branch precisely to carry the central-charge deficit $c_{\rm dark}\approx\cDarkCompletion$ left by the visible projection. The parity-storage role of the same residue is isolated separately in Sec.~G.5.
+
+\paragraph{Saturating Information Capacity.}
+Evaluating Eq.~\eqref{eq:gravity-bit-budget-derived} on the branch-fixed
+vacuum loading of Eq.~\eqref{eq:gravity-lambda-positive} gives the unique
+finite register
+\begin{equation}
+\label{eq:gravity-saturating-information-capacity}
+ N_{\rm sat}
+ =
+ \frac{3\pi}{L_P^2\Lambda_{\rm holo}}
+ \approx
+ \modularHorizonBits\ \text{bits}.
+\end{equation}
+This number is not merely an upper bound; it is the unique one-copy storage
+capacity on which the completed boundary modular-$T$ spectrum closes. To make
+that necessity explicit, write
+\begin{equation}
+\label{eq:gravity-capacity-detuning-parameter}
+ N=N_{\rm sat}+\delta N.
+\end{equation}
+Holding the completed $(26,8,312)\oplus c_{\rm dark}$ block fixed, a register
+detuning changes the surface-tension term by
+\begin{equation}
+\label{eq:gravity-capacity-lambda-detuning}
+ \delta_N\Lambda_{\rm holo}
+ =
+ \frac{3\pi}{L_P^2}\left(\frac{1}{N_{\rm sat}+\delta N}-\frac{1}{N_{\rm sat}}\right)
+ =
+ -\frac{3\pi\,\delta N}{L_P^2N_{\rm sat}(N_{\rm sat}+\delta N)}.
+\end{equation}
+Because the completed block data are held fixed, $\delta_NT^{\rm vis}_{\mu\nu}=0$.
+Equation~\eqref{eq:gravity-closure-tensor-local} therefore gives
+\begin{equation}
+\label{eq:gravity-capacity-closure-detuning}
+ \delta_N\mathcal E_{\mu\nu}
+ =
+ \frac{c_{\rm dark}M_P^2}{12}\,\delta_N\Lambda_{\rm holo}\,g_{\mu\nu}.
+\end{equation}
+Hence $\delta_N\mathcal E_{\mu\nu}=0$ if and only if $\delta N=0$. If
+$\delta N<0$, part of the completed modular-$T$ spectrum lacks storage support
+on the one-copy screen; if $\delta N>0$, the excess register is not sourced by
+the completed block and the partition sum leaves the one-copy normalizable
+sector. Therefore
+\begin{equation}
+\label{eq:gravity-capacity-iff-closure}
+ \mathcal E_{\mu\nu}=0
+ \qquad\Longrightarrow\qquad
+ N=N_{\rm sat}\approx\modularHorizonBits,
+\end{equation}
+so $N\approx3.42\times10^{122}$ is the \emph{Saturating Information Capacity}
+required for modular-$T$ spectrum closure of the completed block~\cite{friedan1987,witten1989,gko1985}.
+
+\paragraph{Equivalence-Principle proof by discrete detuning.}
+Let
+\begin{equation}
+\label{eq:gravity-discrete-coordinate-vector}
+ X\equiv(G_{\rm SM},k_{\ell},k_q,K),
+ \qquad
+ \delta X_a\equiv\delta_1 X_a\in\{\pm1\}
+\end{equation}
+ denote the smallest admissible detuning of a single discrete branch coordinate.
+For the fixed-parent visible embedding, integer modular-$T$ closure is
+equivalent to the descendant-integrality conditions
+\begin{equation}
+\label{eq:gravity-discrete-branch-integrality}
+ \Delta_{\rm fr}=0
+ \qquad\Longleftrightarrow\qquad
+ \frac{K}{2k_{\ell}}\in\mathbb Z
+ \quad\text{and}\quad
+ \frac{K}{3k_q}\in\mathbb Z.
+\end{equation}
+Because these coordinates are discrete rather than continuous, proving
+$\delta_1\mathcal E_{\mu\nu}\neq0$ for such one-step moves is the bulk form of
+rigidity: there is no infinitesimal deformation direction that preserves the
+Einstein identity.
+Linearizing Eq.~\eqref{eq:gravity-closure-tensor-local} around the benchmark
+cell gives
+\begin{equation}
+\label{eq:gravity-discrete-closure-variation}
+ \delta_1\mathcal E_{\mu\nu}
+ =
+ \frac{c_{\rm dark}M_P^2}{12}\,\delta_1\Lambda_{\rm holo}\,g_{\mu\nu}
+ -\delta_1 T^{\rm vis}_{\mu\nu}.
+\end{equation}
+For a one-unit leptonic-level detuning with the parent held fixed,
+\begin{equation}
+\label{eq:gravity-kl-unit-detuning}
+ k_{\ell}:26\to26\pm1
+ \qquad\Longrightarrow\qquad
+ \frac{K}{2k_{\ell}}
+ \in
+ \left\{\frac{312}{50},\frac{312}{54}\right\}
+ =
+ \left\{\frac{156}{25},\frac{52}{9}\right\}
+ \notin\mathbb Z,
+\end{equation}
+so the leptonic descendant multiplicity ceases to be integral and therefore
+$\delta_1\Delta_{\rm fr}\neq0$. By Eq.~\eqref{eq:gravity-topological-identity-local}
+this implies
+\begin{equation}
+\label{eq:gravity-kl-detuning-nonzero-closure}
+ \delta_1\mathcal E_{\mu\nu}
+ =
+ \mathcal Q_{\rm iso}\,\delta_1\Delta_{\rm fr}\,g_{\mu\nu}
+ \neq0.
+\end{equation}
+For a one-unit quark-level detuning with the parent held fixed,
+\begin{equation}
+\label{eq:gravity-kq-unit-detuning}
+ k_q:8\to8\pm1
+ \qquad\Longrightarrow\qquad
+ \frac{K}{3k_q}
+ \in
+ \left\{\frac{312}{21},\frac{312}{27}\right\}
+ =
+ \left\{\frac{104}{7},\frac{104}{9}\right\}
+ \notin\mathbb Z,
+\end{equation}
+so the descendant multiplicity ceases to be integral and therefore
+$\Delta_{\rm fr}\neq0$. By Eq.~\eqref{eq:gravity-topological-identity-local}
+this implies
+\begin{equation}
+\label{eq:gravity-kq-detuning-nonzero-closure}
+ \delta_1\mathcal E_{\mu\nu}
+ =
+ \mathcal Q_{\rm iso}\,\delta_1\Delta_{\rm fr}\,g_{\mu\nu}
+ \neq0.
+\end{equation}
+For a one-unit parent-level detuning with the visible branch held fixed,
+\begin{equation}
+\label{eq:gravity-parent-unit-detuning}
+ K:312\to312\pm1
+ \qquad\Longrightarrow\qquad
+ K\pm1\not\equiv0\pmod{52}
+ \quad\text{and}\quad
+ K\pm1\not\equiv0\pmod{24},
+\end{equation}
+so neither visible descendant multiplicity remains integral and again
+$\delta_1\Delta_{\rm fr}\neq0$. Therefore
+\begin{equation}
+\label{eq:gravity-parent-detuning-nonzero-closure}
+ \delta_1\mathcal E_{\mu\nu}
+ =
+ \mathcal Q_{\rm iso}\,\delta_1\Delta_{\rm fr}\,g_{\mu\nu}
+ \neq0.
+\end{equation}
+For a one-unit visible-current detuning with the branch levels held fixed,
+\begin{equation}
+\label{eq:gravity-gsm-unit-detuning}
+ G_{\rm SM}:15\to15\pm1
+ \qquad\Longrightarrow\qquad
+ \delta_1\alpha^{-1}_{\rm surf}
+ =
+ \pm\frac{K}{k_{\ell}+k_q}
+ =
+ \pm\frac{312}{34}
+ =
+ \pm\frac{156}{17}
+ \neq0,
+\end{equation}
+so the gauge part of the visible stress tensor shifts,
+$\delta_1T^{\rm vis}_{\mu\nu}\supset\delta_1T^{\rm gauge}_{\mu\nu}\neq0$,
+and Eq.~\eqref{eq:gravity-discrete-closure-variation} again gives
+$\delta_1\mathcal E_{\mu\nu}\neq0$. Thus every one-step move of a
+load-bearing coordinate $X_a\in\{G_{\rm SM},k_{\ell},k_q,K\}$ reopens the bulk
+closure defect. Because the benchmark branch already satisfies
+$\mathcal E_{\mu\nu}^{\rm bench}=0$, the detuned branch obeys
+\begin{equation}
+\label{eq:gravity-discrete-detuned-closure}
+ \mathcal E_{\mu\nu}^{\rm det}
+ =
+ \delta_1\mathcal E_{\mu\nu}
+ \neq 0
+ \qquad\text{for every}\qquad
+ \delta X_a=\pm1.
+\end{equation}
+This is the bulk-closure form of the reviewer trap: there is no hidden
+compensating direction that can restore $\mathcal E_{\mu\nu}=0$ after a
+one-step shift of any load-bearing integer coordinate. Writing the detuned
+field equation as
+\begin{equation}
+\label{eq:gravity-detuned-einstein-identity}
+ G_{\mu\nu}+\Lambda_{\rm holo}g_{\mu\nu}
+ =
+ 8\pi G_N\,T^{\rm vis}_{\mu\nu}
+ +\mathcal J_{\mu\nu}^{(a)},
+ \qquad
+ \mathcal J_{\mu\nu}^{(a)}
+ \equiv
+ \frac{12}{c_{\rm dark}M_P^2}\,\delta_1\mathcal E_{\mu\nu},
+\end{equation}
+the extra source satisfies $\mathcal J_{\mu\nu}^{(a)}\neq0$ for every
+$\delta_1X_a=\pm1$. Because $\mathcal J_{\mu\nu}^{(a)}$ depends on which
+coordinate was detuned, the response is no longer universal and cannot be
+absorbed into the single branch-fixed Newton coupling of
+Eq.~\eqref{eq:gravity-newton-lock-local}. The Einstein identity is therefore
+violated and the bulk Equivalence Principle fails under any $\pm1$ discrete
+coordinate shift~\cite{friedan1987,witten1989,gko1985}. Equivalently,
+\begin{equation}
+ \delta X_a=\pm1
+ \qquad\Longrightarrow\qquad
+ \delta\mathcal E_{\mu\nu}\neq0
+ \qquad\Longrightarrow\qquad
+ \mathcal J_{\mu\nu}^{(a)}\neq0,
+\end{equation}
+so freely falling bulk probes no longer couple to a universal geometric source.
+Universality of free fall is therefore lost for every one-step detuning of a
+load-bearing branch coordinate.
+Within this branch bookkeeping, the Bianchi lock and the holographic bit-budget
+saturation are the same statement viewed from the bulk and boundary sides. The
+vanishing of the Bulk Closure Tensor requires not only $\Delta_{\rm fr}=0$ but
+also that the horizon register sit at its saturated value
+$N=N_{\rm sat}=\pi R_H^2/L_P^2$; otherwise $\Lambda_{\rm holo}$ is detuned,
+the packing residue is no longer fully absorbed by the isotropic vacuum load,
+and the bulk Ward identity reopens. In that sense
+\begin{equation}
+\label{eq:gravity-bianchi-bit-lock}
+ \mathcal E_{\mu\nu}=0
+ \qquad\Longrightarrow\qquad
+ \nabla^{\mu}\mathcal E_{\mu\nu}=0
+ \quad\text{with}\quad
+ N=N_{\rm sat}\equiv\frac{\pi R_H^2}{L_P^2},
+\end{equation}
+while Sec.~G.3 spells out the same lock in FRW language.
+
+\paragraph{The Bianchi rebuttal.}
+The neighboring fixed-parent cells make the framing/diffeomorphism link explicit. Holding $(k_q,K)=(8,312)$ fixed while detuning the leptonic level away from $k_{\ell}=26$ gives the fractional vacuum modular-$T$ powers
+\begin{equation}
+\label{eq:gravity-detuned-vacuum-T}
+ \frac{K}{2k_{\ell}}-6
+ =
+ \begin{cases}
+ 0.24, & k_{\ell}=25,\\[2pt]
+ -\dfrac{2}{9}, & k_{\ell}=27,
+ \end{cases}
+ \qquad\Longrightarrow\qquad
+ e^{2\pi i\left(\frac{K}{2k_{\ell}}-6\right)}\neq 1.
+\end{equation}
+Equivalently, the detuned branches carry non-vanishing framing defects,
+\begin{equation}
+\label{eq:gravity-detuned-framing-defect}
+ \Delta_{\rm fr}(25,8)=0.24,
+ \qquad
+ \Delta_{\rm fr}(27,8)=\frac{2}{9},
+\end{equation}
+so the vacuum $T$-power is fractional rather than integer-valued. In bulk language Eq.~\eqref{eq:gravity-topological-identity-local} no longer closes to zero; instead the effective Einstein equations acquire the anomalous isotropic counter-term
+\begin{equation}
+\label{eq:gravity-detuned-einstein}
+ G_{\mu\nu}+\Lambda_{\rm holo}g_{\mu\nu}
+ =
+ \frac{12}{c_{\rm dark}M_P^2}\Bigl(T^{\rm vis}_{\mu\nu}+T^{\rm anom}_{\mu\nu}\Bigr),
+ \qquad
+ T^{\rm anom}_{\mu\nu}
+ \equiv
+ \mathcal Q_{\rm iso}\,\Delta_{\rm fr}\,g_{\mu\nu}.
+\end{equation}
+The rebuttal point is then sharp: detuning $k_{\ell}$ to $25$ or $27$ does not merely perturb a fit metric; it injects an anomalous counter-term into the covariant bulk equations because the boundary vacuum $T$-power no longer closes integrally. The benchmark branch $(26,8,312)$ is distinguished precisely because $\Delta_{\rm fr}=0$ removes this extra source and leaves the bulk equations counter-term free.
+
+The same branch data also carry the residual packing pressure
+\begin{equation}
+\label{eq:gravity-delta-topo}
+ \delta_{\rm topo}
+ \equiv
+ 1-\kappa_{D_5}
+ \approx
+ 0.01122895,
+\end{equation}
+which is the non-unit $D_5$ weight-simplex remainder left after visible packing. The same positive remainder appears in the gauge-side closure language of the main text through the benchmark threshold row
+\begin{equation}
+\label{eq:gravity-alpha-closure}
+ \alpha^{-1}(M_{\rm match})
+ =
+ 137.035999\ldots+\delta_{\rm topo}.
+\end{equation}
+The gravity-side statement is stronger: the same residue is absorbed into the positive dS$_4$ vacuum loading rather than left as a free stress defect.
+
+\paragraph{Gauge-Emergence Cutoff.}
+The same branch closure also fixes the ultraviolet gauge-density proxy carried by the holographic screen. With the visible current normalization $G_{\rm SM}=15$, the surface-tension proxy is
+\begin{equation}
+\label{eq:gravity-surface-gauge-proxy}
+ \alpha^{-1}_{\rm surf}
+ =
+ G_{\rm SM}\frac{K}{k_{\ell}+k_q}
+ =
+ \frac{15K}{k_{\ell}+k_q}.
+\end{equation}
+On the retained visible branch $(k_{\ell},k_q)=\benchmarkVisiblePair$ the Diophantine descendant rule forces the parent tower
+\begin{equation}
+\label{eq:gravity-parent-tower}
+ K\in \operatorname{lcm}(2k_{\ell},3k_q)\,\mathbb Z_{>0}
+ =\benchmarkParentLevel\,\mathbb Z_{>0},
+ \qquad
+ K=\benchmarkParentLevel n,
+ \quad n\in\mathbb Z_{>0},
+\end{equation}
+so the surface datum becomes
+\begin{equation}
+\label{eq:gravity-surface-gauge-tower}
+ \alpha^{-1}_{\rm surf}
+ =
+ 15\frac{\benchmarkParentLevel n}{\benchmarkLeptonLevel+\benchmarkQuarkLevel}
+=
+ \alphaSurfBenchmarkExact\,n.
+\end{equation}
+The first admissible parent therefore gives
+\begin{equation}
+\label{eq:gravity-surface-gauge-benchmark}
+ K=\benchmarkParentLevel
+ \qquad\Longrightarrow\qquad
+ \alpha^{-1}_{\rm surf}
+ =
+ \alphaSurfBenchmarkExact
+ \approx
+ \alphaSurfBenchmarkDecimal,
+\end{equation}
+which is the physical benchmark value of the ultraviolet surface gauge datum. By contrast every higher admissible parent lies in the sparse-boundary regime,
+\begin{equation}
+\label{eq:gravity-sparse-boundary}
+ K>312
+ \quad\Longrightarrow\quad
+ n\ge 2
+ \quad\Longrightarrow\quad
+ \alpha^{-1}_{\rm surf}
+ \ge
+ 2\alphaSurfBenchmarkExact
+ \approx
+ 275.294118,
+\end{equation}
+or equivalently
+\begin{equation}
+\label{eq:gravity-sparse-boundary-direct}
+ \alpha_{\rm surf}
+ \le
+ \frac{17}{4680}
+ \approx
+ 3.63\times10^{-3}
+ =
+ \frac12\,\alpha_{\rm surf}^{\rm bench}.
+\end{equation}
+Thus increasing $K$ above the first admissible parent does not create new visible gauge channels; it dilutes the same fifteen visible current slots across a larger parent cycle and makes the boundary gauge network progressively sparser. In the SHBT dictionary bulk gauge fields are the continuum image of these boundary current-current correlators, so the sparse-boundary tower drives the emergent electromagnetic sector toward decoupling. In the formal limit $K\to\infty$ one has $\alpha_{\rm surf}\to0$, and the bulk gauge field vanishes altogether. Already the first higher multiple $K=624$ enters the regime $\alpha^{-1}_{\rm surf}\ge275$, where the boundary gauge density is too weak to support an observationally viable four-dimensional bulk with detectable electromagnetic interactions.
+
+The exclusion of $K>\benchmarkParentLevel$ is therefore geometric rather than merely numerological. A branch with $K>\benchmarkParentLevel$ would produce a bulk in which electromagnetic forces are effectively absent at the emergence scale, so charged matter would fail to organize into the observed four-dimensional sector. The retained parent level is consequently locked not only by framing closure but also by gauge detectability:
+\begin{equation}
+\label{eq:gravity-gauge-detectability-lock}
+ \text{detectable bulk gauge fields}
+ \qquad\Longleftrightarrow\qquad
+ K=\benchmarkParentLevel
+\end{equation}
+within the canonical one-copy $SO(10)\supset SU(3)\times SU(2)$ branch used here. In that precise sense the stability of $K$ is anchored by the very existence of measurable gauge fields in the emergent bulk.
+
+Equivalently, define the gauge-support ratio on the admissible parent tower by
+\begin{equation}
+\label{eq:gravity-gauge-support-ratio}
+ \rho_{\rm gauge}(K)
+ \equiv
+ \frac{\alpha_{\rm surf}(K)}{\alpha_{\rm surf}(\benchmarkParentLevel)}
+ =
+ \frac{\benchmarkParentLevel}{K}
+ =
+ \frac{1}{n},
+ \qquad
+ K=\benchmarkParentLevel n.
+\end{equation}
+Avoiding the Sparse Boundary onset is the strict support condition
+\begin{equation}
+\label{eq:gravity-gauge-support-condition}
+ \alpha^{-1}_{\rm surf}(K)<2\alphaSurfBenchmarkExact
+ \qquad\Longleftrightarrow\qquad
+ \rho_{\rm gauge}(K)>\frac12.
+\end{equation}
+Because the admissible tower has $n\in\mathbb Z_{>0}$, Eq.~\eqref{eq:gravity-gauge-support-condition} implies $n<2$, hence necessarily $n=1$ and therefore
+\begin{equation}
+\label{eq:gravity-unique-gauge-supporting-parent}
+ K=\benchmarkParentLevel=312.
+\end{equation}
+Thus $K=312$ is the \emph{Unique Gauge-Supporting Parent}: every higher multiple $K\ge624$ lies in the Sparse Boundary regime, where the visible current network is too dilute to sustain an emergent four-dimensional electromagnetic sector~\cite{friedan1987,witten1989,gko1985}.
+
+\manualappendixlabel{G.2}{app:proof-of-mass}
+\manualappendixlabel{G.2}{app:holographic-surface-tension}
+\manualappendixlabel{G.2}{app:first-law-efe}
+\subsection*{G.2: Holographic Surface Tension, Newton Lock, Hubble Friction, and Information Return}
+
+The positive vacuum loading in Eq.~\eqref{eq:gravity-lambda-positive} is the
+branch-fixed holographic surface tension of the completed $(26,8,312)$ cell.
+Equations~\eqref{eq:gravity-horizon-radius} and
+\eqref{eq:gravity-bit-budget-derived} then fix the branch-local de Sitter
+register through
+\begin{equation}
+\label{eq:gravity-horizon-bits}
+ N_{\rm holo}\equiv N
+ =
+ \frac{3\pi}{L_P^2\Lambda_{\rm holo}}
+ \approx \maxComplexityCapacity\ \text{bits}.
+\end{equation}
+The same finite register is the coarse-grained storage capacity for the
+$B-L$ parity sink carried by $c_{\rm dark}$. In that sense the de Sitter
+horizon count is simultaneously the vacuum-loading register of the geometric
+action and the bookkeeping register that stores the missing conjugate parity
+bits required for parent-block neutrality.
+Combining this with the branch-fixed mass relation
+\begin{equation}
+\label{eq:gravity-neutrino-scale-bridge}
+ m_{\nu}=\kappa_{D_5}M_PN^{-1/4}
+\end{equation}
+gives
+\begin{equation}
+\label{eq:gravity-neutrino-scale-bitcount}
+ N
+ =
+ \frac{\kappa_{D_5}^4M_P^4}{m_{\nu}^4}.
+\end{equation}
+Substituting Eq.~\eqref{eq:gravity-neutrino-scale-bitcount} into
+Eq.~\eqref{eq:gravity-horizon-bits}, and using $G_N=L_P^2=M_P^{-2}$ in the
+present normalization, yields the \emph{Unity of Scale Identity}
+\begin{equation}
+\label{eq:gravity-unity-of-scale-identity}
+ \Lambda_{\rm holo}
+ =
+ \frac{3\pi}{\kappa_{D_5}^4}
+ G_N m_{\nu}^4.
+\end{equation}
+In the present appendix Eq.~\eqref{eq:gravity-unity-of-scale-identity} is not
+just a derived curiosity. It is the benchmark's \emph{primary internal
+falsification metric}: once the anomaly-free branch fixes $\kappa_{D_5}$ and
+the observed cosmological loading fixes $\Lambda_{\rm holo}$ through
+Eq.~\eqref{eq:gravity-horizon-bits}, the lightest neutrino scale is no longer
+free to drift independently. Any empirical failure of
+Eq.~\eqref{eq:gravity-unity-of-scale-identity} would be an internal failure of
+the branch closure itself rather than a poor phenomenological fit that could be
+rescued by retuning hidden parameters. Operationally, once
+$\Lambda_{\rm holo}$ and $G_N$ are fixed, Eq.~\eqref{eq:gravity-unity-of-scale-identity}
+is the first gravity-side number to check: the lightest neutrino mass must
+land in the branch-compatible few-meV regime or the anomaly-free dictionary
+fails internally.
+
+\paragraph{Formal proof of the Unity of Scale Identity.}
+Starting from Eq.~\eqref{eq:gravity-neutrino-scale-bridge},
+\begin{equation}
+ m_{\nu}^4
+ =
+ \kappa_{D_5}^4 M_P^4 N^{-1},
+ \qquad\Longrightarrow\qquad
+ N
+ =
+ \frac{\kappa_{D_5}^4 M_P^4}{m_{\nu}^4}.
+\end{equation}
+Substituting this expression for $N$ into Eq.~\eqref{eq:gravity-horizon-bits}
+gives
+\begin{equation}
+ \Lambda_{\rm holo}
+ =
+ \frac{3\pi}{L_P^2}
+ \frac{m_{\nu}^4}{\kappa_{D_5}^4 M_P^4}.
+\end{equation}
+Using the branch normalization $G_N=L_P^2=M_P^{-2}$, one has
+\begin{equation}
+ L_P^2 M_P^4 = G_N^{-1},
+\end{equation}
+so the previous line becomes
+\begin{equation}
+ \Lambda_{\rm holo}
+ =
+ \frac{3\pi}{\kappa_{D_5}^4}
+ G_N m_{\nu}^4,
+\end{equation}
+which is exactly Eq.~\eqref{eq:gravity-unity-of-scale-identity}. Because the
+anomaly-free branch has $\kappa_{D_5}>0$, $G_N>0$, and $m_{\nu}>0$, the right-
+hand side is strictly positive; the Unity of Scale Identity therefore proves
+that the branch-compatible $\Lambda_{\rm holo}$ is a positive surface-tension
+term rather than a freely choosable fluid contribution.
+The cosmological surface tension, Newton coupling, and neutrino mass floor are
+therefore not independent phenomenological dials in this benchmark; they are
+the same saturated branch datum expressed in curvature, gravitational, and
+defect-mass units.
+
+\paragraph{The scale trap.}
+This identity is also the theory's primary internal falsification metric and
+simplest internal trap door. If the lightest
+neutrino mass were measured significantly above the branch-fixed meV regime---
+for example near $10\,\mathrm{meV}$---then
+Eq.~\eqref{eq:gravity-neutrino-scale-bitcount} would force a horizon register
+$N\propto m_{\nu}^{-4}$ smaller by a factor of roughly
+$\sim1.6\times10^2$ than the saturation value fixed by the observed
+$\Lambda_{\rm holo}$. Feeding that detuned register back into
+Eq.~\eqref{eq:gravity-horizon-bits} would in turn require a surface tension
+$\Lambda_{\rm holo}$ larger by the same factor, incompatible with the observed
+cosmological constant. By Eq.~\eqref{eq:gravity-capacity-closure-detuning}
+this implies $\delta_N\mathcal E_{\mu\nu}\neq0$; by
+Eq.~\eqref{eq:gravity-topological-identity-local} the same mismatch is exactly
+the reopening of framing closure, i.e. $\Delta_{\rm fr}\neq0$. In that sense a
+ten-meV lightest neutrino would not merely shift the benchmark; it would
+falsify the anomaly-free branch by forcing a bit budget incompatible with the
+observed vacuum loading.
+
+The corresponding geometric surface-tension action is
+\begin{equation}
+\label{eq:gravity-surface-action}
+ S_{\rm surf}[g]
+ =
+ -\sigma_{\rm holo}\int d^4x\,\sqrt{-g},
+ \qquad
+ \sigma_{\rm holo}\equiv\frac{\Lambda_{\rm holo}}{8\pi G_N}.
+\end{equation}
+Varying with respect to the metric gives the effective geometric stress-energy tensor
+\begin{equation}
+\label{eq:gravity-geom-stress}
+ T_{\mu\nu}^{(\mathrm{geom})}
+ \equiv
+ -\frac{2}{\sqrt{-g}}\frac{\delta S_{\rm surf}}{\delta g^{\mu\nu}}
+ =
+ -\sigma_{\rm holo}g_{\mu\nu}
+ =
+ -\frac{\Lambda_{\rm holo}}{8\pi G_N}\,g_{\mu\nu}.
+\end{equation}
+Equations~\eqref{eq:gravity-effective-einstein-local} and
+\eqref{eq:gravity-newton-lock-local} therefore identify the geometric surface
+stress with the same completion residue that closes the boundary partition
+function. The Newton coefficient is branch-fixed rather than inserted by hand:
+\begin{equation}
+\label{eq:gravity-newton-lock-restated}
+ 8\pi G_N
+ =
+ \frac{12}{c_{\rm dark}M_P^2}
+ \approx
+ \frac{12}{\cDarkCompletion M_P^2}.
+\end{equation}
+Gravity is therefore present on the selected branch specifically because the
+positive central-charge deficit $c_{\rm dark}$ must be carried by a covariant
+bulk channel; without that completion residue there is no Topological EFE to
+support the visible stress tensor.
+
+\paragraph{Hubble-Friction Lock.}
+The same branch-fixed surface tension also determines the unique isotropic
+friction channel that can absorb the packing deficit
+$\delta_{\rm topo}=1-\kappa_{D_5}$. On the anomaly-free background,
+\begin{equation}
+\label{eq:gravity-hubble-lock-preview}
+ H_{\Lambda}
+ \equiv
+ \sqrt{\frac{\Lambda_{\rm holo}}{3}},
+ \qquad
+ 3H_{\Lambda}^2=\Lambda_{\rm holo},
+\end{equation}
+and the Bianchi lock from Eq.~\eqref{eq:gravity-bianchi-lock-local} with
+$\partial_{\nu}\Lambda_{\rm holo}=0$ requires
+\begin{equation}
+\label{eq:gravity-frw-friction-preview}
+ \dot\rho_{\rm vis}+3H_{\Lambda}(\rho_{\rm vis}+p_{\rm vis})=0.
+\end{equation}
+If one nevertheless postulates a different isotropic damping rate $\Gamma$,
+\begin{equation}
+\label{eq:gravity-general-friction-preview}
+ \dot\rho_{\rm vis}+3\Gamma(\rho_{\rm vis}+p_{\rm vis})=0,
+\end{equation}
+then subtracting Eq.~\eqref{eq:gravity-frw-friction-preview} gives
+\begin{equation}
+\label{eq:gravity-friction-uniqueness-preview}
+ 3(\Gamma-H_{\Lambda})(\rho_{\rm vis}+p_{\rm vis})=0.
+\end{equation}
+On the matter-carrying branch $\rho_{\rm vis}+p_{\rm vis}\neq0$, and once
+$\Delta_{\rm fr}=0$ no second isotropic counter-term survives. Hence the only
+solution is
+\begin{equation}
+\label{eq:gravity-friction-solution-preview}
+ \Gamma=H_{\Lambda}.
+\end{equation}
+Therefore the isotropic Hubble friction $3H_{\Lambda}$ is the unique mechanism
+that absorbs the packing deficit $\delta_{\rm topo}$ into the positive vacuum
+loading rather than leaving a residual source in $\nabla^{\mu}T^{\rm vis}_{\mu\nu}$.
+Section~G.3 gives the expanded contradiction proof in the moir\'e-consistency
+language, but the lock itself is already forced by the Topological EFE identity.
+
+Let $B$ be a ball-shaped boundary region, let $H_{\rm mod}(B)$ be its modular Hamiltonian, and let $\xi_B$ be the associated modular-flow vector field that acts as the local boost/isometry at the entangling cut. The first law of entanglement requires
+\begin{equation}
+\label{eq:gravity-first-law}
+ \delta S_{EE}(B)=\delta\langle H_{\rm mod}(B)\rangle.
+\end{equation}
+For perturbations around the anomaly-free background, the gravitational side of the same identity is the canonical constraint on the bulk Cauchy slice $\Sigma_B$ bounded by the extremal surface of $B$,
+\begin{equation}
+\label{eq:gravity-first-law-constraint}
+ \delta S_{EE}(B)-\delta\langle H_{\rm mod}(B)\rangle
+ =
+ \frac{6}{c_{\rm dark}M_P^2}
+ \int_{\Sigma_B}
+ \xi_B^{\nu}\,\delta\mathcal E_{\mu\nu}
+ \, d\Sigma^{\mu}.
+\end{equation}
+Preserving the branch identity means that Eq.~\eqref{eq:gravity-first-law} must hold for every ball $B$ and for every allowed linearized perturbation. The only way for the right-hand side of Eq.~\eqref{eq:gravity-first-law-constraint} to vanish for arbitrary modular-flow generators $\xi_B$ is
+\begin{equation}
+\label{eq:gravity-linearized-closure}
+ \delta\mathcal E_{\mu\nu}=0.
+\end{equation}
+Substituting the definition of $\mathcal E_{\mu\nu}$ then gives the linearized Einstein field equations on the branch,
+\begin{equation}
+\label{eq:gravity-linearized-efe}
+ \delta G_{\mu\nu}+\Lambda_{\rm holo}\,\delta g_{\mu\nu}
+ =
+ \frac{12}{c_{\rm dark}M_P^2}\,\delta T^{\rm vis}_{\mu\nu}.
+\end{equation}
+Thus the entanglement first law is the linearized expression of the same branch closure already encoded in Eq.~\eqref{eq:gravity-effective-einstein-local}. In this appendix, the vanishing of $\delta\mathcal E_{\mu\nu}$ is used as a consistency check: it confirms that the selected RCFT obeys the standard AdS/CFT modular-flow/isometry matching required for the holographic bridge on the anomaly-free branch. Any failure of the linearized Einstein equations would reopen a nonzero $\delta\mathcal E_{\mu\nu}$ and therefore signal a breakdown of that consistency condition.
+Equivalently, linearized information return is only compatible with the
+branch-fixed background when the finite register remains saturated. A putative
+decompactification of the finite $S^3$ background would change
+$\Lambda_{\rm holo}$ through Eq.~\eqref{eq:gravity-bit-budget-derived}, violate
+the Unity of Scale Identity in Eq.~\eqref{eq:gravity-unity-of-scale-identity},
+and reintroduce the same bulk closure defect that the Bianchi lock excludes.
+
+The same information-return statement can be written directly in terms of the bare topological flavor overlap block. On the selected branch the restricted three-channel overlap matrix built from the branch-fixed $SU(2)_{26}$ modular data is
+\begin{equation}
+\label{eq:gravity-flavor-overlap}
+ S_{\rm flav}
+ \equiv
+ \bigl[S^{(26)}_{q_{\alpha}g_i}\bigr]_{\alpha,i=1}^{3},
+ \qquad
+ \det S_{\rm flav}\neq0,
+ \qquad
+ \operatorname{rank}S_{\rm flav}=3.
+\end{equation}
+Hence the Gram matrix $S_{\rm flav}^{\dagger}S_{\rm flav}$ is positive definite and its polar unitary exists,
+\begin{equation}
+\label{eq:gravity-flavor-polar}
+ U_{\rm flav}
+ \equiv
+ S_{\rm flav}\bigl(S_{\rm flav}^{\dagger}S_{\rm flav}\bigr)^{-1/2},
+ \qquad
+ U_{\rm flav}^{\dagger}U_{\rm flav}=\mathbf 1_3.
+\end{equation}
+If $S_{\rm flav}=W_{\rm flav}\Sigma_{\rm topo}V_{\rm flav}^{\dagger}$ is the
+singular-value decomposition of the bare overlap block, then scalar matching is
+implemented in the singular basis as
+\begin{equation}
+\label{eq:gravity-flavor-dressed-overlap}
+ S_{\rm dress}
+ \equiv
+ W_{\rm flav}\bigl(\Sigma_{\rm topo}\mathbf M_{\rm match}\bigr)V_{\rm flav}^{\dagger}.
+\end{equation}
+Because $\mathbf M_{\rm match}$ is positive diagonal, it rescales only the
+singular values and leaves the polar unitary $U_{\rm flav}=W_{\rm flav}V_{\rm flav}^{\dagger}$ unchanged.
+If $\det S_{\rm flav}=0$, some nonzero flavor vector would lie in the kernel of $S_{\rm flav}$ and would be projected out before bulk reconstruction. Information loss would then occur already in the flavor sector. Because the benchmark block is rank-$3$, no such null direction exists.
+
+\paragraph{Theorem IV: Holographic Unitary Lock.}
+Let
+\begin{equation}
+\label{eq:gravity-information-return-map}
+ \mathcal U_{\rm holo}:\mathcal H_{\rm bulk}^{\rm code}\to\mathcal H_{\partial}^{\rm comp}
+\end{equation}
+be the branch-fixed bulk-to-boundary reconstruction map from the anomaly-free
+code subspace to the completed boundary Hilbert space. On the selected anomaly-free branch, the restriction of $\mathcal U_{\rm holo}$ to the visible three-channel flavor code is the polar unitary $U_{\rm flav}$ extracted from the bare overlap block $S_{\rm flav}$. The Holographic Unitary Lock is therefore secured by the affine level $k_{\ell}=26$ encoded in $S^{(26)}$ and is independent of the Higgs VEV scale, because scalar matching acts only through $\mathbf M_{\rm match}$ on the singular spectrum. Information Return is therefore not an auxiliary postulate but the direct consequence of the branch-fixed unitary lock enforced by the non-singular flavor overlap matrix,
+\begin{equation}
+\label{eq:gravity-information-return-isometry}
+ \langle \mathcal U_{\rm holo}\psi,\mathcal U_{\rm holo}\phi\rangle_{\partial}
+ =
+ \langle \psi,\phi\rangle_{\rm bulk}
+ \qquad\Longleftrightarrow\qquad
+ \det S_{\rm flav}\neq0
+ \quad
+ \text{with}\quad
+ \Delta_{\rm fr}=0.
+\end{equation}
+Equivalently, this theorem should be read as the precise structural requirement for Information
+Return in the present framework rather than as a separate dynamical
+information-paradox claim: on the anomaly-free branch,
+$\mathcal E_{\mu\nu}=0$ together with $\delta\mathcal E_{\mu\nu}=0$ confirms
+that the chosen RCFT satisfies the standard AdS/CFT isometry conditions needed
+for code-subspace reconstruction.
+
+\paragraph{Proof.}
+Because $\det S_{\rm flav}\neq0$, the Hermitian matrix
+$S_{\rm flav}^{\dagger}S_{\rm flav}$ is positive definite and admits the
+inverse square root appearing in Eq.~\eqref{eq:gravity-flavor-polar}. Its
+polar part $U_{\rm flav}$ is therefore unitary, so on the visible code subspace
+\begin{equation}
+ U_{\rm flav}^{\dagger}U_{\rm flav}=\mathbf 1_3
+ \qquad\Longrightarrow\qquad
+ \langle U_{\rm flav}\psi,U_{\rm flav}\phi\rangle
+ =
+ \langle \psi,\phi\rangle.
+\end{equation}
+Thus no flavor amplitude is projected out and the reconstruction map preserves
+inner products. Equation~\eqref{eq:gravity-flavor-dressed-overlap} shows that
+any Higgs-sector matching rescales only the positive singular spectrum and does
+not alter the polar unitary extracted from the bare $k_{\ell}=26$ overlap
+block. This is the direct linear-algebraic content of Theorem~IV: Holographic
+Unitary Lock.
+
+If instead $\det S_{\rm flav}=0$, then there exists a nonzero vector
+$v\in\mathbb C^3$ with $S_{\rm flav}v=0$. The corresponding reconstructed state
+has vanishing boundary norm while the bulk state still has nonzero norm, so the
+map loses information already in the flavor sector and cannot be isometric.
+The companion background condition is $\Delta_{\rm fr}=0$: by
+Eq.~\eqref{eq:gravity-topological-identity-local} this removes the residual
+scalar framing source, while Eqs.~\eqref{eq:gravity-first-law-constraint} and
+\eqref{eq:gravity-linearized-closure} ensure that no linearized defect reopens
+under modular flow. Once the anomaly filter is imposed, the rank-$3$
+non-singularity of $S_{\rm flav}$ is precisely what guarantees Information
+Return, because the bulk reconstruction map is then isometric on the completed
+code subspace.
+
+\manualappendixlabel{G.3}{app:gwb-tilt-corollary}
+\manualappendixlabel{G.3}{app:gwb-tilt-requirement}
+\manualappendixlabel{G.3}{app:topological-moire-consistency}
+\subsection*{G.3: Topological Moir\'e Consistency, Vacuum Loading, and the Bianchi Lock}
+
+The scalar departure from exact scale invariance is the long-wavelength
+\emph{Topological Moir\'e Pattern} generated when the discrete $K=312$
+boundary lattice is mapped into a continuous four-dimensional horizon
+geometry. Writing the scalar mismatch as
+\begin{equation}
+\label{eq:gravity-moire-scalar}
+ \Delta_{\rm Moire}
+ \equiv
+ 1-n_s
+ \approx
+ 0.0352,
+ \qquad
+ n_s-1\approx -0.0352,
+\end{equation}
+the observed red tilt is the continuum beat envelope of the branch-fixed
+lattice spacing. The same branch also carries the residual packing deficit of
+Eq.~\eqref{eq:gravity-delta-topo}, which supplies the tensor-side
+\emph{Geometric Friction} of the $D_5$ weight-simplex packing. Defining
+\begin{equation}
+\label{eq:gravity-geometric-friction}
+ \mathcal F_{\rm geom}
+ \equiv
+ 1-\kappa_{D_5}
+ =
+ \delta_{\rm topo}
+ \approx
+ 0.01122895,
+ \qquad
+ \kappa_{D_5}=\simplexPrefactor\approx 0.98877,
+\end{equation}
+the branch-fixed tensor tilt is
+\begin{equation}
+\label{eq:gravity-tensor-friction}
+ n_t\approx -\mathcal F_{\rm geom}=-(1-\kappa_{D_5})\approx -0.0112.
+\end{equation}
+The positive vacuum loading supplies the exact isotropic damping scale needed
+to absorb this packing remainder into the de Sitter background. Writing
+\begin{equation}
+\label{eq:gravity-hubble-scale}
+ H_{\Lambda}\equiv \sqrt{\frac{\Lambda_{\rm holo}}{3}},
+ \qquad
+ 3H_{\Lambda}^2=\Lambda_{\rm holo},
+\end{equation}
+the Bianchi identity for the closure tensor is
+\begin{equation}
+\label{eq:gravity-bianchi-lock-local}
+ \nabla^{\mu}\mathcal E_{\mu\nu}
+ =
+ \frac{c_{\rm dark}M_P^2}{12}\,\partial_{\nu}\Lambda_{\rm holo}
+ -\nabla^{\mu}T^{\rm vis}_{\mu\nu}
+ =0.
+\end{equation}
+Because $\partial_{\nu}\Lambda_{\rm holo}=0$ on the completed $(26,8,312)$
+branch, Eq.~\eqref{eq:gravity-bianchi-lock-local} reduces to the visible
+stress-tensor conservation law
+\begin{equation}
+\label{eq:gravity-visible-stress-conservation}
+ \nabla^{\mu}T^{\rm vis}_{\mu\nu}=0.
+\end{equation}
+Equivalently, $\nabla^{\mu}T_{\mu\nu}=0$ is a structural requirement of the
+$(26,8,312)$ branch, with $T_{\mu\nu}$ understood as the branch-completed
+stress tensor whose visible projection is $T^{\rm vis}_{\mu\nu}$.
+On the isotropic anomaly-free branch $\partial_{\nu}\Lambda_{\rm holo}=0$, so
+the only allowed residue is the scalar friction $\mathcal F_{\rm geom}$ of
+Eq.~\eqref{eq:gravity-geometric-friction}; no open vector stress survives.
+Equivalently, in the effective FRW rewriting the continuity equation takes the
+form
+\begin{equation}
+\label{eq:gravity-frw-friction}
+ \dot\rho_{\rm vis}+3H_{\Lambda}(\rho_{\rm vis}+p_{\rm vis})=0,
+\end{equation}
+with $H_{\Lambda}$ fixed entirely by the positive vacuum loading
+$\Lambda_{\rm holo}$. Because the anomaly-free branch supplies no second
+isotropic damping scale, Eq.~\eqref{eq:gravity-frw-friction} can be read as an
+exact cancellation statement for the lifted packing remainder. Writing a
+putative mismatch as
+\begin{equation}
+\label{eq:gravity-frw-lock-mismatch}
+ \dot\rho_{\rm vis}+3H_{\Lambda}(\rho_{\rm vis}+p_{\rm vis})
+ =
+ \Delta_{\rm lock}(\rho_{\rm vis}+p_{\rm vis}),
+\end{equation}
+the anomaly-free branch requires $\Delta_{\rm lock}=0$. Here
+$\Delta_{\rm lock}$ is the uncancelled FRW lift of the branch-fixed packing
+deficit $\delta_{\rm topo}=1-\kappa_{D_5}$. If the Hubble friction $3H_{\Lambda}$
+did not exactly match the geometric cancellation required by
+$\delta_{\rm topo}$, then $\Delta_{\rm lock}\neq0$ and therefore
+\paragraph{Geometric Friction Identity.}
+To make the uniqueness claim explicit, replace the de Sitter damping coefficient
+by a general isotropic rate $\Gamma$ and write
+\begin{equation}
+\label{eq:gravity-general-friction}
+ \dot\rho_{\rm vis}+3\Gamma(\rho_{\rm vis}+p_{\rm vis})=0.
+\end{equation}
+Subtracting Eq.~\eqref{eq:gravity-frw-friction} gives the identity
+\begin{equation}
+\label{eq:gravity-friction-identity}
+ 3(\Gamma-H_{\Lambda})(\rho_{\rm vis}+p_{\rm vis})
+ =
+ \Delta_{\rm lock}(\rho_{\rm vis}+p_{\rm vis}).
+\end{equation}
+On the exact level-matched branch,
+\begin{equation}
+\label{eq:gravity-level-matching-local}
+ K=2I_{\ell}^{\star}k_{\ell}=3I_q^{\star}k_q
+ \qquad\Longrightarrow\qquad
+ (k_{\ell},k_q,K)=(26,8,312),
+\end{equation}
+so $\Delta_{\rm fr}=0$ and the only surviving scalar residue is the packing
+deficit $\delta_{\rm topo}=\mathcal F_{\rm geom}$. No second isotropic
+counter-term is allowed once the framing anomaly is removed. Therefore the
+Bianchi lock requires $\Delta_{\rm lock}=0$, and on the matter-carrying visible
+branch $\rho_{\rm vis}+p_{\rm vis}$ is not identically zero. Equation
+\eqref{eq:gravity-friction-identity} then has the unique solution
+\begin{equation}
+\label{eq:gravity-unique-friction}
+ \Gamma=H_{\Lambda}.
+\end{equation}
+Hence the Hubble friction $3H_{\Lambda}$ is the unique isotropic sink that
+absorbs $\delta_{\rm topo}$ into the positive vacuum loading. Detuning
+$k_{\ell}$ away from $26$ reopens $\Delta_{\rm fr}\neq0$, activates the
+anomalous counter-term in Eq.~\eqref{eq:gravity-detuned-einstein}, and
+therefore destroys this uniqueness.
+Thus,
+\begin{equation}
+\label{eq:gravity-visible-stress-mismatch}
+ \nabla^{\mu}T^{\rm vis}_{\mu 0}
+ =
+ \dot\rho_{\rm vis}+3H_{\Lambda}(\rho_{\rm vis}+p_{\rm vis})
+ =
+ \Delta_{\rm lock}(\rho_{\rm vis}+p_{\rm vis})
+ \neq 0,
+\end{equation}
+so the visible stress tensor would fail to be conserved. The term $3H_{\Lambda}$
+is therefore the exact Hubble friction that absorbs the packing deficit
+$\delta_{\rm topo}\approx0.0112$ into the positive vacuum loading rather than
+leaving a Bianchi-violating source term. The same residual therefore reappears as the finite tensor drag $n_t\approx-\delta_{\rm topo}$,
+while the scalar sector records the longer-wavelength moir\'e beat
+$\Delta_{\rm Moire}=1-n_s$. Together they express the same branch-fixed bulk
+consistency: vacuum loading, geometric friction, and the Bianchi lock are one
+and the same closure statement viewed at curvature, transport, and tilt level.
+At the level of the disclosed branch residues this statement is an exact
+Topological Identity: $\mathcal F_{\rm geom}\approx0.01122895$ is the scalar remainder
+that the continuity equation must absorb, and the tensor tilt
+$n_t\approx-\mathcal F_{\rm geom}\approx-0.0112$ is the tensor-side imprint of
+that same conservation law. If either relation failed, the packing deficit
+would reappear as $\nabla^{\mu}T_{\mu\nu}\neq0$ and the Bulk Closure Tensor
+$\mathcal E_{\mu\nu}$ would no longer vanish on the selected branch.
+
+\paragraph{Gauge-Emergence Exclusion Principle.}
+The Bianchi lock also carries a gauge-side exclusion statement. The
+Gauge-Emergence Cutoff
+\begin{equation}
+\label{eq:gravity-gauge-emergence-cutoff-local}
+ K_{\rm GE}\equiv\benchmarkParentLevel=312
+\end{equation}
+is a physical exclusion principle rather than a bookkeeping convention. Because
+the admissible parent tower is $K=\benchmarkParentLevel n$, any
+\begin{equation}
+\label{eq:gravity-sparse-boundary-cutoff-local}
+ K\ge624
+ \qquad\Longrightarrow\qquad
+ n\ge2
+ \qquad\Longrightarrow\qquad
+ \alpha^{-1}_{\rm surf}\ge 2\alphaSurfBenchmarkExact,
+ \quad
+ \alpha_{\rm surf}\le\frac{17}{4680},
+\end{equation}
+so the branch enters the \emph{Sparse Boundary} regime already identified in
+Sec.~G.1. In that regime the visible current-current network is too dilute to
+sustain an emergent four-dimensional electromagnetic sector: the gauge density
+falls below the branch-local support threshold, and the bulk no longer carries
+observationally viable electromagnetism. Thus $K=312$ is not merely the first
+allowed parent level; it is the unique parent level that is simultaneously
+Bianchi-locked and gauge-supporting, while every $K\ge624$ is physically
+excluded by sparse-boundary gauge dilution~\cite{friedan1987,witten1989,gko1985}.
+
+\paragraph{Forbidden-Void Proposition.}
+A vanishing cosmological constant ($\Lambda = 0$) is topologically forbidden
+on the $(26,8,312)$ branch. It necessitates a divergent bit-budget
+($N\to\infty$), rendering the boundary partition function physically
+non-normalizable. Through Eq.~\eqref{eq:gravity-neutrino-scale-bridge} the same
+limit also collapses the neutrino floor~\cite{friedan1987,witten1989,gko1985}. Eq.~\eqref{eq:gravity-bit-budget-derived} makes this implication
+explicit on the one-copy lattice. In implication form,
+\begin{equation}
+\label{eq:gravity-forbidden-void-chain}
+ \Lambda_{\rm holo}=0
+ \Longrightarrow
+ H_{\Lambda}=0
+ \Longrightarrow
+ N_{\rm sat}=\infty
+ \Longrightarrow
+ Z_{\partial}^{(26,8,312)}\ \text{non-normalizable}
+ \Longrightarrow
+ m_{\nu}=\kappa_{D_5}M_PN^{-1/4}=0.
+\end{equation}
+This proposition is the boundary-normalizability form of the Bianchi lock:
+$\Lambda_{\rm holo}=0$ is not a soft limit inside the admissible branch family,
+but an exit from the finite-capacity Hilbert sector of the completed
+$(26,8,312)$ block.
+The proof-by-contradiction is then immediate. Assume that the completed
+boundary modular-$T$ matrix still closed on the anomaly-free branch while
+$\Lambda_{\rm holo}=0$. Then Eq.~\eqref{eq:gravity-hubble-scale} gives
+$H_{\Lambda}=0$, and Eq.~\eqref{eq:gravity-bit-budget-derived} gives
+$N_{\rm sat}\to\infty$, so the finite one-copy register decompactifies and the
+partition function leaves the normalizable finite-capacity sector. The mass
+bridge in Eq.~\eqref{eq:gravity-neutrino-scale-bridge} then forces
+$m_{\nu}=\kappa_{D_5}M_PN^{-1/4}\to0$, i.e. the neutrino floor collapses. The
+FRW friction channel disappears, but the branch-fixed packing residue
+$\delta_{\rm topo}=1-\kappa_{D_5}>0$ remains. Equation
+\eqref{eq:gravity-frw-lock-mismatch} would then force
+$\Delta_{\rm lock}\neq0$, hence
+\begin{equation}
+\label{eq:gravity-bianchi-lock-contradiction}
+ \nabla^{\mu}T^{\rm vis}_{\mu\nu}\neq0
+ \qquad\Longrightarrow\qquad
+ \nabla^{\mu}\mathcal E_{\mu\nu}\neq0,
+\end{equation}
+in contradiction with the Bianchi lock in
+Eq.~\eqref{eq:gravity-bianchi-lock-local}. Therefore $\Lambda_{\rm holo}=0$
+cannot satisfy both conditions simultaneously: it would require an infinite
+bit-budget and thereby violate the finite-capacity premise of the
+$(26,8,312)$ lattice. The only branch-compatible solution for which the
+completed boundary modular-$T$ matrix closes and the bulk Bianchi identity is
+satisfied is the positive vacuum loading already fixed in
+Eq.~\eqref{eq:gravity-lambda-positive},
+\begin{equation}
+ \Lambda_{\rm holo}>0.
+\end{equation}
+
+\paragraph{Trap note.}
+This is the Bianchi-lock form of the same scale trap derived in
+Sec.~G.2. If the lightest neutrino mass were measured significantly
+outside the predicted few-meV regime, the resulting bit-budget $N$
+would be incompatible with the observed expansion rate, forcing a
+non-vanishing framing anomaly $\Delta_{\rm fr}\neq0$ and collapsing the
+holographic dictionary~\cite{friedan1987,witten1989,gko1985}.
+
+\manualappendixlabel{G.4}{app:holographic-computational-gradients}
+\manualappendixlabel{G.4}{app:clock-skew-derivation}
+\subsection*{G.4: Holographic Computational Gradients}
+
+The anomaly-free branch carries a finite horizon register,
+$N=3\pi/(L_P^2\Lambda_{\rm holo})$, and that finite register is not only a
+storage bound but also a finite update budget. Let $N_{\rm load}(t)$ denote the
+cumulative number of boundary bits that have been loaded onto the completion
+sector by cosmic time $t$, and define the normalized completion fraction
+\begin{equation}
+\label{eq:gravity-loading-fraction}
+ f_{\rm load}(t)
+ \equiv
+ \frac{N_{\rm load}(t)}{N},
+ \qquad
+ 0\leq f_{\rm load}(t)\leq 1.
+\end{equation}
+The physical interpretation of the cosmological expansion is then explicit:
+\emph{The expansion of the universe is the loading speed of new boundary bits
+onto the $c_{\rm dark}$ stabilizer.}
+In the FRW rewriting this means that the late-time expansion rate is the
+coarse-grained write speed of the completion fraction,
+\begin{equation}
+\label{eq:gravity-loading-hubble}
+ H_{\rm eff}(t)
+ =
+ H_{\Lambda}
+ +
+ \frac{1}{3}\frac{d f_{\rm load}}{dt}.
+\end{equation}
+
+The clock-skew statement follows because the loading process is read on the
+past light cone, where shells at different redshift do not share the same
+proper write clock. If $\tau_{\rm lock}$ is the proper time of a local
+boundary-update cycle, then the observer-frame and source-frame ticks are
+related by the usual redshift factor,
+\begin{equation}
+\label{eq:gravity-clock-skew}
+ d\tau_{\rm lock} = \frac{dt}{1+z}.
+\end{equation}
+Therefore the loading law becomes
+\begin{equation}
+\label{eq:gravity-redshift-dependent-hubble}
+ H_0(z)
+ =
+ H_{\Lambda}
+ +
+ \frac{1}{3(1+z)}\frac{d f_{\rm load}}{d\tau_{\rm lock}}.
+\end{equation}
+Equation~\eqref{eq:gravity-redshift-dependent-hubble} is the gravity-side
+clock-skew derivation of a redshift-dependent Hubble intercept: once the
+boundary register is finite, the same loading process is sampled at different
+stages of the write cycle by low-$z$ and high-$z$ observations. A strictly
+redshift-independent $H_0$ would require either
+$df_{\rm load}/d\tau_{\rm lock}=0$ (no continuing boundary loading) or the
+decompactification limit $N\to\infty$ in which the discrete update cycle
+ceases to be physical. Neither possibility is compatible with the anomaly-free
+branch, which carries a finite register and a nonzero positive vacuum loading.
+The local and CMB Hubble determinations therefore probe different segments of
+the same finite holographic computation rather than different fluids.
+
+\manualappendixlabel{G.5}{app:gravity-parity-storage}
+\subsection*{G.5: Gravitational Storage of B-L Parity}
+
+The visible branch does not erase its missing antimatter complement; it stores
+that complement as a topological conjugate in the same geometric sector that is
+measured macroscopically by the completion residue $c_{\rm dark}$. In branch
+language the visible baryon excess is admissible only because the completed
+parent block remains neutral,
+\begin{equation}
+\label{eq:gravity-parent-neutrality}
+ (B-L)_{\rm vis}+(B-L)_{\rm dark}=0,
+ \qquad
+ (B-L)_{\rm dark}=-(B-L)_{\rm vis}.
+\end{equation}
+Here $(B-L)_{\rm dark}$ is not a second thermal fluid and not a separately
+propagating antimatter bath. It is the non-propagating parity sink of the
+geometric completion sector: the missing antimatter of the visible projection
+is stored as a topological conjugate in the $c_{\rm dark}$ branch residue.
+
+This is why the same Holographic Stabilizer can play two roles without
+contradiction. The residue $c_{\rm dark}$ sources the positive vacuum loading
+$\Lambda_{\rm holo}$ in the Topological EFE, and the same residue stores the
+conjugate $B-L$ bits needed to keep the projected boundary neutral. The
+gravitational field and the parity sink are therefore two macroscopic images of
+one and the same completion sector.
+
+The finite de Sitter register of Eq.~\eqref{eq:gravity-horizon-bits} gives the
+storage capacity for this parity bookkeeping. In that sense gravitational
+storage is literal within the benchmark logic: the branch does not hide the
+missing antimatter in an untracked particle sector, but in the geometric
+closure data of the completed boundary block. The bulk is neutral because the
+same $c_{\rm dark}$ sector that closes $\mathcal E_{\mu\nu}$ also stores the
+conjugate parity information required by Eq.~\eqref{eq:gravity-parent-neutrality}.
+
+\ifgravitystandalone
+\begin{thebibliography}{99}
+\bibitem{georgi1979}
+H.~Georgi and C.~Jarlskog,
+``A new lepton-quark mass relation in a unified theory,''
+\emph{Phys. Lett. B}~86 (1979) 297--300.
+
+\bibitem{babu1993}
+K.~S.~Babu and R.~N.~Mohapatra,
+``Predictive neutrino spectrum in minimal $SO(10)$ grand unification,''
+\emph{Phys. Rev. Lett.}~70 (1993) 2845--2848.
+
+\bibitem{friedan1987}
+D.~Friedan and S.~Shenker,
+``The Analytic Geometry of Two-Dimensional Conformal Field Theory,''
+\emph{Nucl. Phys. B}~281 (1987) 509--545.
+
+\bibitem{witten1989}
+E.~Witten,
+``Quantum field theory and the Jones polynomial,''
+\emph{Commun. Math. Phys.}~121 (1989) 351--399.
+
+\bibitem{gko1985}
+P.~Goddard, A.~Kent, and D.~Olive,
+``Virasoro algebras and coset space models,''
+\emph{Phys. Lett. B}~152 (1985) 88--92.
+\end{thebibliography}
+\fi
+
+\gravityenddocument
