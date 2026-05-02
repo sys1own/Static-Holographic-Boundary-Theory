@@ -16,12 +16,6 @@ Within the retained one-copy branch, modular closure, boundary neutrality, and f
 
 The SHBT benchmark contains **Zero Free Parameters** in the strict sense used by the manuscript and supplement. Once the following topological residues are fixed, the construction retains no continuous adjustment sector:
 
-Topological Coordinate Triplet: $(26, 8, 312)$.  
-Representational Admissibility Constraint:$$\frac{\langle \Sigma_{126} \rangle}{\langle \phi_{10} \rangle} = \frac{64}{312}$$
-Current-Algebra Neutrality (Matter Weight):$$G_{SM} = 15$$
-Observational Boundary Condition ($N$): the finite holographic information budget anchored to the observed cosmological constant $\Lambda_{obs}$.  
-
-
 - **Topological Coordinate Triplet:** $(26,8,312)$.
 - **Representational Admissibility Constraint:**
 
