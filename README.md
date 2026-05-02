@@ -26,8 +26,8 @@ The SHBT benchmark contains **Zero Free Parameters** in the strict sense used by
 - **Current-Algebra Neutrality (Matter Weight):**
 
   $$
-  G_{SM}=15,
-  $$
+  G_{SM}=15
+  $$.
 
 - **Observational Boundary Condition ($N$):** the finite holographic information budget anchored to the observed cosmological constant $\Lambda_{obs}$.
 
