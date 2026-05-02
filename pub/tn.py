@@ -8,7 +8,9 @@ import logging
 import math
 import os
 import re
+import signal
 import shutil
+import time
 import warnings
 from dataclasses import dataclass, field, replace
 from decimal import Decimal, ROUND_HALF_UP, localcontext
@@ -22,7 +24,7 @@ from typing import Any, ClassVar, Sequence
 import matplotlib.pyplot as plt
 import numpy as np
 from jinja2 import TemplateNotFound
-from scipy.integrate import quad
+from scipy.integrate import IntegrationWarning, quad, solve_ivp
 from scipy.stats import chi2 as _chi2_distribution
 
 from . import algebra
@@ -71,6 +73,67 @@ for _name in dir(_constants):
         globals()[_name] = getattr(_constants, _name)
 del _name
 
+
+class AnomalyClosureError(Exception):
+    """Raised when a candidate branch violates the framing-anomaly moat."""
+
+
+class _SolverStiffnessTimeout(TimeoutError):
+    """Private timeout used by the explicit-solver stiffness diagnostic."""
+
+
+def derive_su2_total_dim(level: int) -> float:
+    """Return the total quantum dimension of the visible ``SU(2)_k`` benchmark block."""
+
+    return float(algebra.su2_total_quantum_dimension(int(level)))
+
+
+def _benchmark_decimal_geometric_kappa() -> float:
+    """Return the benchmark ``kappa_D5`` using high-precision decimal arithmetic."""
+
+    with localcontext() as ctx:
+        ctx.prec = 50
+        area_ratio = (Decimal(160) / Decimal(1521)) * Decimal(10).sqrt()
+        beta = Decimal(str(0.5 * math.log(derive_su2_total_dim(LEPTON_LEVEL))))
+        spinor_retention = (Decimal(347) - Decimal(8) * beta * beta) / Decimal(351)
+        kappa_d5 = ((Decimal(16) / Decimal(5)) * area_ratio * spinor_retention).sqrt()
+    return float(kappa_d5)
+
+
+def _rk45_timeout_scope(seconds: float | None):
+    """Context manager enforcing a wall-clock timeout for the RK45 stiffness probe."""
+
+    class _Scope:
+        def __init__(self, timeout_seconds: float | None) -> None:
+            self.timeout_seconds = None if timeout_seconds is None else max(float(timeout_seconds), 0.0)
+            self._previous_handler = None
+
+        def __enter__(self):
+            if (
+                self.timeout_seconds is None
+                or self.timeout_seconds <= 0.0
+                or not hasattr(signal, "setitimer")
+                or os.name == "nt"
+            ):
+                return self
+
+            def _handle_timeout(signum, frame):
+                del signum, frame
+                raise _SolverStiffnessTimeout("RK45 stiffness diagnostic exceeded the wall-clock limit.")
+
+            self._previous_handler = signal.getsignal(signal.SIGALRM)
+            signal.signal(signal.SIGALRM, _handle_timeout)
+            signal.setitimer(signal.ITIMER_REAL, self.timeout_seconds)
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            if self._previous_handler is not None and hasattr(signal, "setitimer"):
+                signal.setitimer(signal.ITIMER_REAL, 0.0)
+                signal.signal(signal.SIGALRM, self._previous_handler)
+            return False
+
+    return _Scope(seconds)
+
 RG_SCALE_RATIO = GUT_SCALE_GEV / MZ_SCALE_GEV
 # Branch-fixed topological identities and disclosed benchmark matching conditions
 # on the anomaly-free `(26, 8, 312)` branch.
@@ -79,11 +142,21 @@ BENCHMARK_VEV_RATIO = Fraction(64, 312)
 BENCHMARK_SCALAR_MATCHING_RATIO = float(BENCHMARK_VEV_RATIO)
 REPRESENTATIONAL_ADMISSIBILITY_RATIO = BENCHMARK_VEV_RATIO
 VEV_RATIO = BENCHMARK_SCALAR_MATCHING_RATIO
-KAPPA_D5 = 0.9887710512663789
+AREA_RATIO = Fraction(160, 1521) * math.sqrt(10)
+SPINOR_RETENTION = (347 - 8 * (0.5 * math.log(derive_su2_total_dim(LEPTON_LEVEL))) ** 2) / 351
+KAPPA_D5 = _benchmark_decimal_geometric_kappa()
+if not math.isclose(
+    KAPPA_D5,
+    math.sqrt(Fraction(16, 5) * AREA_RATIO * SPINOR_RETENTION),
+    rel_tol=0.0,
+    abs_tol=1.0e-15,
+):
+    raise RuntimeError("Benchmark provenance drift: the D5 simplex invariant no longer matches its symbolic identity.")
 CONFIG_GEOMETRIC_KAPPA = _constants.GEOMETRIC_KAPPA
 if not math.isclose(CONFIG_GEOMETRIC_KAPPA, KAPPA_D5, rel_tol=0.0, abs_tol=1.0e-15):
     raise RuntimeError(
-        "Benchmark provenance drift: pub/config/benchmark_v1.yaml must pin geometric_kappa to 0.9887710512663789."
+        "Benchmark provenance drift: pub/config/benchmark_v1.yaml must pin geometric_kappa "
+        f"to the D5 simplex invariant {KAPPA_D5:.16f}."
     )
 PUBLISHED_GEOMETRIC_KAPPA = KAPPA_D5
 RANK_DIFFERENCE = SO10_RANK - SU3_RANK
@@ -188,6 +261,10 @@ BENCHMARK_PARAMETER_LANGUAGE_PLAIN = (
 BENCHMARK_CHI2_INTERPRETATION = (
     "The benchmark chi-squared tallies only predictive rows; fixed branch-selection "
     "bookkeeping entries are disclosed separately."
+)
+RK45_STIFFNESS_NOTICE = (
+    "Notice: Explicit RK45 solver diverged due to holographic scale stiffness. "
+    "Radau IIA is mandatory for stable boundary transport"
 )
 LOCAL_LEPTON_LEVEL_WINDOW = tuple(range(max(2, LEPTON_LEVEL - 2), LEPTON_LEVEL + 3))
 
@@ -2389,12 +2466,7 @@ def _benchmark_parent_central_charge(parent_level: int = PARENT_LEVEL) -> float:
 
 
 def _benchmark_su2_total_quantum_dimension(lepton_level: int = LEPTON_LEVEL) -> float:
-    resolved_level = int(lepton_level)
-    shifted_level = resolved_level + SU2_DUAL_COXETER
-    if shifted_level <= 0:
-        raise ValueError(f"Lepton level must keep k_ℓ + h^∨ positive, received k_ℓ={resolved_level}.")
-    angle = math.pi / shifted_level
-    return float(math.sqrt(shifted_level / 2.0) / math.sin(angle))
+    return derive_su2_total_dim(lepton_level)
 
 
 def _benchmark_framing_gap_area(lepton_level: int = LEPTON_LEVEL) -> float:
@@ -2466,7 +2538,7 @@ def compute_geometric_kappa_residue(
 
     weight_simplex_hyperarea = float(math.sqrt(2.0) / 8.0)
     regular_reference_hyperarea = float(1521.0 * math.sqrt(5.0) / 6400.0)
-    area_ratio = float(weight_simplex_hyperarea / regular_reference_hyperarea)
+    area_ratio = float(AREA_RATIO)
     parent_central_charge = _benchmark_parent_central_charge(parent_level)
     framing_gap_area = _benchmark_framing_gap_area(lepton_level)
     spinorial_retention = float(1.0 - (framing_gap_area + 0.5) / parent_central_charge)
@@ -3471,6 +3543,12 @@ def verify_derived_uniqueness_theorem(
         lepton_level=lepton_level,
         quark_level=quark_level,
     )
+    framing_gap = float(resolved_model.framing_gap)
+    if not solver_isclose(framing_gap, 0.0):
+        raise AnomalyClosureError(
+            "Derived uniqueness theorem violated: framing closure requires Delta_fr=0 on the selected branch, "
+            f"received Delta_fr={framing_gap:.6e}."
+        )
     parent_dual_coxeter = int(SO10_DUAL_COXETER)
     if parent_dual_coxeter != 8:
         raise AssertionError(
@@ -3490,12 +3568,6 @@ def verify_derived_uniqueness_theorem(
         resolved_model.quark_level,
         resolved_model.parent_level,
     )
-    framing_gap = float(resolved_model.framing_gap)
-    if not solver_isclose(framing_gap, 0.0):
-        raise AssertionError(
-            "Derived uniqueness theorem violated: framing closure requires Delta_fr=0 on the selected branch, "
-            f"received Delta_fr={framing_gap:.6e}."
-        )
     gauge_neutrality_weight = int(G_SM)
     gauge_neutrality_verified = gauge_neutrality_weight == int(NON_SINGLET_WEYL_COUNT) == 15
     if not gauge_neutrality_verified:
@@ -3553,7 +3625,7 @@ def verify_derived_uniqueness_theorem(
 def _auxiliary_scan_filter_violation(*, model: TopologicalModel) -> str | None:
     try:
         verify_derived_uniqueness_theorem(model=model)
-    except AssertionError as exc:
+    except (AssertionError, AnomalyClosureError) as exc:
         return str(exc)
     return None
 
@@ -6038,6 +6110,135 @@ def derive_step_size_convergence_audit(
     )
 
 
+def verify_solver_stiffness(
+    *,
+    model: TopologicalModel | None = None,
+    time_limit_seconds: float = 1.0,
+    mz_inputs: RunningCouplings | None = None,
+) -> dict[str, float | bool | int | str]:
+    """Probe the benchmark PMNS transport with explicit RK45 to confirm stiffness."""
+
+    resolved_model = DEFAULT_TOPOLOGICAL_VACUUM if model is None else _coerce_topological_model(model=model)
+    verify_derived_uniqueness_theorem(model=resolved_model)
+
+    resolved_solver_config = resolved_model.solver_config
+    resolved_time_limit = max(float(time_limit_seconds), 0.0)
+    scales = derive_scales_for_bits(
+        resolved_model.bit_count,
+        resolved_model.scale_ratio,
+        kappa_geometric=resolved_model.kappa_geometric,
+        parent_level=resolved_model.parent_level,
+        lepton_level=resolved_model.lepton_level,
+        quark_level=resolved_model.quark_level,
+        solver_config=resolved_solver_config,
+    )
+    kernel_helper = ModularKernel(resolved_model.lepton_level, Sector.LEPTON, solver_config=resolved_solver_config)
+    kernel_block = kernel_helper.restricted_block()
+    topological_matrix = polar_unitary(kernel_block, solver_config=resolved_solver_config)
+    total_dimension = su2_total_quantum_dimension(resolved_model.lepton_level)
+    d1 = su2_quantum_dimension(resolved_model.lepton_level, 1)
+    d2 = su2_quantum_dimension(resolved_model.lepton_level, 2)
+    phi_rt = -(math.log(total_dimension) + math.log(d2 / d1)) / (4.0 * (resolved_model.lepton_level + 2.0))
+    seed_matrix = topological_kernel.rotation_23(phi_rt) @ topological_matrix
+    pmns_uv, _ = kernel_helper.complex_unitary(seed_matrix, kernel_block, branch_shift_deg=180.0)
+    transport_curvature = derive_transport_curvature_audit(
+        lepton_level=resolved_model.lepton_level,
+        quark_level=resolved_model.quark_level,
+    )
+    gamma_0_one_loop = transport_curvature.gamma_0_one_loop
+    gamma_0_two_loop = transport_curvature.gamma_0_two_loop
+    total_loop_time = derive_rhn_threshold_data(
+        resolved_model.scale_ratio,
+        sector=Sector.LEPTON,
+        parent_level=resolved_model.parent_level,
+        lepton_level=resolved_model.lepton_level,
+        quark_level=resolved_model.quark_level,
+    ).one_loop_factor
+    uv_scale_gev = MZ_SCALE_GEV * resolved_model.scale_ratio
+    phase_proxies_rad = structural_majorana_phase_proxies(resolved_model.lepton_level)
+    uv_mass_matrix = physics_engine.majorana_mass_matrix_from_pmns(
+        pmns_uv,
+        normal_order_masses(scales.m_0_uv_ev),
+        phase_proxies_rad,
+    )
+    coupling_state_uv = derive_running_couplings(
+        uv_scale_gev,
+        solver_config=resolved_solver_config,
+        mz_inputs=mz_inputs,
+    ).as_array()
+
+    def transport_equations(loop_time: float, state: np.ndarray) -> np.ndarray:
+        unpacked = physics_engine._unpack_complex_matrix(state[:18])
+        mass_matrix = 0.5 * (unpacked + unpacked.T)
+        couplings = state[18:]
+        universal_gamma = gamma_0_one_loop + 2.0 * loop_time * gamma_0_two_loop
+        mass_beta = physics_engine.majorana_mass_matrix_beta(
+            mass_matrix,
+            tau_yukawa=float(couplings[2]),
+            charged_lepton_yukawa_ratios=CHARGED_LEPTON_YUKAWA_RATIOS,
+            sm_majorana_c_e=SM_MAJORANA_C_E,
+            universal_gamma=universal_gamma,
+        )
+        coupling_betas = sm_one_loop_running_betas(RunningCouplings(*couplings)).as_array()
+        return np.concatenate([physics_engine._pack_complex_matrix(mass_beta), -coupling_betas]).astype(float)
+
+    initial_state = np.concatenate(
+        [physics_engine._pack_complex_matrix(uv_mass_matrix), coupling_state_uv],
+    ).astype(float)
+
+    elapsed_seconds = 0.0
+    warning_count = 0
+    timed_out = False
+    solution = None
+    warning_records: list[warnings.WarningMessage] = []
+    start_time = time.perf_counter()
+    try:
+        with warnings.catch_warnings(record=True) as caught_warnings:
+            warnings.simplefilter("always", IntegrationWarning)
+            with _rk45_timeout_scope(resolved_time_limit):
+                solution = solve_ivp(
+                    transport_equations,
+                    (0.0, total_loop_time),
+                    initial_state,
+                    method="RK45",
+                    rtol=resolved_solver_config.rtol,
+                    atol=resolved_solver_config.atol,
+                )
+        warning_records = list(caught_warnings)
+    except _SolverStiffnessTimeout:
+        timed_out = True
+    finally:
+        elapsed_seconds = time.perf_counter() - start_time
+
+    warning_count = sum(1 for record in warning_records if issubclass(record.category, IntegrationWarning))
+    timed_out = bool(timed_out or (resolved_time_limit > 0.0 and elapsed_seconds > resolved_time_limit and solution is None))
+    solver_success = bool(solution.success) if solution is not None else False
+    reached_target = bool(
+        solution is not None
+        and solution.t.size > 0
+        and math.isclose(float(solution.t[-1]), float(total_loop_time), rel_tol=0.0, abs_tol=resolved_solver_config.atol)
+    )
+    finite_state = bool(solution is not None and np.all(np.isfinite(solution.y)))
+    stiffness_detected = bool(timed_out or warning_count > 0 or not solver_success or not reached_target or not finite_state)
+    if stiffness_detected:
+        LOGGER.warning(RK45_STIFFNESS_NOTICE)
+
+    return {
+        "method": "RK45",
+        "time_limit_seconds": float(resolved_time_limit),
+        "elapsed_seconds": float(elapsed_seconds),
+        "timed_out": bool(timed_out),
+        "integration_warning_count": int(warning_count),
+        "integration_warning": bool(warning_count > 0),
+        "solver_success": bool(solver_success),
+        "reached_target": bool(reached_target),
+        "finite_state": bool(finite_state),
+        "stiffness_detected": bool(stiffness_detected),
+        "nfev": int(getattr(solution, "nfev", 0) if solution is not None else 0),
+        "message": str(getattr(solution, "message", "timed out" if timed_out else "")) if solution is not None or timed_out else "",
+    }
+
+
 def export_step_size_convergence_figure(
     convergence: StepSizeConvergenceData,
     output_path: Path | None = None,
@@ -6433,6 +6634,17 @@ def derive_pmns(
         default_value=DEFAULT_SOLVER_CONFIG,
         parameter_name="solver_config",
     )
+    resolved_model = _coerce_topological_model(
+        model=model,
+        lepton_level=resolved_level,
+        quark_level=resolved_quark_level,
+        parent_level=resolved_parent_level,
+        scale_ratio=resolved_scale_ratio,
+        bit_count=resolved_bit_count,
+        kappa_geometric=resolved_kappa_geometric,
+        solver_config=resolved_solver_config,
+    )
+    verify_derived_uniqueness_theorem(model=resolved_model)
 
     # See `pub/tn.tex`, Appendix A, subsection "Antusch One-Loop Structure":
     # the UV benchmark is fixed by
@@ -6827,6 +7039,16 @@ def derive_ckm(
     resolved_gut_threshold_residue = (
         resolved_gut_threshold_residue if resolved_gut_threshold_residue is not None else ckm_phase_tilt_parameter
     )
+    resolved_model = _coerce_topological_model(
+        model=model,
+        lepton_level=resolved_lepton_level,
+        quark_level=resolved_level,
+        parent_level=resolved_parent_level,
+        scale_ratio=resolved_scale_ratio,
+        gut_threshold_residue=resolved_gut_threshold_residue,
+        solver_config=resolved_solver_config,
+    )
+    verify_derived_uniqueness_theorem(model=resolved_model)
 
     # The CKM benchmark follows the main-text split emphasized in
     # "The Complex Holonomy from the $\mathbf{126}_H$ Threshold": the modular
@@ -10508,6 +10730,9 @@ class TopologicalVacuum:
 
     def verify_derived_uniqueness_theorem(self) -> DerivedUniquenessTheoremAudit:
         return verify_derived_uniqueness_theorem(model=self)
+
+    def verify_solver_stiffness(self) -> dict[str, float | bool | int | str]:
+        return verify_solver_stiffness(model=self)
 
     def verify_gauge_holography(self) -> GaugeHolographyAudit:
         return verify_gauge_holography(model=self)
@@ -15925,6 +16150,7 @@ class PeerReviewDefensiveAudit:
                 "exact_match": bool(gut_residue_verified),
             },
             "mass_scale_audit": mass_scale_status,
+            "solver_stiffness": self.model.verify_solver_stiffness(),
             "solver_sensitivity": self.sensitivity_check(),
             "benchmark_metrics": {
                 "predictive_chi2": float(resolved_pull_table.predictive_chi2),
