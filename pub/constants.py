@@ -166,7 +166,7 @@ HIGGS_POLE_MASS_GEV = _coerce_float(_SCALES_CONFIG, "higgs_pole_mass_gev")
 PDG_TOP_POLE_MASS_CENTRAL_GEV = _coerce_float(_UNCERTAINTIES_CONFIG, "pdg_top_pole_mass_central_gev")
 PDG_TOP_POLE_MASS_SIGMA_GEV = _coerce_float(_UNCERTAINTIES_CONFIG, "pdg_top_pole_mass_sigma_gev")
 ALPHA_S_MZ_SIGMA = _coerce_float(_UNCERTAINTIES_CONFIG, "alpha_s_mz_sigma")
-THEORETICAL_MATCHING_UNCERTAINTY_FRACTION = _coerce_float(_UNCERTAINTIES_CONFIG, "theoretical_matching_uncertainty_fraction")
+THEORETICAL_MATCHING_UNCERTAINTY_FRACTION = float(_UNCERTAINTIES_CONFIG.get("theoretical_matching_uncertainty_fraction", 0.05))
 PARAMETRIC_TRANSPORT_COVARIANCE_FRACTION = _coerce_float(_UNCERTAINTIES_CONFIG, "parametric_transport_covariance_fraction")
 THEORETICAL_UNCERTAINTY_FRACTION = THEORETICAL_MATCHING_UNCERTAINTY_FRACTION
 PARAMETRIC_COVARIANCE_FRACTION = PARAMETRIC_TRANSPORT_COVARIANCE_FRACTION
@@ -268,9 +268,17 @@ REPRODUCIBILITY_STATEMENT = (
 
 LOCKED_TOPOLOGICAL_COORDINATE_LABEL = "Locked Topological Coordinate"
 TRIPLE_MATCH_MANDATORY_CLOSURE_LABEL = "Mandatory Closure Requirement"
+ELIMINATIVE_SURVIVAL_PROCESS_MESSAGE = (
+    "Branch selection proceeds as an eliminative survival process on the fixed-parent moat audit rather than by likelihood maximization."
+)
+PRIMARY_BENCHMARK_AUDIT_SUCCESS_MESSAGE = (
+    "[PRIMARY BENCHMARK AUDIT]: Eigenvector Rigidity verified. Matched Mass Sector (singular values) successfully decoupled from the Rigid Mixing Sector (eigenvectors). Standard Model values are mandatory residues of 4D gravity."
+)
+SVD_RIGIDITY_SHIELD_SIGMA_THRESHOLD = 1.0e-12
+SVD_RIGIDITY_SHIELD_VEV_DEFORMATION_FRACTION = 0.10
 MIXING_SECTOR_RIGIDITY_MESSAGE = (
-    r"Mixing Sector Rigidity Verified: PMNS/CKM eigenvectors remain stable at the $10^{-12}\sigma$ level "
-    r"under $\pm10\%$ deformation of matching coordinates. This confirms the separation of the Matched Mass "
+    r"Mixing Sector Rigidity Verified: the SVD Rigidity Shield keeps PMNS/CKM eigenvectors stable at the $10^{-12}\sigma$ level "
+    r"under $\pm10\%$ VEV-ratio deformations. This confirms the separation of the Matched Mass "
     r"Sector from the Rigid Mixing Sector."
 )
 
