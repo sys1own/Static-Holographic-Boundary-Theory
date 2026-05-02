@@ -22,7 +22,7 @@ On the gravity side, the effective 4D image is written on the anomaly-free branc
 
 ## Abstract Summary
 
-SHBT provides a mathematically rigid benchmark for Standard Model flavor data from the fixed parent $SO(10)_{312}$ boundary construction. The benchmark is retained over a disclosed 9,801-cell **Local Moat Audit** of the visible lattice, with the branch $(26,8,312)$ selected by framing closure and fixed-parent modular consistency rather than by numerical optimization. Once the Topological Coordinate triplet $(26,8,312)$, the representational admissibility constraint $64/312$, the matter weight $G_{\rm SM}=15$, and the observational boundary condition $N$ are fixed, the construction retains no detached continuous adjustment sector. The displayed Standard Model observables are therefore treated as mandatory residues of 4D gravity on a finite-capacity horizon rather than fittable coefficients.
+SHBT provides a mathematically rigid benchmark for Standard Model flavor data from the fixed parent $SO(10)_{312}$ boundary construction. The benchmark is retained over a disclosed $9{,}801$-cell **Local Moat Audit** of the visible lattice, with the branch $(26,8,312)$ selected by framing closure and fixed-parent modular consistency rather than by numerical optimization. Once the Topological Coordinate triplet $(26,8,312)$, the representational admissibility constraint $64/312$, the matter weight $G_{\rm SM}=15$, and the observational boundary condition $N$ are fixed, the construction retains no detached continuous adjustment sector. The displayed Standard Model observables are therefore treated as mandatory residues of 4D gravity on a finite-capacity horizon rather than fittable coefficients.
 
 ## Mathematical Rigidity: Why the Benchmark is “Unfittable”
 
