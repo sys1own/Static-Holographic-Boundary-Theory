@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import importlib.util
 import math
+from dataclasses import dataclass
 from collections.abc import Callable
+from functools import lru_cache
 
 import numpy as np
 import numpy.typing as npt
@@ -11,6 +14,190 @@ from .runtime_config import DEFAULT_SOLVER_CONFIG, SolverConfig, SolverException
 
 ONE_LOOP_FACTOR = 16.0 * math.pi * math.pi
 SAFE_LOG_MAGNITUDE_FLOOR = 1.0e-30
+
+
+@dataclass(frozen=True)
+class LinearAlgebraBackendAudit:
+    requested_backend: str
+    selected_backend: str
+    device: str
+    accelerated: bool
+    jit_compiled: bool
+    deterministic_float64: bool
+    prioritizes_cuda: bool
+    prioritizes_tensor_cores: bool
+
+
+def _torch_available() -> bool:
+    return importlib.util.find_spec("torch") is not None
+
+
+def _jax_available() -> bool:
+    return importlib.util.find_spec("jax") is not None
+
+
+@lru_cache(maxsize=8)
+def resolve_linear_algebra_backend(solver_config: SolverConfig = DEFAULT_SOLVER_CONFIG) -> LinearAlgebraBackendAudit:
+    requested_backend = str(getattr(solver_config, "linear_algebra_backend", "auto")).strip().lower() or "auto"
+    priority = tuple(str(entry).strip().lower() for entry in getattr(solver_config, "backend_priority", ("cpu",)))
+    prioritizes_cuda = any(entry in {"cuda", "gpu", "torch"} for entry in priority)
+    prioritizes_tensor_cores = any(entry in {"tensorcore", "tensor", "cuda"} for entry in priority)
+
+    for candidate in priority:
+        if candidate in {"cuda", "gpu", "tensorcore", "tensor", "torch"} and _torch_available():
+            import torch
+
+            if torch.cuda.is_available():
+                try:
+                    torch.use_deterministic_algorithms(bool(getattr(solver_config, "deterministic_float64", True)))
+                except Exception:
+                    pass
+                if hasattr(torch.backends, "cuda") and hasattr(torch.backends.cuda, "matmul"):
+                    torch.backends.cuda.matmul.allow_tf32 = False
+                if hasattr(torch.backends, "cudnn"):
+                    torch.backends.cudnn.allow_tf32 = False
+                return LinearAlgebraBackendAudit(
+                    requested_backend=requested_backend,
+                    selected_backend="torch",
+                    device="cuda",
+                    accelerated=True,
+                    jit_compiled=False,
+                    deterministic_float64=bool(getattr(solver_config, "deterministic_float64", True)),
+                    prioritizes_cuda=prioritizes_cuda,
+                    prioritizes_tensor_cores=prioritizes_tensor_cores,
+                )
+        if candidate in {"cuda", "gpu", "jax"} and _jax_available():
+            import jax
+
+            gpu_devices = tuple(device for device in jax.devices() if getattr(device, "platform", "") == "gpu")
+            if gpu_devices:
+                return LinearAlgebraBackendAudit(
+                    requested_backend=requested_backend,
+                    selected_backend="jax",
+                    device="gpu",
+                    accelerated=True,
+                    jit_compiled=True,
+                    deterministic_float64=bool(getattr(solver_config, "deterministic_float64", True)),
+                    prioritizes_cuda=prioritizes_cuda,
+                    prioritizes_tensor_cores=prioritizes_tensor_cores,
+                )
+
+    return LinearAlgebraBackendAudit(
+        requested_backend=requested_backend,
+        selected_backend="numpy",
+        device="cpu",
+        accelerated=False,
+        jit_compiled=False,
+        deterministic_float64=True,
+        prioritizes_cuda=prioritizes_cuda,
+        prioritizes_tensor_cores=prioritizes_tensor_cores,
+    )
+
+
+def _torch_dtype_for_array(array: np.ndarray):
+    import torch
+
+    resolved = np.asarray(array)
+    return torch.complex128 if np.iscomplexobj(resolved) else torch.float64
+
+
+def dense_svd(
+    matrix: npt.NDArray[np.complexfloating | np.floating],
+    *,
+    solver_config: SolverConfig = DEFAULT_SOLVER_CONFIG,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    resolved_matrix = np.asarray(matrix)
+    backend = resolve_linear_algebra_backend(solver_config)
+    if backend.selected_backend == "torch":
+        import torch
+
+        tensor = torch.tensor(resolved_matrix, dtype=_torch_dtype_for_array(resolved_matrix), device=backend.device)
+        left, singular_values, vh = torch.linalg.svd(tensor, full_matrices=False)
+        return (
+            np.asarray(left.detach().cpu().numpy()),
+            np.asarray(singular_values.detach().cpu().numpy(), dtype=float),
+            np.asarray(vh.detach().cpu().numpy()),
+        )
+    return np.linalg.svd(np.asarray(resolved_matrix), full_matrices=False)
+
+
+def dense_singular_values(
+    matrix: npt.NDArray[np.complexfloating | np.floating],
+    *,
+    solver_config: SolverConfig = DEFAULT_SOLVER_CONFIG,
+) -> np.ndarray:
+    _, singular_values, _ = dense_svd(matrix, solver_config=solver_config)
+    return np.asarray(singular_values, dtype=float)
+
+
+def dense_matrix_condition_number(
+    matrix: npt.NDArray[np.complexfloating | np.floating],
+    *,
+    solver_config: SolverConfig = DEFAULT_SOLVER_CONFIG,
+) -> float:
+    singular_values = dense_singular_values(matrix, solver_config=solver_config)
+    if singular_values.size == 0:
+        return 1.0
+    sigma_max = float(np.max(singular_values))
+    sigma_min = float(np.min(singular_values))
+    if math.isclose(sigma_min, 0.0, rel_tol=0.0, abs_tol=np.finfo(float).eps * max(sigma_max, 1.0)):
+        return math.inf
+    return float(sigma_max / sigma_min)
+
+
+def dense_matrix_multiply(
+    left: npt.NDArray[np.complexfloating | np.floating],
+    right: npt.NDArray[np.complexfloating | np.floating],
+    *,
+    solver_config: SolverConfig = DEFAULT_SOLVER_CONFIG,
+) -> np.ndarray:
+    resolved_left = np.asarray(left)
+    resolved_right = np.asarray(right)
+    backend = resolve_linear_algebra_backend(solver_config)
+    if backend.selected_backend == "torch":
+        import torch
+
+        left_tensor = torch.tensor(resolved_left, dtype=_torch_dtype_for_array(resolved_left), device=backend.device)
+        right_tensor = torch.tensor(resolved_right, dtype=_torch_dtype_for_array(resolved_right), device=backend.device)
+        return np.asarray((left_tensor @ right_tensor).detach().cpu().numpy())
+    return np.asarray(resolved_left @ resolved_right)
+
+
+def dense_jacobian_inverse(
+    jacobian: npt.NDArray[np.complexfloating | np.floating],
+    *,
+    solver_config: SolverConfig = DEFAULT_SOLVER_CONFIG,
+) -> np.ndarray:
+    resolved_jacobian = np.asarray(jacobian)
+    backend = resolve_linear_algebra_backend(solver_config)
+    if backend.selected_backend == "torch":
+        import torch
+
+        tensor = torch.tensor(resolved_jacobian, dtype=_torch_dtype_for_array(resolved_jacobian), device=backend.device)
+        inverse = torch.linalg.inv(tensor)
+        return np.asarray(inverse.detach().cpu().numpy())
+    return np.asarray(np.linalg.inv(resolved_jacobian))
+
+
+def finite_difference_jacobian(
+    equations: Callable[[float, np.ndarray], np.ndarray],
+    t_value: float,
+    state: np.ndarray,
+    *,
+    relative_step: float = DEFAULT_SOLVER_CONFIG.jacobian_relative_step,
+) -> np.ndarray:
+    resolved_state = np.asarray(state, dtype=float)
+    base = np.asarray(equations(float(t_value), resolved_state), dtype=float)
+    jacobian = np.zeros((base.size, resolved_state.size), dtype=float)
+    for index in range(resolved_state.size):
+        step = max(abs(float(resolved_state[index])), 1.0) * float(relative_step)
+        delta = np.zeros_like(resolved_state)
+        delta[index] = step
+        jacobian[:, index] = (
+            np.asarray(equations(float(t_value), resolved_state + delta), dtype=float)
+            - np.asarray(equations(float(t_value), resolved_state - delta), dtype=float)
+        ) / (2.0 * step)
+    return jacobian
 
 
 def solve_ivp_with_fallback(
@@ -130,7 +317,7 @@ def takagi_diagonalize_symmetric(
     solver_config: SolverConfig = DEFAULT_SOLVER_CONFIG,
 ) -> tuple[npt.NDArray[np.complex128], npt.NDArray[np.float64]]:
     symmetric_matrix = 0.5 * (mass_matrix + mass_matrix.T)
-    left_unitary, singular_values, vh_matrix = np.linalg.svd(symmetric_matrix)
+    left_unitary, singular_values, vh_matrix = dense_svd(symmetric_matrix, solver_config=solver_config)
     right_unitary = vh_matrix.conjugate().T
     phase_alignment = left_unitary.conjugate().T @ right_unitary
     diagonal_phases = np.diag(phase_alignment)
