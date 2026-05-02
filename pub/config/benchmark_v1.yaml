@@ -1,3 +1,10 @@
+# Classification labels in this file are benchmark-provenance metadata.
+# They document how values are used in the repository pipeline; they are not claims of inevitability or uniqueness.
+metadata:
+  selection_logic: anomaly_filter_survivor
+  reheating_temperature:
+    T_rh_visible: 7.3e+6
+    T_mod_dark: 5.9
 solver:
   rtol:
     value: 1.0e-10
@@ -175,10 +182,10 @@ uncertainties:
     classification: Empirical Matching Ansatz
 reporting:
   topological_quantum_number_dof_subtraction:
-    value: 0
+    value: 1
     classification: Empirical Matching Ansatz
   threshold_matching_dof_subtraction:
-    value: 0
+    value: 1
     classification: Empirical Matching Ansatz
 group_theory:
   su2_dimension:
