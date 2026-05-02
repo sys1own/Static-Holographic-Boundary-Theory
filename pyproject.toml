@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "so10-312-reviewer-framework"
+version = "0.1.0"
+description = "Referee-facing computational framework for the SO(10)_312 flavor benchmark"
+requires-python = ">=3.11"
+dependencies = [
+  "PyYAML==6.0.3",
+  "Jinja2==3.1.6",
+  "mpmath==1.3.0",
+  "numpy==1.26.4",
+  "scipy==1.12.0",
+  "matplotlib==3.8.3",
+]
+
+[project.scripts]
+so10-312-review = "pub.main:main"
+so10-312-referee = "pub.main:main"
+
+[tool.setuptools.packages.find]
+include = ["pub"]
+
+[tool.setuptools.package-data]
+pub = ["config/*.yaml", "templates/*.tex.j2"]
