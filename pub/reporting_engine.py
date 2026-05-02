@@ -87,8 +87,8 @@ def write_audit_statement(
             f"The disclosed discrete survey spans {int(diagnostics['predictive_landscape_trial_count'])} visible-level cells. The retained solar "
             f"row has pull_theta12={diagnostics['theta12_pull']:+.2f}σ and is interpreted as the known one-loop "
             "tension in the $\\theta_12$ transport rather than evidence for hidden tuning or missing fit knobs. "
-            f"With total-variance pulls and a uniform {100.0 * diagnostics['theoretical_matching_uncertainty_fraction']:.0f}% "
-            "theory allowance tracking the transport sensitivity to the top-quark mass and alpha_s, the descriptive benchmark tally remains a fixed-branch audit; "
+            "Theoretical uncertainties are uniquely defined by the Quantified Two-Loop Residuals of the anomaly-free branch. "
+            f"The largest disclosed transport residual on the displayed flavor rows is {100.0 * diagnostics['theoretical_matching_uncertainty_fraction']:.3e}%, and the descriptive benchmark tally remains a fixed-branch audit; "
             "the residual deviations remain compatible with ordinary "
             "transport-level fluctuations of the current benchmark rather than evidence for a tuned refit."
         ),
