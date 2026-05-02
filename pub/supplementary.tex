@@ -3094,11 +3094,11 @@ supplemented by $\gamma_0^{(1)}=5/28\approx\gammaZeroOneLoop$ and $\gamma_0^{(2)
 \begin{equation}
  \max_a \left|\Delta_a\right|/\sigma_a = \rgNonlinearityMaxSigma,
 \end{equation}
-between the linearized transport estimate and the fully integrated PMNS flow, well below the conservative manuscript-side bound of $\rgNonlinearityConservativeBound\sigma$. The same benchmark defines in Sec.~S12.6 the conservative theory floor
+between the linearized transport estimate and the fully integrated PMNS flow, well below the conservative manuscript-side bound of $\rgNonlinearityConservativeBound\sigma$. The same benchmark defines in Sec.~S12.6 the row-wise transport residual budget
 \begin{equation}
- \sigma_{a,{\rm theory}}=0.05\,|X_a^{\rm th}|,
+ \sigma_{a,{\rm theory}}=\epsilon_a^{(2)}\,|X_a^{\rm th}|=|\Delta_a^{(2)}|,
 \end{equation}
-for the transported flavor rows. Table~\ref{tab:s4-two-loop} now compares the explicit two-loop corrections with that same $5\%$ allowance. The largest angular correction, the solar row, consumes only $4.60\times10^{-3}$ of the floor, while the mass-side two-loop shift uses only $1.40\times10^{-2}$ of the same buffer. The main-text $5\%$ floor is therefore an intentionally oversized RG allowance for negligible higher-loop effects rather than a fitted nuisance band. These coefficients serve as bookkeeping diagnostics of the benchmark flow rather than as additional continuous degrees of freedom.
+for the transported flavor rows. Theoretical uncertainties are uniquely defined by the Quantified Two-Loop Residuals of the anomaly-free branch, with $\epsilon_a^{(2)}$ the observable-level fractional residual returned by the branch-fixed two-loop transport audit. Table~\ref{tab:s4-two-loop} therefore reports the explicit angular and mass-side residuals that set the uncertainty budget row by row. The largest angular correction appears in the solar row, while the mass-side two-loop shift remains at the sub-per-mille level. These coefficients serve as bookkeeping diagnostics of the benchmark flow rather than as additional continuous degrees of freedom.
 
 For reviewer-facing bookkeeping,
 Table~\ref{tab:s22-topological-identity-matrix} collects four benchmark
@@ -3758,14 +3758,13 @@ interval through
  \equiv
  \frac{\bigl(X_a^{\rm th}-X_a^{\rm exp}\bigr)^2}{\sigma_{a,{\rm tot}}^2},
  \qquad
- \sigma_{a,{\rm tot}}^2
- =
+\sigma_{a,{\rm tot}}^2
+=
  \sigma_{a,{\rm exp}}^2+\sigma_{a,{\rm theory}}^2+\Sigma_{{\rm par},aa}.
 \end{equation}
-For the eight transported flavor observables the conservative theory floor is
-taken as
+For the eight transported flavor observables, Theoretical uncertainties are uniquely defined by the Quantified Two-Loop Residuals of the anomaly-free branch:
 \begin{equation}
- \sigma_{a,{\rm theory}}=0.05\,|X_a^{\rm th}|,
+ \sigma_{a,{\rm theory}}=\epsilon_a^{(2)}\,|X_a^{\rm th}|=|\Delta_a^{(2)}|,
 \end{equation}
 while $\Sigma_{\rm par}$ is the diagonal transport covariance induced by the
 finite-difference propagation of the input uncertainties in $m_t$ and
