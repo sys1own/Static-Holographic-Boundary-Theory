@@ -7,7 +7,7 @@ import numpy as np
 import numpy.typing as npt
 from scipy.integrate import solve_ivp
 
-from .runtime_config import DEFAULT_SOLVER_CONFIG, SolverConfig
+from .runtime_config import DEFAULT_SOLVER_CONFIG, SolverConfig, SolverException
 
 ONE_LOOP_FACTOR = 16.0 * math.pi * math.pi
 SAFE_LOG_MAGNITUDE_FLOOR = 1.0e-30
@@ -21,35 +21,51 @@ def solve_ivp_with_fallback(
     solver_config: SolverConfig = DEFAULT_SOLVER_CONFIG,
     **kwargs,
 ):
-    """Run ``solve_ivp`` with the configured method ladder until one succeeds."""
+    """Run ``solve_ivp`` with strictly pinned Radau IIA and raise on failure."""
 
     for reserved_keyword in ("method", "rtol", "atol"):
         if reserved_keyword in kwargs:
             raise TypeError(f"'{reserved_keyword}' is managed by solver_config and cannot be passed explicitly")
 
-    attempt_errors: list[str] = []
-    for method in solver_config.method_ladder:
-        try:
-            solution = solve_ivp(
-                equations,
-                t_span,
-                initial_state,
-                method=method,
-                rtol=solver_config.rtol,
-                atol=solver_config.atol,
-                **kwargs,
-            )
-        except ValueError as exc:
-            attempt_errors.append(f"{method}: {exc}")
-            continue
+    method = str(solver_config.method).strip()
+    if method != "Radau":
+        raise SolverException(f"Radau IIA pinning violation: expected method='Radau', got {method!r}.")
+    if solver_config.atol > 1.0e-12:
+        raise SolverException(
+            f"Radau IIA pinning violation: verifier requires atol <= 1e-12, got {solver_config.atol!r}."
+        )
 
-        if solution.success:
-            return solution
-        attempt_errors.append(f"{method}: {solution.message}")
+    try:
+        solution = solve_ivp(
+            equations,
+            t_span,
+            initial_state,
+            method=method,
+            rtol=solver_config.rtol,
+            atol=solver_config.atol,
+            **kwargs,
+        )
+    except ValueError as exc:
+        raise SolverException(
+            f"Radau IIA solve failed before convergence at atol={solver_config.atol:.1e}: {exc}"
+        ) from exc
 
-    attempted_methods = ", ".join(solver_config.method_ladder)
-    failure_summary = "; ".join(attempt_errors) if attempt_errors else "no solver methods configured"
-    raise RuntimeError(f"ODE solve failed for methods [{attempted_methods}]: {failure_summary}")
+    if not solution.success:
+        raise SolverException(
+            f"Radau IIA solve failed to satisfy atol={solver_config.atol:.1e}: {solution.message}"
+        )
+    if solution.t.size == 0:
+        raise SolverException("Radau IIA solve returned an empty time grid.")
+
+    target_time = float(t_span[1])
+    reached_time = float(solution.t[-1])
+    if not math.isclose(reached_time, target_time, rel_tol=0.0, abs_tol=solver_config.atol):
+        raise SolverException(
+            f"Radau IIA solve terminated at t={reached_time:.12e} before reaching {target_time:.12e} within atol={solver_config.atol:.1e}."
+        )
+    if not np.all(np.isfinite(solution.y)):
+        raise SolverException("Radau IIA solve produced non-finite state entries.")
+    return solution
 
 
 def sm_one_loop_running_betas(couplings):
