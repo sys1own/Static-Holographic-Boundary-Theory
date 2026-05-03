@@ -40,7 +40,7 @@ m_{\nu} = \kappa_{D_5} M_P N^{-1/4},
 \Lambda_{\rm holo} = \frac{3\pi}{\kappa_{D_5}^4} G_N m_{\nu}^4.
 $$
 
-This repository treats that chain as a theorem to be audited, not as an ansatz to be curve-fit. The gravity proof engines close the Unity of Scale Identity to better than $O(10^{-124})$ precision and, in the current high-precision audit, to an even smaller residual $\epsilon_{\Lambda} \sim 1.7 \times 10^{-251}$ against the one-register floor $1/N \sim 3.0 \times 10^{-123}$. The same audit enforces the Newton Constant Lock that ties the emergent gravitational coupling to the positive $c_{\rm dark}$ completion residue required by boundary neutrality.
+This repository treats that chain as a theorem to be audited, not as an ansatz to be curve-fit. The gravity proof engines close the Unity of Scale Identity to better than $O(10^{-124})$ precision and, in the current checked-in audit, export $\epsilon_{\Lambda} = 1.0 \times 10^{-199}$ against the one-register floor $1/N \sim 3.0 \times 10^{-123}$. The same audit enforces the Newton Constant Lock that ties the emergent gravitational coupling to the positive $c_{\rm dark}$ completion residue required by boundary neutrality.
 
 ## Modular Proof Engines
 
@@ -122,7 +122,7 @@ Interpret `results/residuals.json` as the benchmark's audit ledger:
 - `theoretical_uncertainty_fractions` and `transport_residuals` are the disclosed two-loop transport residuals actually used by the verifier, not adjustable padding for the pull table.
 - `informational_costs.delta_s_red_nat` is the finite one-copy redundancy cost for forcing inverted support, not a fit parameter.
 
-Read the JSON as a branch diagnosis rather than as an error-budget knob. If `results/residuals.json` differs from the benchmark export, then the run is no longer evaluating the physical branch and should be treated as an unphysical off-shell computation.
+Read the JSON as a branch diagnosis rather than as an error-budget knob. The publication-facing summary in `results/benchmark_diagnostics.json` and `results/final/benchmark_diagnostics.json` now mirrors the same nested `unity_of_scale_identity.epsilon_lambda` payload. If these artifacts differ from the benchmark export, then the run is no longer evaluating the physical branch and should be treated as an unphysical off-shell computation.
 
 ## Reproducibility
 
