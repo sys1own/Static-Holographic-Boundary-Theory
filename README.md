@@ -75,9 +75,7 @@ $$ m_g = m_0 e^{\beta g} $$
 - `stiff_transport_audit.py` proves the mathematical necessity of the implicit Radau IIA solver for stiff holographic transport. Explicit RK45 is audited as non-certified at the $10^{-12}$ floor, while duplicate Radau runs remain reproducible below $10^{-12}\sigma$.
 - `character_dictionary.py` quantifies the informational cost of Inverted Ordering in the one-copy dictionary and proves that accommodating it requires an additional support slot with redundancy cost
 
-  $$
-  \Delta S_{\rm red} = \ln 2.
-  $$
+  $$ \Delta S_{\rm red} = \ln 2 $$
 
 ## Technical Rigidities
 
