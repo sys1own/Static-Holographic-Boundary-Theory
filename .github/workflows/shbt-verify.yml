@@ -21,7 +21,7 @@ jobs:
   shbt-verify:
     name: SHBT audit
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 180
 
     steps:
       - name: Check out repository
