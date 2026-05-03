@@ -4,7 +4,10 @@ import math
 from fractions import Fraction
 
 from sympy import Matrix, Rational
-from sympy.matrices.exceptions import NonInvertibleMatrixError
+try:
+    from sympy.matrices.exceptions import NonInvertibleMatrixError
+except ImportError:
+    from sympy import NonInvertibleMatrixError
 
 
 def add_fraction_vectors(left: tuple[Fraction, ...], right: tuple[Fraction, ...]) -> tuple[Fraction, ...]:
