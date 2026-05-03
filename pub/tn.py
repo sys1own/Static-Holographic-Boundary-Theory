@@ -9605,15 +9605,16 @@ def verify_dark_energy_tension(
         bit_count=resolved_model.bit_count,
         kappa_geometric=resolved_model.kappa_geometric,
     )
+    bridge_planck_mass_ev = topological_planck_mass_ev()
     assert math.isclose(
         benchmark_m_nu_topological,
-        (PLANCK_MASS_EV / (HOLOGRAPHIC_BITS**0.25)) * KAPPA_D5,
+        (bridge_planck_mass_ev / (HOLOGRAPHIC_BITS**0.25)) * KAPPA_D5,
         rel_tol=1.0e-15,
         abs_tol=1.0e-18,
     )
     assert math.isclose(
         m_nu_topological,
-        (PLANCK_MASS_EV / (resolved_model.bit_count**0.25)) * resolved_model.kappa_geometric,
+        (bridge_planck_mass_ev / (resolved_model.bit_count**0.25)) * resolved_model.kappa_geometric,
         rel_tol=1.0e-15,
         abs_tol=1.0e-18,
     )
