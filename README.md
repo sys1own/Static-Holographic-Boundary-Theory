@@ -129,7 +129,7 @@ Read the JSON as a branch diagnosis rather than as an error-budget knob. The pub
 The benchmark configuration is locked by the checked-in YAML at `config/benchmark_v1.yaml` and the standard package configuration in `pyproject.toml`.
 
 - **Benchmark lockfile:** `config/benchmark_v1.yaml`
-- **SHA-256:** `737667c8d0a2925f09ae89e40a68f7d26d2177df383f4a220e7d9c2c6b55dbf4`
+- **SHA-256:** `37a8b88a5045e98a699638efae6f8f8b718b8fb8753aeabd8619d9deb4169604`
 - **Build backend:** `setuptools.build_meta`
 - **Python requirement:** `>=3.11`
 - **Pinned scientific stack:** `PyYAML==6.0.3`, `Jinja2==3.1.6`, `mpmath==1.3.0`, `numpy==1.26.4`, `scipy==1.12.0`, `matplotlib==3.8.3`
