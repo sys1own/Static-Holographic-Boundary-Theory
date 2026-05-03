@@ -11,12 +11,6 @@ Once the disclosed structural residues are fixed,
 
 the framework retains no continuous phenomenological fit coordinates. SHBT is therefore presented here as executable proof, not as a fittable model.
 
-## Chief Verification Officer Audit Report (May 2, 2026)
-
-**Status:** PASS  
-**Verified commit:** `e06b31f`
-
-The Chief Verification Officer Audit records the hardening program as successful on commit `e06b31f`. In audit terms, the repository satisfies its proof obligations across gravity closure, flavor rigidity, cosmological sourcing, algebraic uniqueness, and numerical transport stability. The codebase should therefore be interpreted as an auditable verifier of branch-fixed identities rather than as a sandbox for parameter retuning.
 
 ## Framework Identity
 
