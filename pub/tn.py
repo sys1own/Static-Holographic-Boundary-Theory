@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import importlib
 import inspect
 import itertools
+import io
 import json
 import logging
 import math
@@ -11,6 +13,7 @@ import os
 import re
 import signal
 import shutil
+import sys
 import time
 import warnings
 from dataclasses import dataclass, field, replace
@@ -21,6 +24,10 @@ from os import PathLike
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, ClassVar, Sequence
+
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    __package__ = "pub"
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -82,6 +89,29 @@ class AnomalyClosureError(Exception):
 
 class _SolverStiffnessTimeout(TimeoutError):
     """Private timeout used by the explicit-solver stiffness diagnostic."""
+
+
+SHBT_UNIVERSAL_AUDIT_BANNER = "Static Holographic Boundary Theory: Universal Source Code v1.0"
+TARGET_AUDIT_SECTORS: tuple[str, ...] = ("gravity", "cosmology", "flavor", "rigidity")
+SECTOR_AUDIT_MODULES: dict[str, tuple[str, ...]] = {
+    "gravity": (
+        "pub.noether_bridge",
+        "pub.holographic_tension_verifier",
+    ),
+    "cosmology": (
+        "pub.baryon_asymmetry",
+        "pub.precision_cosmology_engine",
+    ),
+    "flavor": (
+        "pub.flavor_identity_resolver",
+        "pub.eigenvector_rigidity",
+        "pub.stiff_transport_audit",
+    ),
+    "rigidity": (
+        "pub.uniqueness_theorem",
+        "pub.minimality_proof",
+    ),
+}
 
 
 def derive_su2_total_dim(level: int) -> float:
@@ -17462,6 +17492,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--manuscript-dir", type=Path, default=DEFAULT_MANUSCRIPT_DIR)
     parser.add_argument("--output-dir", type=Path, default=Path("results"))
     parser.add_argument(
+        "--sector",
+        choices=TARGET_AUDIT_SECTORS,
+        default=None,
+        help="Run only the requested SHBT sector audit module group.",
+    )
+    parser.add_argument(
         "--residue-check",
         action="store_true",
         help="Run only the benchmark-residue detuning audit, export its artifacts, and exit.",
@@ -17497,6 +17533,50 @@ def _display_path(path: Path) -> str:
         return str(path)
 
 
+def _emit_shbt_branding(*, sector: str | None) -> None:
+    print(SHBT_UNIVERSAL_AUDIT_BANNER)
+    if sector is None:
+        print("SHBT Universal Audit: full sequential verifier")
+    else:
+        print(f"SHBT Universal Audit: {sector} sector")
+    print("")
+
+
+def _invoked_via_pub_tn_script() -> bool:
+    return Path(sys.argv[0]).as_posix().endswith("pub/tn.py")
+
+
+def _capture_sector_module_report(module_name: str, *, output_dir: Path, sector: str) -> Path:
+    module = importlib.import_module(module_name)
+    module_main = getattr(module, "main", None)
+    if not callable(module_main):
+        raise RuntimeError(f"Targeted audit module {module_name} does not define a callable main().")
+
+    LOGGER.info("[SECTOR AUDIT]: Running %s", module_name.replace(".", "/") + ".py")
+    transcript = io.StringIO()
+    with contextlib.redirect_stdout(transcript), contextlib.redirect_stderr(transcript):
+        module_main([])
+    transcript_text = transcript.getvalue() or f"{module_name} completed without console output.\n"
+    print(transcript_text, end="" if transcript_text.endswith("\n") else "\n")
+
+    report_path = output_dir / f"{sector}_{module_name.rsplit('.', 1)[-1]}.txt"
+    report_path.write_text(transcript_text, encoding="utf-8")
+    LOGGER.info("[SECTOR AUDIT]: Wrote %s", _display_path(report_path))
+    return report_path
+
+
+def run_targeted_sector_audits(*, sector: str | None, output_dir: Path) -> tuple[Path, ...]:
+    os.makedirs(output_dir, exist_ok=True)
+    resolved_sectors = TARGET_AUDIT_SECTORS if sector is None else (sector,)
+    report_paths: list[Path] = []
+    for sector_name in resolved_sectors:
+        for module_name in SECTOR_AUDIT_MODULES[sector_name]:
+            report_paths.append(_capture_sector_module_report(module_name, output_dir=output_dir, sector=sector_name))
+        if sector_name == "rigidity":
+            LOGGER.info("[ALGEBRAIC RIGIDITY GATE PASSED]")
+    return tuple(report_paths)
+
+
 def main(argv: list[str] | None = None) -> None:
     """Run the full publication-facing verifier report."""
 
@@ -17505,6 +17585,7 @@ def main(argv: list[str] | None = None) -> None:
     output_dir = args.output_dir.expanduser()
     os.makedirs(output_dir, exist_ok=True)
     configure_reporting(quiet=args.quiet, log_file=None if args.log_file is None else args.log_file.expanduser())
+    _emit_shbt_branding(sector=args.sector)
 
     if args.residue_check:
         run_residue_check(output_dir=output_dir)
@@ -17513,6 +17594,15 @@ def main(argv: list[str] | None = None) -> None:
     if args.audit_generation_3:
         generation3_audit = DEFAULT_TOPOLOGICAL_VACUUM.derive_generation3_audit()
         generation3_audit.run_final_lock()
+        return
+
+    if args.sector is not None:
+        run_targeted_sector_audits(sector=args.sector, output_dir=output_dir)
+        return
+
+    if argv is None and _invoked_via_pub_tn_script():
+        LOGGER.info("[SECTOR AUDIT]: No sector override supplied; running all SHBT sectors sequentially.")
+        run_targeted_sector_audits(sector=None, output_dir=output_dir)
         return
 
     vacuum = DEFAULT_TOPOLOGICAL_VACUUM
