@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib
 import inspect
 import itertools
 import json
@@ -3620,6 +3621,112 @@ def verify_derived_uniqueness_theorem(
         gauge_neutrality_weight=gauge_neutrality_weight,
         gauge_neutrality_verified=gauge_neutrality_verified,
     )
+
+
+@dataclass(frozen=True)
+class RuntimeAlgebraicIsolationAudit:
+    branch: tuple[int, int, int]
+    unique_survivor: tuple[int, int, int]
+    unique_survivor_count: int
+    uniqueness_verdict: str
+    minimal_local_survivor: str
+    benchmark_parent_survives: bool
+    alternative_survivor_count: int
+    minimality_verdict: str
+
+    @property
+    def branch_isolated(self) -> bool:
+        return bool(self.unique_survivor_count == 1 and self.unique_survivor == self.branch)
+
+    @property
+    def parent_minimal(self) -> bool:
+        return bool(
+            self.benchmark_parent_survives
+            and self.minimal_local_survivor == "SO(10)"
+            and self.alternative_survivor_count == 0
+        )
+
+    @property
+    def passed(self) -> bool:
+        return bool(self.branch_isolated and self.parent_minimal)
+
+    def message(self) -> str:
+        return (
+            "Runtime algebraic isolation verified: "
+            f"branch {self.branch} is the unique lexicographic survivor and "
+            f"{self.minimal_local_survivor} remains the minimal parent completion."
+        )
+
+
+def verify_runtime_algebraic_isolation(
+    parent_level: int | None = None,
+    lepton_level: int | None = None,
+    quark_level: int | None = None,
+    *,
+    model: TopologicalModel | None = None,
+) -> RuntimeAlgebraicIsolationAudit:
+    """Run the formal uniqueness and minimality proof engines as runtime gates."""
+
+    resolved_model = _coerce_topological_model(
+        model=model,
+        parent_level=parent_level,
+        lepton_level=lepton_level,
+        quark_level=quark_level,
+    )
+    resolved_branch = (
+        int(resolved_model.lepton_level),
+        int(resolved_model.quark_level),
+        int(resolved_model.parent_level),
+    )
+    package_name = __package__ or "pub"
+    try:
+        uniqueness_module = importlib.import_module(f"{package_name}.uniqueness_theorem")
+        minimality_module = importlib.import_module(f"{package_name}.minimality_proof")
+    except ImportError as exc:
+        raise AnomalyClosureError(
+            "Runtime algebraic isolation failed: unable to import the formal uniqueness/minimality proof engines."
+        ) from exc
+
+    try:
+        certificate = uniqueness_module.build_formal_uniqueness_certificate()
+        minimality_audit = minimality_module.build_minimality_proof_audit()
+    except AssertionError as exc:
+        raise AnomalyClosureError(f"Runtime algebraic isolation failed: {exc}") from exc
+
+    audit = RuntimeAlgebraicIsolationAudit(
+        branch=resolved_branch,
+        unique_survivor=tuple(int(value) for value in certificate.unique_survivor),
+        unique_survivor_count=int(certificate.unique_survivor_count),
+        uniqueness_verdict=str(certificate.verdict),
+        minimal_local_survivor=str(minimality_audit.minimal_local_survivor),
+        benchmark_parent_survives=bool(minimality_audit.benchmark_parent.survives),
+        alternative_survivor_count=sum(int(candidate.survives) for candidate in minimality_audit.alternatives),
+        minimality_verdict=str(minimality_audit.verdict),
+    )
+
+    if not bool(certificate.integrated_filter.passed):
+        raise AnomalyClosureError(
+            "Runtime algebraic isolation failed: the formal uniqueness certificate no longer satisfies the integrated anomaly filter."
+        )
+    if audit.unique_survivor_count != 1:
+        raise AnomalyClosureError(
+            "Runtime algebraic isolation failed: the lexicographic proof no longer isolates a unique survivor on the fixed-parent moat."
+        )
+    if audit.unique_survivor != resolved_branch:
+        raise AnomalyClosureError(
+            "Runtime algebraic isolation failed: the configured branch "
+            f"{resolved_branch} is off-shell; the lexicographic theorem isolates {audit.unique_survivor}."
+        )
+    if tuple(int(value) for value in minimality_audit.branch) != resolved_branch:
+        raise AnomalyClosureError(
+            "Runtime algebraic isolation failed: the minimality proof is locked to "
+            f"{tuple(int(value) for value in minimality_audit.branch)} while the configured branch is {resolved_branch}."
+        )
+    if not audit.parent_minimal:
+        raise AnomalyClosureError(
+            "Runtime algebraic isolation failed: SO(10) is no longer certified as the unique minimal parent of the anomaly-free branch."
+        )
+    return audit
 
 
 def _auxiliary_scan_filter_violation(*, model: TopologicalModel) -> str | None:
@@ -17001,6 +17108,12 @@ def main(argv: list[str] | None = None) -> None:
 
     vacuum = DEFAULT_TOPOLOGICAL_VACUUM
     resolved_branch_model = _coerce_topological_model(model=vacuum)
+    runtime_algebraic_isolation = verify_runtime_algebraic_isolation(model=resolved_branch_model)
+    LOGGER.info(
+        "[ALGEBRAIC RIGIDITY GATE PASSED]: Runtime proof engines isolate %s and certify %s as the unique minimal parent before flavor transport.",
+        runtime_algebraic_isolation.unique_survivor,
+        runtime_algebraic_isolation.minimal_local_survivor,
+    )
     if not MasterAudit.hard_anomaly_filter(model=vacuum):
         log_disclosed_detuning_event(
             "Boundary Selection Hypothesis failed for the configured benchmark branch.",
@@ -17829,6 +17942,11 @@ def main(argv: list[str] | None = None) -> None:
     LOGGER.info(f"exact modularity roots (Delta c=0): {len(global_audit.exact_modularity_roots)}")
     LOGGER.info(f"root list                         : {global_audit.exact_modularity_roots}")
     LOGGER.info(f"selected tuple sole exact root?    : {algebraic_unique}")
+    LOGGER.info(f"runtime theorem-isolated branch   : {runtime_algebraic_isolation.unique_survivor}")
+    LOGGER.info(f"runtime uniqueness gate          : {int(runtime_algebraic_isolation.branch_isolated)}")
+    LOGGER.info(f"runtime minimal parent           : {runtime_algebraic_isolation.minimal_local_survivor}")
+    LOGGER.info(f"runtime minimality gate          : {int(runtime_algebraic_isolation.parent_minimal)}")
+    LOGGER.info(runtime_algebraic_isolation.message())
     LOGGER.info("")
 
     LOGGER.info("Benchmark integrity checks")
@@ -18175,7 +18293,8 @@ def main(argv: list[str] | None = None) -> None:
         and generation3_identity_pass
     )
     benchmark_triple_lock_closed = bool(
-        gauge_gravity_lock_pass
+        runtime_algebraic_isolation.passed
+        and gauge_gravity_lock_pass
         and flavor_residue_lock_pass
         and atomic_lock_pass
         and audit_statistics.efe_topological_identity_pass
@@ -18191,7 +18310,8 @@ def main(argv: list[str] | None = None) -> None:
     )
 
     rg_consistency_audit_passed = (
-        audit_statistics.hard_anomaly_filter_pass
+        runtime_algebraic_isolation.passed
+        and audit_statistics.hard_anomaly_filter_pass
         and audit_statistics.efe_topological_identity_pass
         and audit_statistics.internal_validity_pass
         and audit_statistics.external_validity_pass
