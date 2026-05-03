@@ -3660,6 +3660,13 @@ class RuntimeAlgebraicIsolationAudit:
         )
 
 
+def _raise_runtime_proof_engine_failure(message: str, exc: Exception) -> None:
+    detail = str(exc).strip()
+    if detail:
+        raise AnomalyClosureError(f"{message}: {detail}") from exc
+    raise AnomalyClosureError(message) from exc
+
+
 def verify_runtime_algebraic_isolation(
     parent_level: int | None = None,
     lepton_level: int | None = None,
@@ -3685,15 +3692,20 @@ def verify_runtime_algebraic_isolation(
         uniqueness_module = importlib.import_module(f"{package_name}.uniqueness_theorem")
         minimality_module = importlib.import_module(f"{package_name}.minimality_proof")
     except ImportError as exc:
-        raise AnomalyClosureError(
-            "Runtime algebraic isolation failed: unable to import the formal uniqueness/minimality proof engines."
-        ) from exc
+        _raise_runtime_proof_engine_failure(
+            "Runtime algebraic isolation failed: unable to import the formal uniqueness/minimality proof engines",
+            exc,
+        )
 
     try:
         certificate = uniqueness_module.build_formal_uniqueness_certificate()
         minimality_audit = minimality_module.build_minimality_proof_audit()
+    except AnomalyClosureError:
+        raise
     except AssertionError as exc:
-        raise AnomalyClosureError(f"Runtime algebraic isolation failed: {exc}") from exc
+        _raise_runtime_proof_engine_failure("Runtime algebraic isolation failed", exc)
+    except Exception as exc:
+        _raise_runtime_proof_engine_failure("Runtime algebraic isolation failed", exc)
 
     audit = RuntimeAlgebraicIsolationAudit(
         branch=resolved_branch,
@@ -11951,6 +11963,7 @@ def build_benchmark_diagnostics(
     if not hasattr(pull_table, "calibration_anchor_pull"):
         pull_table.calibration_anchor_pull = 0.0
     mass_scale_audit = _mass_scale_hypothesis_report(resolved_model, pmns=pmns)
+    unity_of_scale = verify_unity_of_scale(model=resolved_model)
     holographic_consistency_relation = verify_holographic_consistency_relation(model=resolved_model)
     raw_result = pull_table.raw_result
     benchmark_result = pull_table.predictive_result
@@ -12011,6 +12024,14 @@ def build_benchmark_diagnostics(
         "benchmark_rms_pull": benchmark_result.rms_pull,
         "benchmark_reduced_chi2": benchmark_result.reduced_chi2,
         "benchmark_degrees_of_freedom": benchmark_result.degrees_of_freedom,
+        "unity_of_scale_identity": {
+            "epsilon_lambda": float(unity_of_scale["epsilon_lambda"]),
+            "exact_epsilon_lambda": float(unity_of_scale["exact_epsilon_lambda"]),
+            "numerical_residual": float(unity_of_scale["numerical_residual"]),
+            "register_noise_floor": float(unity_of_scale["register_noise_floor"]),
+            "exact_register_noise_floor": float(unity_of_scale["exact_register_noise_floor"]),
+            "passed": bool(unity_of_scale["passed"]),
+        },
         "holographic_consistency_relation": holographic_consistency_relation,
         "holographic_c_dark_residue": float(holographic_consistency_relation["c_dark"]),
         "holographic_tensor_ratio_observed": float(holographic_consistency_relation["r_obs"]),
