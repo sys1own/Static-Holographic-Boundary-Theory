@@ -7,8 +7,11 @@ from sympy import Matrix, Rational
 try:
     from sympy import NonInvertibleMatrixError
 except ImportError:
-    from sympy.matrices.exceptions import NonInvertibleMatrixError
-
+    try:
+        from sympy.matrices.exceptions import NonInvertibleMatrixError
+    except ImportError:
+        # Fallback: catch the generic exception that SymPy raises
+        NonInvertibleMatrixError = ValueError
 
 def add_fraction_vectors(left: tuple[Fraction, ...], right: tuple[Fraction, ...]) -> tuple[Fraction, ...]:
     """Add two exact rational vectors componentwise."""
