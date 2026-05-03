@@ -101,7 +101,7 @@ The repository includes a production-grade diagnostic stack to ensure the mathem
 
 ### Topological Visualization (`plot_local_moat.py`)
 
-`plot_local_moat.py` generates a high-precision map of the Local Moat surrounding the anomaly-free island and writes `results/local_moat_topology.png`. The figure makes the moat visually explicit by showing the steep rise of the framing anomaly $\Delta_{\rm fr}$ under any off-shell coordinate shift away from $(26, 8, 312)$.
+`plot_local_moat.py` generates a high-precision map of the **Local Moat** surrounding the anomaly-free island and writes `results/local_moat_topology.png`. The figure provides visual confirmation that the anomaly-free island is a zero-dimensional point in parameter space. By plotting the steep, non-linear rise of the framing anomaly $\Delta_{\rm fr}$ under any off-shell coordinate shift away from $(26, 8, 312)$, the engine demonstrates that there are no "nearby" admissible models. The "Moat" represents a terminal logical barrier where the Equivalence Principle is destroyed for any coordinate detuning.
 
 ### Formal Exception Testing (`test_anomaly_logic.py`)
 
@@ -109,21 +109,16 @@ The repository includes a production-grade diagnostic stack to ensure the mathem
 
 ## Operational Usage
 
-Run the universal verifier from the repository root:
-
+Run the universal verifier from the repository root to execute the non-invertible derivation:
 ```bash
 python tn.py --output-dir results/
 ```
-
-The repository-root driver forwards into `pub/tn.py` and regenerates the benchmark-facing artifacts, numerical audits, manuscript exports, and reviewer packets from the disclosed branch data. The intended use is verification of a rigid branch-fixed theorem stack, not parameter search.
-
-Interpret `results/residuals.json` as the benchmark's audit ledger:
-
-- `unity_of_scale_identity.epsilon_lambda` is the closed Unity-of-Scale residue, not a tunable tolerance.
-- `theoretical_uncertainty_fractions` and `transport_residuals` are the disclosed two-loop transport residuals actually used by the verifier, not adjustable padding for the pull table.
-- `informational_costs.delta_s_red_nat` is the finite one-copy redundancy cost for forcing inverted support, not a fit parameter.
-
-Read the JSON as a branch diagnosis rather than as an error-budget knob. The publication-facing summary in `results/benchmark_diagnostics.json` and `results/final/benchmark_diagnostics.json` now mirrors the same nested `unity_of_scale_identity.epsilon_lambda` payload. If these artifacts differ from the benchmark export, then the run is no longer evaluating the physical branch and should be treated as an unphysical off-shell computation.
+The repository-root driver forwards into `pub/tn.py` and regenerates the benchmark-facing artifacts, numerical audits, manuscript exports, and reviewer packets from the disclosed branch data. The intended use is the **automated verification of a rigid branch-fixed theorem stack**, not a parameter search or curve-fitting exercise.
+Interpret `results/residuals.json` as the benchmark's **Audit Ledger**:
+- `unity_of_scale_identity.epsilon_lambda`: This is the closed Unity-of-Scale residue, currently evaluated at $O(10^{-199})$, which serves as a fixed identity rather than a tunable tolerance.
+- `theoretical_uncertainty_fractions`: These are the disclosed two-loop transport residuals actually used by the verifier, representing the internal error-correction of the manifold.
+- `informational_costs.delta_s_red_nat`: This measures the finite one-copy redundancy cost ($\ln 2$) for forcing inverted support, acting as a mathematical rejection of non-minimal hierarchies.
+Read the JSON as a **Branch Diagnosis** rather than as an error-budget knob. The publication-facing summary in `results/final/benchmark_diagnostics.json` acts as the final signature of the audit. If these artifacts differ from the benchmark export, the run has exited the physical shell and is evaluating a non-physical, off-shell computation that is **not certified** by the SHBT framework.
 
 ## Reproducibility
 
