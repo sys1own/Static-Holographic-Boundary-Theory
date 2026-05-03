@@ -7993,6 +7993,54 @@ def _followup_predictive_point_cached(
     return predictive_chi2, float(max_abs_pull), float(conditional_p_value)
 
 
+def derive_followup_chi2_landscape_audit(
+    lepton_range: tuple[int, int],
+    quark_range: tuple[int, int],
+    parent_level: int,
+    scale_ratio: float,
+    bit_count: float,
+    kappa_geometric: float,
+    benchmark_lepton_level: int,
+    benchmark_quark_level: int,
+) -> Chi2LandscapeAuditData:
+    points: list[_Record] = []
+    survival_count = 0
+
+    for lepton_level in range(int(lepton_range[0]), int(lepton_range[1]) + 1):
+        for quark_level in range(int(quark_range[0]), int(quark_range[1]) + 1):
+            predictive_chi2, max_abs_pull, conditional_p_value = _followup_predictive_point_cached(
+                int(lepton_level),
+                int(quark_level),
+                int(parent_level),
+                float(scale_ratio),
+                float(bit_count),
+                float(kappa_geometric),
+            )
+            selected_visible_pair = bool(
+                int(lepton_level) == int(benchmark_lepton_level)
+                and int(quark_level) == int(benchmark_quark_level)
+            )
+            points.append(
+                Chi2LandscapePoint(
+                    lepton_level=int(lepton_level),
+                    quark_level=int(quark_level),
+                    predictive_chi2=float(predictive_chi2),
+                    predictive_max_abs_pull=float(max_abs_pull),
+                    conditional_p_value=float(conditional_p_value),
+                    selected_visible_pair=selected_visible_pair,
+                )
+            )
+            if float(predictive_chi2) <= FOLLOWUP_CHI2_SURVIVAL_THRESHOLD:
+                survival_count += 1
+
+    return Chi2LandscapeAuditData(
+        points=tuple(points),
+        total_pairs_scanned=len(points),
+        survival_count=int(survival_count),
+        effective_trial_count=float(len(points)),
+    )
+
+
 def build_ckm_phase_tilt_profile(
     *,
     reference_pmns: PmnsData,
