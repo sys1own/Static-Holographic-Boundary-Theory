@@ -88,6 +88,22 @@ The same policy applies across the stack:
 - hierarchy penalties are measured as informational costs rather than rhetorical preferences,
 - and publication tables are generated from the verifier rather than hand-maintained.
 
+## Infrastructure & Integrity
+
+The repository includes a production-grade diagnostic stack to ensure the mathematical rigidity of the $(26, 8, 312)$ branch is never compromised by environment drift or manual intervention. These scripts extend the verifier with cryptographic locking, visual moat diagnostics, and formal exception testing.
+
+### Cryptographic Verification (`verify_benchmark_integrity.py`)
+
+`verify_benchmark_integrity.py` automatically audits the SHA-256 hash of `benchmark_v1.yaml` against the mandated theoretical benchmark. This check prevents "silent drift" in the 8-observable flavor residues by refusing to treat a modified configuration as the published branch.
+
+### Topological Visualization (`plot_local_moat.py`)
+
+`plot_local_moat.py` generates a high-precision map of the Local Moat surrounding the anomaly-free island and writes `results/local_moat_topology.png`. The figure makes the moat visually explicit by showing the steep rise of the framing anomaly $\Delta_{\rm fr}$ under any off-shell coordinate shift away from $(26, 8, 312)$.
+
+### Formal Exception Testing (`test_anomaly_logic.py`)
+
+`test_anomaly_logic.py` provides a dedicated formal verification suite for Reviewer Trap scenarios. It asserts that the engine raises `AnomalyClosureError` and halts execution when presented with unphysical anomalous coordinates, ensuring that future optimizations cannot silently relax the branch-closure logic.
+
 ## Operational Usage
 
 Run the universal verifier from the repository root:
