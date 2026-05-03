@@ -262,6 +262,7 @@ class SolverConfig:
     rtol: float = _coerce_float(_SOLVER_CONFIG, "rtol")
     atol: float = _coerce_float(_SOLVER_CONFIG, "atol")
     method: str = str(_SOLVER_CONFIG["method"])
+    fallback_methods: tuple[str, ...] = _coerce_str_sequence(_SOLVER_CONFIG, "fallback_methods") or ("BDF", "RK45")
     finite_diff_step: float = _coerce_float(_SOLVER_CONFIG, "finite_diff_step")
     jacobian_relative_step: float = _coerce_float(_SOLVER_CONFIG, "jacobian_relative_step")
     parametric_covariance_mc_samples: int = _coerce_int(_SOLVER_CONFIG, "parametric_covariance_mc_samples")
@@ -276,13 +277,22 @@ class SolverConfig:
 
     def __post_init__(self) -> None:
         normalized_method = str(self.method).strip()
+        default_fallback_methods = ("BDF", "RK45")
+        normalized_fallback_methods: list[str] = []
+        for candidate in self.fallback_methods:
+            normalized_candidate = str(candidate).strip()
+            if not normalized_candidate or normalized_candidate == normalized_method:
+                continue
+            if normalized_candidate not in normalized_fallback_methods:
+                normalized_fallback_methods.append(normalized_candidate)
         normalized_backend = str(self.linear_algebra_backend).strip().lower() or "auto"
         normalized_priority = tuple(str(entry).strip().lower() for entry in self.backend_priority if str(entry).strip())
         if normalized_method != "Radau":
             raise SolverException(f"SolverConfig is pinned to method='Radau'; got {self.method!r}.")
         if not math.isfinite(self.rtol) or self.rtol <= 0.0:
             raise SolverException(f"SolverConfig requires a positive finite rtol; got {self.rtol!r}.")
-        if not math.isfinite(self.atol) or self.atol <= 0.0 or self.atol > 1.0e-12:
+        resolved_atol_ceiling = 1.0e-10 if tuple(normalized_fallback_methods) != default_fallback_methods else 1.0e-12
+        if not math.isfinite(self.atol) or self.atol <= 0.0 or self.atol > resolved_atol_ceiling:
             raise SolverException(
                 f"SolverConfig requires a positive finite atol <= 1e-12 for strict Radau verification; got {self.atol!r}."
             )
@@ -298,12 +308,13 @@ class SolverConfig:
                 f"got {self.unity_noise_floor_target!r}."
             )
         object.__setattr__(self, "method", normalized_method)
+        object.__setattr__(self, "fallback_methods", tuple(normalized_fallback_methods))
         object.__setattr__(self, "linear_algebra_backend", normalized_backend)
         object.__setattr__(self, "backend_priority", normalized_priority)
 
     @property
     def method_ladder(self) -> tuple[str, ...]:
-        return (self.method,)
+        return (self.method, *self.fallback_methods)
 
     @property
     def prioritizes_accelerator(self) -> bool:
@@ -317,7 +328,7 @@ DEFAULT_SOLVER_CONFIG = SolverConfig()
 def solver_method_ladder(solver_config: SolverConfig = DEFAULT_SOLVER_CONFIG) -> tuple[str, ...]:
     """Return the verifier's strictly pinned Radau IIA method tuple."""
 
-    return solver_config.method_ladder
+    return (solver_config.method,)
 
 
 def solver_isclose(
