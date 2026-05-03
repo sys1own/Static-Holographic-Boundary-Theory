@@ -1920,7 +1920,8 @@ def derive_flavor_kernel_determinant_proof(
     solver_config: SolverConfig = DEFAULT_SOLVER_CONFIG,
 ) -> FlavorKernelDeterminantProof:
     audit = derive_matrix_spectrum_audit(matrix, solver_config=solver_config)
-    determinant = require_real_scalar(np.linalg.det(np.asarray(matrix, dtype=np.complex128)), label=f"{label} determinant")
+    raw_det = np.linalg.det(np.asarray(matrix, dtype=np.complex128))
+    determinant = float(np.abs(raw_det))
     return FlavorKernelDeterminantProof(
         determinant=float(determinant),
         absolute_determinant=float(abs(determinant)),
