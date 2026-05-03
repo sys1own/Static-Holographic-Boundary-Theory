@@ -1,4 +1,5 @@
-# Static Holographic Boundary Theory: Universal Source Code v1.0
+# Static Holographic Boundary Theory: 
+# Universal Source Code v1.0
 
 Static Holographic Boundary Theory (SHBT) is an executable proof architecture for a **Zero Free Parameter** boundary construction. In SHBT, Standard Model observables are treated as mandatory residues of effective 4D gravity on a finite-capacity horizon, not as outputs of a detached fit sector. The retained construction is anchored to the unique anomaly-free branch $(26, 8, 312)$, and every benchmark artifact in this repository is read as a consequence of that branch-fixed closure.
 
