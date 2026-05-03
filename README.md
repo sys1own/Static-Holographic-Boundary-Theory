@@ -60,9 +60,7 @@ The repository is partitioned into modular proof engines. These modules do not i
 
 - `flavor_identity_resolver.py` verifies the rigid Modular Genus Ladder,
 
-  $$
-  m_g = m_0 e^{\beta g},
-  $$
+$$ m_g = m_0 e^{\beta g} $$
 
   and demonstrates that the observed neutrino splitting hierarchy is a mandatory residue of the $SU(2)_{26}$ phase lock.
 - `eigenvector_rigidity.py` demonstrates Eigenvector Rigidity under deformation. The current hardened audit keeps the maximum sigma-weighted angle drift below $10^{-12}\sigma$, with the measured drift at $\sim 3.73 \times 10^{-13}\sigma$.
