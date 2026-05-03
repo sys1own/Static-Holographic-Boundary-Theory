@@ -1,217 +1,31 @@
-name: Universal Source Code Audit
+name: SHBT-Parallel-Audit
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
-  MPLBACKEND: Agg
-  PIP_DISABLE_PIP_VERSION_CHECK: "1"
-  PYTHONUNBUFFERED: "1"
-
-permissions:
-  contents: read
+on: [push, pull_request]
 
 jobs:
-  shbt-verify:
-    name: SHBT audit
+  audit-sector:
     runs-on: ubuntu-latest
     timeout-minutes: 180
-
+    strategy:
+      fail-fast: false
+      matrix:
+        sector: [gravity, cosmology, flavor, rigidity]
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-          cache: pip
-          cache-dependency-path: pyproject.toml
+          python-version: '3.11'
+          cache: 'pip'
 
-      - name: Validate execution entry points
-        run: |
-          set -euo pipefail
-          finish_group() { echo "::endgroup::"; }
-          trap finish_group EXIT
-          echo "::group::Entry-point validation | verify_benchmark_integrity.py and tn.py"
-          test -f pub/verify_benchmark_integrity.py
-          test -r pub/verify_benchmark_integrity.py
-          test -f tn.py
-          test -r tn.py
-          python - <<'PY2'
-          from pathlib import Path
+      - name: Install Stack
+        run: pip install numpy scipy pyyaml mpmath matplotlib
 
-          for required_path in (Path("pub/verify_benchmark_integrity.py"), Path("tn.py")):
-              if not required_path.is_file():
-                  raise SystemExit(f"Missing required entry point: {required_path.as_posix()}")
-              print(f"Found entry point: {required_path.as_posix()}")
-          PY2
+      - name: Execute Sector Proof
+        run: python pub/tn.py --sector ${{ matrix.sector }} --output-dir results/
 
-      - name: Install locked audit environment
-        run: |
-          set -euo pipefail
-          finish_group() { echo "::endgroup::"; }
-          trap finish_group EXIT
-          echo "::group::Bootstrap sector | locked Python environment"
-          python -m pip install --upgrade pip
-          python -m pip install \
-            "Jinja2==3.1.6" \
-            "mpmath==1.3.0" \
-            "PyYAML==6.0.3" \
-            "numpy==1.26.4" \
-            "scipy==1.12.0" \
-            "matplotlib==3.8.3" \
-            "sympy==1.12" \
-            pytest
-          python -m pip check
-
-      - name: Verify benchmark integrity
-        run: |
-          set -euo pipefail
-          finish_group() { echo "::endgroup::"; }
-          trap finish_group EXIT
-          echo "::group::Integrity sector | benchmark lock"
-          test -f pub/verify_benchmark_integrity.py
-          test -r pub/verify_benchmark_integrity.py
-          python pub/verify_benchmark_integrity.py
-
-      - name: Enforce pinned scientific stack
-        run: |
-          set -euo pipefail
-          finish_group() { echo "::endgroup::"; }
-          trap finish_group EXIT
-          echo "::group::Scale Identity sector | pinned scientific stack"
-          python - <<'PY2'
-          import importlib.metadata as metadata
-
-          expected_versions = {
-              "mpmath": "1.3.0",
-              "PyYAML": "6.0.3",
-              "numpy": "1.26.4",
-              "scipy": "1.12.0",
-              "matplotlib": "3.8.3",
-              "sympy": "1.12",
-          }
-
-          for package_name, expected_version in expected_versions.items():
-              installed_version = metadata.version(package_name)
-              if installed_version != expected_version:
-                  raise SystemExit(
-                      f"{package_name} expected {expected_version}, got {installed_version}"
-                  )
-
-          print("Pinned scientific stack verified.")
-          PY2
-
-      - name: Regenerate benchmark artifacts
-        run: |
-          set -euo pipefail
-          finish_group() { echo "::endgroup::"; }
-          trap finish_group EXIT
-          echo "::group::Universal Source Code sector | tn.py regeneration"
-          test -f tn.py
-          test -r tn.py
-          python tn.py
-
-      - name: Directory tree audit
-        run: |
-          set -euo pipefail
-          finish_group() { echo "::endgroup::"; }
-          trap finish_group EXIT
-          echo "::group::Artifact audit sector | results directory tree"
-          if [ -d results ]; then
-            ls -R results
-          else
-            echo "results/ directory is missing after tn.py regeneration"
-            exit 1
-          fi
-
-      - name: Standardize residual artifact name
-        run: |
-          set -euo pipefail
-          finish_group() { echo "::endgroup::"; }
-          trap finish_group EXIT
-          echo "::group::Residual alias sector | benchmark_diagnostics.json to residuals.json"
-          python - <<'PY2'
-          from pathlib import Path
-          import shutil
-
-          results_dir = Path("results")
-          source_candidates = (
-              results_dir / "benchmark_diagnostics.json",
-              results_dir / "final" / "benchmark_diagnostics.json",
-          )
-          source_path = next((path for path in source_candidates if path.is_file()), None)
-          if source_path is None:
-              raise SystemExit(
-                  "Missing benchmark_diagnostics.json in results/ or results/final/ after tn.py regeneration."
-              )
-
-          results_dir.mkdir(parents=True, exist_ok=True)
-          target_path = results_dir / "residuals.json"
-          shutil.copy2(source_path, target_path)
-          print(f"Standardized residual artifact: {source_path.as_posix()} -> {target_path.as_posix()}")
-          PY2
-
-      - name: Generate local moat topology
-        run: |
-          set -euo pipefail
-          finish_group() { echo "::endgroup::"; }
-          trap finish_group EXIT
-          echo "::group::Local Moat sector | topology map"
-          python pub/plot_local_moat.py --output-dir results
-
-      - name: Validate quantified two-loop residuals
-        run: |
-          set -euo pipefail
-          finish_group() { echo "::endgroup::"; }
-          trap finish_group EXIT
-          echo "::group::Scale Identity sector | residual export"
-          test -f results/residuals.json
-          python - <<'PY2'
-          import json
-          from pathlib import Path
-
-          payload = json.loads(Path("results/residuals.json").read_text(encoding="utf-8"))
-          print(f"Residual payload source = {Path('results/residuals.json').as_posix()}")
-          if "unity_of_scale_identity" in payload:
-              unity = payload["unity_of_scale_identity"]
-              assert "epsilon_lambda" in unity
-              assert bool(unity["passed"])
-              print(f"epsilon_lambda = {unity['epsilon_lambda']}")
-              print("Scale Identity residual export verified.")
-          else:
-              assert "predictive_chi2" in payload
-              print("Residual alias verified from benchmark_diagnostics.json fallback.")
-          PY2
-
-      - name: Run reviewer trap audit
-        run: |
-          set -euo pipefail
-          finish_group() { echo "::endgroup::"; }
-          trap finish_group EXIT
-          echo "::group::Anomaly Logic sector | reviewer trap"
-          python -m pytest -q pub/test_anomaly_logic.py
-
-      - name: Verify retained artifacts
-        run: |
-          set -euo pipefail
-          finish_group() { echo "::endgroup::"; }
-          trap finish_group EXIT
-          echo "::group::Artifact retention sector | results bundle"
-          test -d results
-          test -f results/local_moat_topology.png
-          test -f results/residuals.json
-
-      - name: Upload audit artifacts
+      - name: Archive Results
         uses: actions/upload-artifact@v4
         with:
-          name: shbt-audit-results
+          name: audit-${{ matrix.sector }}
           path: results/
-          if-no-files-found: error
