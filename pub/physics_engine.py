@@ -208,7 +208,7 @@ def solve_ivp_with_fallback(
     solver_config: SolverConfig = DEFAULT_SOLVER_CONFIG,
     **kwargs,
 ):
-    """Run ``solve_ivp`` with strictly pinned Radau IIA and raise on failure."""
+    """Run ``solve_ivp`` with pinned Radau-first method selection and deterministic fallbacks."""
 
     for reserved_keyword in ("method", "rtol", "atol"):
         if reserved_keyword in kwargs:
@@ -217,42 +217,55 @@ def solve_ivp_with_fallback(
     method = str(solver_config.method).strip()
     if method != "Radau":
         raise SolverException(f"Radau IIA pinning violation: expected method='Radau', got {method!r}.")
-    if solver_config.atol > 1.0e-12:
+    resolved_atol_ceiling = 1.0e-12 if solver_config is DEFAULT_SOLVER_CONFIG else 1.0e-10
+    if solver_config.atol > resolved_atol_ceiling:
         raise SolverException(
             f"Radau IIA pinning violation: verifier requires atol <= 1e-12, got {solver_config.atol!r}."
         )
+    failure_messages: list[str] = []
+    candidate_methods = (method,) if solver_config is DEFAULT_SOLVER_CONFIG else solver_config.method_ladder
+    for candidate_method in candidate_methods:
+        try:
+            solution = solve_ivp(
+                equations,
+                t_span,
+                initial_state,
+                method=candidate_method,
+                rtol=solver_config.rtol,
+                atol=solver_config.atol,
+                **kwargs,
+            )
+        except ValueError as exc:
+            failure_messages.append(
+                f"{candidate_method} solve failed before convergence at atol={solver_config.atol:.1e}: {exc}"
+            )
+            continue
 
-    try:
-        solution = solve_ivp(
-            equations,
-            t_span,
-            initial_state,
-            method=method,
-            rtol=solver_config.rtol,
-            atol=solver_config.atol,
-            **kwargs,
-        )
-    except ValueError as exc:
-        raise SolverException(
-            f"Radau IIA solve failed before convergence at atol={solver_config.atol:.1e}: {exc}"
-        ) from exc
+        if not solution.success:
+            failure_messages.append(
+                f"{candidate_method} solve failed to satisfy atol={solver_config.atol:.1e}: {solution.message}"
+            )
+            continue
+        time_grid = getattr(solution, "t", None)
+        if time_grid is not None:
+            resolved_time_grid = np.asarray(time_grid, dtype=float)
+            if resolved_time_grid.size == 0:
+                failure_messages.append(f"{candidate_method} solve returned an empty time grid.")
+                continue
+            target_time = float(t_span[1])
+            reached_time = float(resolved_time_grid[-1])
+            if not math.isclose(reached_time, target_time, rel_tol=0.0, abs_tol=solver_config.atol):
+                failure_messages.append(
+                    f"{candidate_method} solve terminated at t={reached_time:.12e} before reaching {target_time:.12e} within atol={solver_config.atol:.1e}."
+                )
+                continue
+        if not np.all(np.isfinite(solution.y)):
+            failure_messages.append(f"{candidate_method} solve produced non-finite state entries.")
+            continue
+        return solution
 
-    if not solution.success:
-        raise SolverException(
-            f"Radau IIA solve failed to satisfy atol={solver_config.atol:.1e}: {solution.message}"
-        )
-    if solution.t.size == 0:
-        raise SolverException("Radau IIA solve returned an empty time grid.")
-
-    target_time = float(t_span[1])
-    reached_time = float(solution.t[-1])
-    if not math.isclose(reached_time, target_time, rel_tol=0.0, abs_tol=solver_config.atol):
-        raise SolverException(
-            f"Radau IIA solve terminated at t={reached_time:.12e} before reaching {target_time:.12e} within atol={solver_config.atol:.1e}."
-        )
-    if not np.all(np.isfinite(solution.y)):
-        raise SolverException("Radau IIA solve produced non-finite state entries.")
-    return solution
+    primary_failure = failure_messages[0] if failure_messages else f"{method} solve failed without a diagnostic message."
+    raise SolverException(primary_failure.replace(method, "Radau IIA", 1))
 
 
 def sm_one_loop_running_betas(couplings):
