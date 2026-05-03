@@ -79,7 +79,9 @@ $$ \Delta S_{\rm red} = \ln 2 $$
 
 ## Technical Rigidities
 
-SHBT does not use manual uncertainty floors as a substitute for missing structure. Theoretical uncertainties are reported through the **Quantified Two-Loop Residuals** exported by the branch-fixed transport audit. This repository therefore treats residual envelopes as computed disclosures, not as reviewer-adjustable padding.
+SHBT does not use manual uncertainty floors as a substitute for missing structure. The definitive machine-readable source for the **Quantified Two-Loop Residuals** is `results/residuals.json`, exported directly by the branch-fixed transport audit. That JSON records the Unity-of-Scale residue `epsilon_lambda`, the signed benchmark mixing-angle drifts and per-observable transport residual fractions, and the one-copy informational cost `Delta S_red`.
+
+`results/residuals.json` is a disclosed audit quantity, not a reviewer-adjustable error bar. Any deviation in `results/residuals.json` from the benchmark export signifies that the computation has left the anomaly-free `(26, 8, 312)` shell and moved onto an unphysical, off-shell branch.
 
 The same policy applies across the stack:
 
@@ -113,6 +115,14 @@ python tn.py --output-dir results/
 ```
 
 The repository-root driver forwards into `pub/tn.py` and regenerates the benchmark-facing artifacts, numerical audits, manuscript exports, and reviewer packets from the disclosed branch data. The intended use is verification of a rigid branch-fixed theorem stack, not parameter search.
+
+Interpret `results/residuals.json` as the benchmark's audit ledger:
+
+- `unity_of_scale_identity.epsilon_lambda` is the closed Unity-of-Scale residue, not a tunable tolerance.
+- `theoretical_uncertainty_fractions` and `transport_residuals` are the disclosed two-loop transport residuals actually used by the verifier, not adjustable padding for the pull table.
+- `informational_costs.delta_s_red_nat` is the finite one-copy redundancy cost for forcing inverted support, not a fit parameter.
+
+Read the JSON as a branch diagnosis rather than as an error-budget knob. If `results/residuals.json` differs from the benchmark export, then the run is no longer evaluating the physical branch and should be treated as an unphysical off-shell computation.
 
 ## Reproducibility
 
