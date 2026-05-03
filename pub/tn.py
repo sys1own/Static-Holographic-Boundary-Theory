@@ -1982,12 +1982,14 @@ class SupportOverlapResult:
 def _pull_table_to_tex(self: PullTable) -> str:
     rows = tuple(getattr(self, "rows", ()) or ())
     note_text = " ".join(_benchmark_bookkeeping_lines(self))
+    kappa_default = r"\\kappa_{D_5}"
     calibration_summary = (
-        f"Geometric anchor: {getattr(self, 'calibration_input_symbol', r'\\kappa_{D_5}')}"
+        f"Geometric anchor: {getattr(self, 'calibration_input_symbol', kappa_default)}"
         f" = {getattr(self, 'calibration_input_value', math.nan)}"
     )
+    lambda_default = r"\\Lambda_{\\rm obs}"
     anchor_summary = (
-        f"Cosmology anchor: {getattr(self, 'cosmology_anchor_symbol', r'\\Lambda_{\\rm obs}')}"
+        f"Cosmology anchor: {getattr(self, 'cosmology_anchor_symbol', lambda_default)}"
         f" = {getattr(self, 'cosmology_anchor_value', math.nan)}"
     )
     try:
