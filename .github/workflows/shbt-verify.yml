@@ -67,6 +67,7 @@ jobs:
             "numpy==1.26.4" \
             "scipy==1.12.0" \
             "matplotlib==3.8.3" \
+            "sympy==1.12" \
             pytest
           python -m pip check
 
@@ -95,6 +96,7 @@ jobs:
               "numpy": "1.26.4",
               "scipy": "1.12.0",
               "matplotlib": "3.8.3",
+              "sympy": "1.12",
           }
 
           for package_name, expected_version in expected_versions.items():
