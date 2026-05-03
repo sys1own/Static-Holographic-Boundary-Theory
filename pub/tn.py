@@ -314,6 +314,7 @@ REQUIRED_TN_CONSTANT_MACROS: tuple[str, ...] = ()
 REQUIRED_SUPPLEMENTARY_CONSTANT_MACROS: tuple[str, ...] = ()
 PACKET_OUTPUT_ARTIFACTS = (
     BENCHMARK_DIAGNOSTICS_FILENAME,
+    RESIDUALS_JSON_FILENAME,
     TRANSPORT_COVARIANCE_DIAGNOSTICS_FILENAME,
     SUPPLEMENTARY_IH_SINGULAR_VALUE_SPECTRUM_FIGURE_FILENAME,
     SUPPLEMENTARY_IH_SINGULAR_VALUE_SPECTRUM_DATA_FILENAME,
@@ -2165,6 +2166,7 @@ def _referee_packet_manifest_lines(
         f"- `{LANDSCAPE_ANOMALY_MAP_FILENAME}` — low-rank anomaly ranking used to contextualize the selected branch.",
         f"- `{COROLLARY_REPORT_FILENAME}` — appendix-only sparse-residue / H0 / computational-bounds note; not part of the benchmark pass/fail criteria.",
         f"- `{MATCHING_RESIDUAL_REPORT_FILENAME}` — structured benchmark-input disclosure and RG-consistency summary.",
+        f"- `{RESIDUALS_JSON_FILENAME}` — definitive machine-readable Quantified Two-Loop Residuals export carrying `epsilon_lambda`, the signed benchmark angle drifts, and `Delta S_red`.",
         f"- `{HOLOGRAPHIC_AUDIT_FILENAME}` — machine-readable curvature / tensor-tilt residue audit for the branch-fixed `c_{{\\rm dark}}`, packing, horizon, and `n_t` checks.",
         f"- `{AUDIT_SUMMARY_TEX_FILENAME}` — synchronized TeX macro summary for the locked curvature-audit values cited in the manuscript prose.",
         f"- `{RESIDUE_SENSITIVITY_DATA_FILENAME}` — skeptical-reader residue-detuning scan over the disclosed $\\pm5\\%$ benchmark window.",
@@ -3965,13 +3967,13 @@ def _fractional_transport_residual(scale: float, absolute_residual: float) -> fl
     return float(abs(float(absolute_residual)) / resolved_scale)
 
 
-def derive_transport_observable_residuals(
+def _build_transport_observable_residual_summary(
     pmns: PmnsData,
     ckm: CkmData,
     *,
     transport_curvature: _Record | None = None,
-) -> dict[str, float]:
-    """Map each load-bearing pull-table observable to its derived transport residual fraction."""
+) -> dict[str, dict[str, float | str]]:
+    """Return signed two-loop drifts plus the fractional residual used in the pull budget."""
 
     resolved_transport_curvature = (
         derive_transport_curvature_audit(
@@ -4008,7 +4010,13 @@ def derive_transport_observable_residuals(
     delta_cp_rg_deg = float(getattr(ckm, "delta_cp_rg_deg", getattr(ckm, "gamma_rg_deg", CKM_GAMMA_GOLD_STANDARD_DEG.central)))
     baseline_ckm = pdg_unitary(theta_c_rg_deg, theta13_rg_deg, theta23_rg_deg, delta_cp_rg_deg)
 
-    def shifted_ckm(*, theta_c_shift_deg: float = 0.0, theta13_shift_deg: float = 0.0, theta23_shift_deg: float = 0.0, delta_shift_deg: float = 0.0) -> np.ndarray:
+    def shifted_ckm(
+        *,
+        theta_c_shift_deg: float = 0.0,
+        theta13_shift_deg: float = 0.0,
+        theta23_shift_deg: float = 0.0,
+        delta_shift_deg: float = 0.0,
+    ) -> np.ndarray:
         return pdg_unitary(
             theta_c_rg_deg + float(theta_c_shift_deg),
             theta13_rg_deg + float(theta13_shift_deg),
@@ -4023,30 +4031,101 @@ def derive_transport_observable_residuals(
         theta23_shift_deg=float(quark_theta_two_loop[2]),
         delta_shift_deg=float(resolved_transport_curvature.quark_delta_two_loop),
     )
-    gamma_shifted = float(
-        ckm_unitarity_triangle_angles(shifted_ckm_total)[2]
+    gamma_shifted = float(ckm_unitarity_triangle_angles(shifted_ckm_total)[2])
+
+    theta12_shift = float(lepton_theta_two_loop[0])
+    theta13_shift = float(lepton_theta_two_loop[1])
+    theta23_shift = float(lepton_theta_two_loop[2])
+    delta_cp_shift = float(resolved_transport_curvature.lepton_delta_two_loop)
+    vus_shift = float(abs(shifted_ckm_total[0, 1]) - abs(baseline_ckm[0, 1]))
+    vcb_shift = float(abs(shifted_ckm_total[1, 2]) - abs(baseline_ckm[1, 2]))
+    vub_shift = float(abs(shifted_ckm_total[0, 2]) - abs(baseline_ckm[0, 2]))
+    gamma_shift = float(wrapped_angle_difference_deg(gamma_shifted, gamma_baseline))
+
+    return {
+        "theta12": {
+            "sector": "pmns",
+            "units": "deg",
+            "reference_value": float(pmns.theta12_rg_deg),
+            "signed_two_loop_shift": theta12_shift,
+            "absolute_two_loop_shift": abs(theta12_shift),
+            "fractional_residual": _fractional_transport_residual(float(pmns.theta12_rg_deg), theta12_shift),
+        },
+        "theta13": {
+            "sector": "pmns",
+            "units": "deg",
+            "reference_value": float(pmns.theta13_rg_deg),
+            "signed_two_loop_shift": theta13_shift,
+            "absolute_two_loop_shift": abs(theta13_shift),
+            "fractional_residual": _fractional_transport_residual(float(pmns.theta13_rg_deg), theta13_shift),
+        },
+        "theta23": {
+            "sector": "pmns",
+            "units": "deg",
+            "reference_value": float(pmns.theta23_rg_deg),
+            "signed_two_loop_shift": theta23_shift,
+            "absolute_two_loop_shift": abs(theta23_shift),
+            "fractional_residual": _fractional_transport_residual(float(pmns.theta23_rg_deg), theta23_shift),
+        },
+        "delta_cp": {
+            "sector": "pmns",
+            "units": "deg",
+            "reference_value": float(pmns.delta_cp_rg_deg),
+            "signed_two_loop_shift": delta_cp_shift,
+            "absolute_two_loop_shift": abs(delta_cp_shift),
+            "fractional_residual": _fractional_transport_residual(float(pmns.delta_cp_rg_deg), delta_cp_shift),
+        },
+        "vus": {
+            "sector": "ckm",
+            "units": "dimensionless",
+            "reference_value": float(ckm.vus_rg),
+            "signed_two_loop_shift": vus_shift,
+            "absolute_two_loop_shift": abs(vus_shift),
+            "fractional_residual": _fractional_transport_residual(float(ckm.vus_rg), vus_shift),
+        },
+        "vcb": {
+            "sector": "ckm",
+            "units": "dimensionless",
+            "reference_value": float(ckm.vcb_rg),
+            "signed_two_loop_shift": vcb_shift,
+            "absolute_two_loop_shift": abs(vcb_shift),
+            "fractional_residual": _fractional_transport_residual(float(ckm.vcb_rg), vcb_shift),
+        },
+        "vub": {
+            "sector": "ckm",
+            "units": "dimensionless",
+            "reference_value": float(ckm.vub_rg),
+            "signed_two_loop_shift": vub_shift,
+            "absolute_two_loop_shift": abs(vub_shift),
+            "fractional_residual": _fractional_transport_residual(float(ckm.vub_rg), vub_shift),
+        },
+        "gamma": {
+            "sector": "ckm",
+            "units": "deg",
+            "reference_value": float(ckm.gamma_rg_deg),
+            "signed_two_loop_shift": gamma_shift,
+            "absolute_two_loop_shift": abs(gamma_shift),
+            "fractional_residual": _fractional_transport_residual(float(ckm.gamma_rg_deg), gamma_shift),
+        },
+    }
+
+
+def derive_transport_observable_residuals(
+    pmns: PmnsData,
+    ckm: CkmData,
+    *,
+    transport_curvature: _Record | None = None,
+) -> dict[str, float]:
+    """Map each load-bearing pull-table observable to its derived transport residual fraction."""
+
+    observable_summary = _build_transport_observable_residual_summary(
+        pmns,
+        ckm,
+        transport_curvature=transport_curvature,
     )
     return {
-        "theta12": _fractional_transport_residual(float(pmns.theta12_rg_deg), float(lepton_theta_two_loop[0])),
-        "theta13": _fractional_transport_residual(float(pmns.theta13_rg_deg), float(lepton_theta_two_loop[1])),
-        "theta23": _fractional_transport_residual(float(pmns.theta23_rg_deg), float(lepton_theta_two_loop[2])),
-        "delta_cp": _fractional_transport_residual(float(pmns.delta_cp_rg_deg), float(resolved_transport_curvature.lepton_delta_two_loop)),
-        "vus": _fractional_transport_residual(
-            float(ckm.vus_rg),
-            abs(float(abs(shifted_ckm_total[0, 1]) - abs(baseline_ckm[0, 1]))),
-        ),
-        "vcb": _fractional_transport_residual(
-            float(ckm.vcb_rg),
-            abs(float(abs(shifted_ckm_total[1, 2]) - abs(baseline_ckm[1, 2]))),
-        ),
-        "vub": _fractional_transport_residual(
-            float(ckm.vub_rg),
-            abs(float(abs(shifted_ckm_total[0, 2]) - abs(baseline_ckm[0, 2]))),
-        ),
-        "gamma": _fractional_transport_residual(
-            float(ckm.gamma_rg_deg),
-            abs(float(wrapped_angle_difference_deg(gamma_shifted, gamma_baseline))),
-        ),
+        observable_name: float(observable_data["fractional_residual"])
+        for observable_name, observable_data in observable_summary.items()
     }
 
 
@@ -12306,6 +12385,143 @@ def write_holographic_curvature_audit(
     return payload
 
 
+def build_quantified_two_loop_residuals(
+    pmns: PmnsData | None = None,
+    ckm: CkmData | None = None,
+    audit: AuditData | None = None,
+    *,
+    model: TopologicalModel | None = None,
+    transport_curvature: TransportCurvatureAudit | None = None,
+) -> dict[str, object]:
+    """Build the definitive machine-readable Quantified Two-Loop Residuals payload."""
+
+    resolved_gut_threshold_residue = None
+    if ckm is not None:
+        resolved_gut_threshold_residue = getattr(ckm, "gut_threshold_residue", None)
+        if resolved_gut_threshold_residue is None:
+            resolved_gut_threshold_residue = getattr(getattr(ckm, "so10_threshold_correction", None), "gut_threshold_residue", None)
+
+    resolved_model = _coerce_topological_model(
+        model=model,
+        lepton_level=None if pmns is None else int(getattr(pmns, "level", LEPTON_LEVEL)),
+        quark_level=None if ckm is None else int(getattr(ckm, "level", QUARK_LEVEL)),
+        parent_level=(
+            int(getattr(pmns, "parent_level", getattr(ckm, "parent_level", PARENT_LEVEL)))
+            if pmns is not None or ckm is not None
+            else None
+        ),
+        scale_ratio=(
+            float(getattr(pmns, "scale_ratio", getattr(ckm, "scale_ratio", RG_SCALE_RATIO)))
+            if pmns is not None or ckm is not None
+            else None
+        ),
+        bit_count=(
+            float(getattr(pmns, "bit_count", getattr(ckm, "bit_count", HOLOGRAPHIC_BITS)))
+            if pmns is not None or ckm is not None
+            else None
+        ),
+        kappa_geometric=(
+            float(getattr(pmns, "kappa_geometric", getattr(ckm, "kappa_geometric", GEOMETRIC_KAPPA)))
+            if pmns is not None or ckm is not None
+            else None
+        ),
+        gut_threshold_residue=resolved_gut_threshold_residue,
+        solver_config=(
+            getattr(pmns, "solver_config", getattr(model, "solver_config", DEFAULT_SOLVER_CONFIG))
+            if pmns is not None or model is not None
+            else None
+        ),
+    )
+    resolved_pmns = derive_pmns(model=resolved_model) if pmns is None else pmns
+    resolved_ckm = derive_ckm(model=resolved_model) if ckm is None else ckm
+    resolved_transport_curvature = (
+        derive_transport_curvature_audit(
+            lepton_level=int(getattr(resolved_pmns, "level", resolved_model.lepton_level)),
+            quark_level=int(getattr(resolved_ckm, "level", resolved_model.quark_level)),
+            scale_ratio=float(getattr(resolved_pmns, "scale_ratio", getattr(resolved_ckm, "scale_ratio", resolved_model.scale_ratio))),
+            parent_level=int(getattr(resolved_pmns, "parent_level", getattr(resolved_ckm, "parent_level", resolved_model.parent_level))),
+        )
+        if transport_curvature is None
+        else transport_curvature
+    )
+    resolved_audit = (
+        derive_audit(
+            level=int(getattr(resolved_pmns, "level", resolved_model.lepton_level)),
+            bit_count=float(getattr(resolved_pmns, "bit_count", getattr(resolved_ckm, "bit_count", resolved_model.bit_count))),
+            scale_ratio=float(getattr(resolved_pmns, "scale_ratio", getattr(resolved_ckm, "scale_ratio", resolved_model.scale_ratio))),
+            kappa_geometric=float(getattr(resolved_pmns, "kappa_geometric", getattr(resolved_ckm, "kappa_geometric", resolved_model.kappa_geometric))),
+            parent_level=int(getattr(resolved_pmns, "parent_level", getattr(resolved_ckm, "parent_level", resolved_model.parent_level))),
+            quark_level=int(getattr(resolved_ckm, "level", resolved_model.quark_level)),
+        )
+        if audit is None
+        else audit
+    )
+    unity_of_scale = verify_unity_of_scale(model=resolved_model)
+    transport_residuals = _build_transport_observable_residual_summary(
+        resolved_pmns,
+        resolved_ckm,
+        transport_curvature=resolved_transport_curvature,
+    )
+
+    return {
+        "artifact": "Quantified Two-Loop Residuals",
+        "artifact_filename": RESIDUALS_JSON_FILENAME,
+        "benchmark_tuple": [int(value) for value in resolved_model.target_tuple],
+        "interpretation": "disclosed_audit_quantity",
+        "off_shell_branch_condition": (
+            "Any deviation from this benchmark residual export signals an unphysical off-shell branch."
+        ),
+        "unity_of_scale_identity": {
+            "epsilon_lambda": float(unity_of_scale["epsilon_lambda"]),
+            "exact_epsilon_lambda": float(unity_of_scale["exact_epsilon_lambda"]),
+            "numerical_residual": float(unity_of_scale["numerical_residual"]),
+            "register_noise_floor": float(unity_of_scale["register_noise_floor"]),
+            "exact_register_noise_floor": float(unity_of_scale["exact_register_noise_floor"]),
+            "passed": bool(unity_of_scale["passed"]),
+        },
+        "theoretical_uncertainty_fractions": {
+            observable_name: float(observable_data["fractional_residual"])
+            for observable_name, observable_data in transport_residuals.items()
+        },
+        "transport_residuals": transport_residuals,
+        "mixing_angle_drifts_deg": {
+            observable_name: float(transport_residuals[observable_name]["signed_two_loop_shift"])
+            for observable_name in ("theta12", "theta13", "theta23", "delta_cp")
+        },
+        "informational_costs": {
+            "delta_s_red_nat": float(getattr(resolved_audit, "redundancy_entropy_cost_nat", math.log(2.0))),
+            "support_deficit": int(getattr(resolved_audit, "support_deficit", 0)),
+            "required_inverted_rank": int(getattr(resolved_audit, "required_inverted_rank", 0)),
+            "modularity_limit_rank": int(getattr(resolved_audit, "modularity_limit_rank", 0)),
+            "relaxed_proxy_gap": float(getattr(resolved_audit, "relaxed_inverted_gap", math.nan)),
+        },
+        "mass_scale_two_loop_fraction": float(getattr(resolved_transport_curvature, "mass_shift_fraction", math.nan)),
+    }
+
+
+def write_quantified_two_loop_residuals(
+    pmns: PmnsData | None = None,
+    ckm: CkmData | None = None,
+    audit: AuditData | None = None,
+    output_dir: Path | None = None,
+    *,
+    model: TopologicalModel | None = None,
+    transport_curvature: TransportCurvatureAudit | None = None,
+) -> dict[str, object]:
+    """Write the definitive Quantified Two-Loop Residuals JSON export."""
+
+    payload = build_quantified_two_loop_residuals(
+        pmns=pmns,
+        ckm=ckm,
+        audit=audit,
+        model=model,
+        transport_curvature=transport_curvature,
+    )
+    if output_dir is not None:
+        publication_export.write_json_artifact(Path(output_dir) / RESIDUALS_JSON_FILENAME, payload)
+    return payload
+
+
 def _load_checked_in_benchmark_diagnostics() -> dict[str, object]:
     repo_root = Path(__file__).resolve().parent.parent
     for relative_path in (
@@ -13552,6 +13768,13 @@ def write_generated_tables(
         complexity_audit=complexity_audit,
         model=resolved_vacuum,
         output_dir=resolved_output_dir,
+    )
+    write_quantified_two_loop_residuals(
+        pmns=pmns,
+        ckm=ckm,
+        audit=audit,
+        output_dir=resolved_output_dir,
+        model=resolved_vacuum,
     )
     write_audit_summary_tex(
         resolved_output_dir,
