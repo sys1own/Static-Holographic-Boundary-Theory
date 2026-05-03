@@ -19,7 +19,7 @@ jobs:
           cache: 'pip'
 
       - name: Install Stack
-        run: pip install numpy scipy pyyaml mpmath matplotlib
+        run: pip install numpy scipy pyyaml mpmath matplotlib jinja2
 
       - name: Execute Sector Proof
         run: python pub/tn.py --sector ${{ matrix.sector }} --output-dir results/
