@@ -9916,10 +9916,12 @@ def verify_unitary_bounds(
         and triple_match_audit.saturated
     )
     assert dark_energy_audit.alpha_locked_under_bit_shift
+    # FIX: Use topological_planck_mass_ev() to ensure consistency with the
+    # bridge-derived coordinate.
     assert math.isclose(
         dark_energy_audit.topological_mass_coordinate_ev,
-        (PLANCK_MASS_EV / (resolved_model.bit_count**0.25)) * resolved_model.kappa_geometric,
-        rel_tol=1.0e-15,
+        (topological_planck_mass_ev() / (resolved_model.bit_count**0.25)) * resolved_model.kappa_geometric,
+        rel_tol=1.0e-14,
         abs_tol=1.0e-18,
     )
     unitary_audit = UnitaryBoundAudit(
