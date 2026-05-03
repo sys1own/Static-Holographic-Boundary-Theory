@@ -22,7 +22,9 @@ jobs:
         run: pip install numpy scipy pyyaml mpmath matplotlib jinja2 sympy
 
       - name: Execute Sector Proof
-        run: python pub/tn.py --sector ${{ matrix.sector }} --output-dir results/
+        run: |
+          mkdir -p results
+          python pub/tn.py --sector ${{ matrix.sector }} --output-dir results/
 
       - name: Archive Results
         uses: actions/upload-artifact@v4
