@@ -197,6 +197,15 @@ BARYON_LEPTON_CONFORMAL_MIXING_FLUX_BENCHMARK = 6.15622377546189
 FOLLOWUP_CHI2_SURVIVAL_THRESHOLD = float(_chi2_distribution.ppf(FOLLOWUP_CHI2_SURVIVAL_PROBABILITY, FOLLOWUP_CHI2_REFERENCE_DOF))
 FOLLOWUP_LEPTON_LEVEL_RANGE = tuple(range(LEPTON_LEVEL - FOLLOWUP_LEPTON_HALF_WINDOW, LEPTON_LEVEL + FOLLOWUP_LEPTON_HALF_WINDOW + 1))
 FOLLOWUP_QUARK_LEVEL_RANGE = tuple(range(QUARK_LEVEL - FOLLOWUP_QUARK_HALF_WINDOW, QUARK_LEVEL + FOLLOWUP_QUARK_HALF_WINDOW + 1))
+# CI-optimized half-open windows centered on the anomaly-free `(26, 8, 312)` cell.
+# `[21, 31)` and `[3, 13)` each carry ten scanned levels, so the disclosed
+# global moat audit visits exactly `10 x 10 = 100` visible pairs.
+GLOBAL_LEPTON_LEVEL_RANGE = (21, 31)
+GLOBAL_QUARK_LEVEL_RANGE = (3, 13)
+LANDSCAPE_TRIAL_COUNT = (
+    (GLOBAL_LEPTON_LEVEL_RANGE[1] - GLOBAL_LEPTON_LEVEL_RANGE[0])
+    * (GLOBAL_QUARK_LEVEL_RANGE[1] - GLOBAL_QUARK_LEVEL_RANGE[0])
+)
 CKM_PHASE_TILT_PARAMETER = R_GUT
 CKM_PHASE_TILT_SYMBOL = MATCHING_COEFFICIENT_SYMBOL
 LOW_RANK_RCFT_SCAN_COMBINATIONS = LANDSCAPE_TRIAL_COUNT
@@ -10602,10 +10611,16 @@ class LevelScanner:
         lepton_range: tuple[int, int] = GLOBAL_LEPTON_LEVEL_RANGE,
         quark_range: tuple[int, int] = GLOBAL_QUARK_LEVEL_RANGE,
     ) -> GlobalSensitivityAudit:
+        def _scan_levels(level_range: tuple[int, int]) -> range:
+            lower_bound, upper_bound = (int(level_range[0]), int(level_range[1]))
+            if lower_bound == upper_bound:
+                return range(lower_bound, upper_bound + 1)
+            return range(lower_bound, upper_bound)
+
         rows = [
             self.scan_global_candidate(lepton_level, quark_level)
-            for lepton_level in range(lepton_range[0], lepton_range[1] + 1)
-            for quark_level in range(quark_range[0], quark_range[1] + 1)
+            for lepton_level in _scan_levels(lepton_range)
+            for quark_level in _scan_levels(quark_range)
         ]
         rows.sort(key=lambda row: (row.anomaly_energy, row.modularity_gap, row.lepton_level, row.quark_level))
         return GlobalSensitivityAudit(
@@ -17883,8 +17898,8 @@ def main(argv: list[str] | None = None) -> None:
 
     LOGGER.info("Search-window bookkeeping")
     LOGGER.info("-" * 88)
-    LOGGER.info(f"scan lepton window           : [{GLOBAL_LEPTON_LEVEL_RANGE[0]}, {GLOBAL_LEPTON_LEVEL_RANGE[1]}]")
-    LOGGER.info(f"scan quark window            : [{GLOBAL_QUARK_LEVEL_RANGE[0]}, {GLOBAL_QUARK_LEVEL_RANGE[1]}]")
+    LOGGER.info(f"scan lepton window           : [{GLOBAL_LEPTON_LEVEL_RANGE[0]}, {GLOBAL_LEPTON_LEVEL_RANGE[1]})")
+    LOGGER.info(f"scan quark window            : [{GLOBAL_QUARK_LEVEL_RANGE[0]}, {GLOBAL_QUARK_LEVEL_RANGE[1]})")
     LOGGER.info(f"trial volume                     : {LOW_RANK_RCFT_SCAN_COMBINATIONS}")
     LOGGER.info(f"auxiliary density capacity       : {search_window.pixel_capacity:.12f}")
     LOGGER.info(f"effective load at k=99           : {search_window.level_99_load:.12f}")
