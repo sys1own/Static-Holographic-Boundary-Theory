@@ -34,6 +34,30 @@ class ExperimentalContext:
     ckm_gamma_experimental_input_deg: Interval
 
 
+@dataclass(frozen=True)
+class BenchmarkConstantDefinition:
+    name: str
+    value: Any
+    legacy_metadata_paths: tuple[str, ...] = ()
+    allowed_legacy_classifications: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class BenchmarkConstantTier:
+    identifier: str
+    title: str
+    description: str
+    constants: tuple[BenchmarkConstantDefinition, ...]
+
+    @property
+    def label(self) -> str:
+        return f"{self.identifier}: {self.title}"
+
+    @property
+    def values(self) -> dict[str, Any]:
+        return {constant.name: constant.value for constant in self.constants}
+
+
 def _require_mapping(config: dict[str, Any], key: str) -> dict[str, Any]:
     value = config.get(key)
     if not isinstance(value, dict):
@@ -222,49 +246,281 @@ BENCHMARK_REFERENCE_COSET_CENTRAL_CHARGE = float(BENCHMARK_REFERENCE_COSET_CENTR
 # 2 is supplied. Numerical tolerances, reporting strings, and artifact
 # filenames remain auxiliary runtime infrastructure and are declared below.
 
-TIER_1_TOPOLOGICAL_COORDINATES = {
-    "LEPTON_LEVEL": LEPTON_LEVEL,
-    "QUARK_LEVEL": QUARK_LEVEL,
-    "PARENT_LEVEL": PARENT_LEVEL,
-    "G_SM": G_SM,
-}
+STRICT_BENCHMARK_TIER_DEFINITIONS = (
+    BenchmarkConstantTier(
+        identifier="Tier 1",
+        title="Topological Coordinates",
+        description="Branch-fixed discrete coordinates that identify the anomaly-free benchmark cell.",
+        constants=(
+            BenchmarkConstantDefinition(
+                name="LEPTON_LEVEL",
+                value=LEPTON_LEVEL,
+                legacy_metadata_paths=("model.parent_level", "model.lepton_fixed_point_index"),
+                allowed_legacy_classifications=("Topological Necessity",),
+            ),
+            BenchmarkConstantDefinition(
+                name="QUARK_LEVEL",
+                value=QUARK_LEVEL,
+                legacy_metadata_paths=("model.parent_level", "model.quark_fixed_point_index"),
+                allowed_legacy_classifications=("Topological Necessity",),
+            ),
+            BenchmarkConstantDefinition(
+                name="PARENT_LEVEL",
+                value=PARENT_LEVEL,
+                legacy_metadata_paths=("model.parent_level",),
+                allowed_legacy_classifications=("Topological Necessity",),
+            ),
+            BenchmarkConstantDefinition(name="G_SM", value=G_SM),
+        ),
+    ),
+    BenchmarkConstantTier(
+        identifier="Tier 2",
+        title="Observational Boundary Conditions",
+        description="External observational boundary conditions supplied to the benchmark as fixed input anchors.",
+        constants=(
+            BenchmarkConstantDefinition(
+                name="PLANCK2018_H0_KM_S_MPC",
+                value=PLANCK2018_H0_KM_S_MPC,
+                legacy_metadata_paths=("physical_constants.planck2018_h0_km_s_mpc",),
+                allowed_legacy_classifications=("Empirical Matching Ansatz",),
+            ),
+            BenchmarkConstantDefinition(
+                name="PLANCK2018_H0_SIGMA_KM_S_MPC",
+                value=PLANCK2018_H0_SIGMA_KM_S_MPC,
+                legacy_metadata_paths=("physical_constants.planck2018_h0_sigma_km_s_mpc",),
+                allowed_legacy_classifications=("Empirical Matching Ansatz",),
+            ),
+            BenchmarkConstantDefinition(
+                name="PLANCK2018_OMEGA_LAMBDA",
+                value=PLANCK2018_OMEGA_LAMBDA,
+                legacy_metadata_paths=("physical_constants.planck2018_omega_lambda",),
+                allowed_legacy_classifications=("Empirical Matching Ansatz",),
+            ),
+            BenchmarkConstantDefinition(
+                name="PLANCK2018_OMEGA_LAMBDA_SIGMA",
+                value=PLANCK2018_OMEGA_LAMBDA_SIGMA,
+                legacy_metadata_paths=("physical_constants.planck2018_omega_lambda_sigma",),
+                allowed_legacy_classifications=("Empirical Matching Ansatz",),
+            ),
+            BenchmarkConstantDefinition(
+                name="PLANCK2018_LAMBDA_SI_M2",
+                value=PLANCK2018_LAMBDA_SI_M2,
+                legacy_metadata_paths=(
+                    "physical_constants.planck2018_h0_km_s_mpc",
+                    "physical_constants.planck2018_omega_lambda",
+                    "physical_constants.light_speed_m_per_s",
+                    "physical_constants.mpc_in_meters",
+                ),
+                allowed_legacy_classifications=("Empirical Matching Ansatz",),
+            ),
+            BenchmarkConstantDefinition(
+                name="PLANCK2018_LAMBDA_FRACTIONAL_SIGMA",
+                value=PLANCK2018_LAMBDA_FRACTIONAL_SIGMA,
+                legacy_metadata_paths=(
+                    "physical_constants.planck2018_h0_km_s_mpc",
+                    "physical_constants.planck2018_h0_sigma_km_s_mpc",
+                    "physical_constants.planck2018_omega_lambda",
+                    "physical_constants.planck2018_omega_lambda_sigma",
+                ),
+                allowed_legacy_classifications=("Empirical Matching Ansatz",),
+            ),
+            BenchmarkConstantDefinition(
+                name="PLANCK2018_ALPHA_EM_INV_MZ",
+                value=PLANCK2018_ALPHA_EM_INV_MZ,
+                legacy_metadata_paths=("physical_constants.planck2018_alpha_em_inv_mz",),
+                allowed_legacy_classifications=("Empirical Matching Ansatz",),
+            ),
+            BenchmarkConstantDefinition(
+                name="PLANCK2018_SIN2_THETA_W_MZ",
+                value=PLANCK2018_SIN2_THETA_W_MZ,
+                legacy_metadata_paths=("physical_constants.planck2018_sin2_theta_w_mz",),
+                allowed_legacy_classifications=("Empirical Matching Ansatz",),
+            ),
+            BenchmarkConstantDefinition(
+                name="PLANCK2018_ALPHA_S_MZ",
+                value=PLANCK2018_ALPHA_S_MZ,
+                legacy_metadata_paths=("physical_constants.planck2018_alpha_s_mz",),
+                allowed_legacy_classifications=("Empirical Matching Ansatz",),
+            ),
+        ),
+    ),
+    BenchmarkConstantTier(
+        identifier="Tier 3",
+        title="Derived Residues",
+        description="Quantities fixed after Tier 1 is chosen and Tier 2 inputs are supplied.",
+        constants=(
+            BenchmarkConstantDefinition(
+                name="GEOMETRIC_KAPPA",
+                value=GEOMETRIC_KAPPA,
+                legacy_metadata_paths=("model.geometric_kappa",),
+                allowed_legacy_classifications=("Empirical Matching Ansatz",),
+            ),
+            BenchmarkConstantDefinition(
+                name="PLANCK_HOLOGRAPHIC_BITS",
+                value=PLANCK_HOLOGRAPHIC_BITS,
+                legacy_metadata_paths=(
+                    "physical_constants.planck_length_m",
+                    "physical_constants.planck2018_h0_km_s_mpc",
+                    "physical_constants.planck2018_omega_lambda",
+                    "physical_constants.light_speed_m_per_s",
+                    "physical_constants.mpc_in_meters",
+                ),
+                allowed_legacy_classifications=("Empirical Matching Ansatz",),
+            ),
+            BenchmarkConstantDefinition(
+                name="HOLOGRAPHIC_BITS",
+                value=HOLOGRAPHIC_BITS,
+                legacy_metadata_paths=(
+                    "physical_constants.planck_length_m",
+                    "physical_constants.planck2018_h0_km_s_mpc",
+                    "physical_constants.planck2018_omega_lambda",
+                    "physical_constants.light_speed_m_per_s",
+                    "physical_constants.mpc_in_meters",
+                ),
+                allowed_legacy_classifications=("Empirical Matching Ansatz",),
+            ),
+            BenchmarkConstantDefinition(
+                name="HOLOGRAPHIC_BITS_FRACTIONAL_SIGMA",
+                value=HOLOGRAPHIC_BITS_FRACTIONAL_SIGMA,
+                legacy_metadata_paths=(
+                    "physical_constants.planck2018_h0_km_s_mpc",
+                    "physical_constants.planck2018_h0_sigma_km_s_mpc",
+                    "physical_constants.planck2018_omega_lambda",
+                    "physical_constants.planck2018_omega_lambda_sigma",
+                ),
+                allowed_legacy_classifications=("Empirical Matching Ansatz",),
+            ),
+            BenchmarkConstantDefinition(
+                name="R_GUT",
+                value=R_GUT,
+                legacy_metadata_paths=(
+                    "model.parent_level",
+                    "model.lepton_fixed_point_index",
+                    "model.quark_fixed_point_index",
+                    "group_theory.su2_dual_coxeter",
+                ),
+                allowed_legacy_classifications=("Topological Necessity",),
+            ),
+            BenchmarkConstantDefinition(
+                name="BENCHMARK_C_DARK_RESIDUE_FRACTION",
+                value=BENCHMARK_C_DARK_RESIDUE_FRACTION,
+                legacy_metadata_paths=(
+                    "model.parent_level",
+                    "model.lepton_fixed_point_index",
+                    "model.quark_fixed_point_index",
+                    "group_theory.su2_dimension",
+                    "group_theory.su3_dimension",
+                    "group_theory.su2_dual_coxeter",
+                    "group_theory.su3_dual_coxeter",
+                ),
+                allowed_legacy_classifications=("Topological Necessity",),
+            ),
+            BenchmarkConstantDefinition(
+                name="BENCHMARK_C_DARK_RESIDUE",
+                value=BENCHMARK_C_DARK_RESIDUE,
+                legacy_metadata_paths=(
+                    "model.parent_level",
+                    "model.lepton_fixed_point_index",
+                    "model.quark_fixed_point_index",
+                    "group_theory.su2_dimension",
+                    "group_theory.su3_dimension",
+                    "group_theory.su2_dual_coxeter",
+                    "group_theory.su3_dual_coxeter",
+                ),
+                allowed_legacy_classifications=("Topological Necessity",),
+            ),
+            BenchmarkConstantDefinition(
+                name="BENCHMARK_REFERENCE_COSET_CENTRAL_CHARGE_FRACTION",
+                value=BENCHMARK_REFERENCE_COSET_CENTRAL_CHARGE_FRACTION,
+                legacy_metadata_paths=(
+                    "model.parent_level",
+                    "model.lepton_fixed_point_index",
+                    "model.quark_fixed_point_index",
+                    "group_theory.su2_dimension",
+                    "group_theory.su3_dimension",
+                    "group_theory.so10_dimension",
+                    "group_theory.su2_dual_coxeter",
+                    "group_theory.su3_dual_coxeter",
+                    "group_theory.so10_dual_coxeter",
+                ),
+                allowed_legacy_classifications=("Topological Necessity",),
+            ),
+            BenchmarkConstantDefinition(
+                name="BENCHMARK_REFERENCE_COSET_CENTRAL_CHARGE",
+                value=BENCHMARK_REFERENCE_COSET_CENTRAL_CHARGE,
+                legacy_metadata_paths=(
+                    "model.parent_level",
+                    "model.lepton_fixed_point_index",
+                    "model.quark_fixed_point_index",
+                    "group_theory.su2_dimension",
+                    "group_theory.su3_dimension",
+                    "group_theory.so10_dimension",
+                    "group_theory.su2_dual_coxeter",
+                    "group_theory.su3_dual_coxeter",
+                    "group_theory.so10_dual_coxeter",
+                ),
+                allowed_legacy_classifications=("Topological Necessity",),
+            ),
+        ),
+    ),
+)
 
-TIER_2_OBSERVATIONAL_BOUNDARY_CONDITIONS = {
-    "PLANCK2018_H0_KM_S_MPC": PLANCK2018_H0_KM_S_MPC,
-    "PLANCK2018_H0_SIGMA_KM_S_MPC": PLANCK2018_H0_SIGMA_KM_S_MPC,
-    "PLANCK2018_OMEGA_LAMBDA": PLANCK2018_OMEGA_LAMBDA,
-    "PLANCK2018_OMEGA_LAMBDA_SIGMA": PLANCK2018_OMEGA_LAMBDA_SIGMA,
-    "PLANCK2018_LAMBDA_SI_M2": PLANCK2018_LAMBDA_SI_M2,
-    "PLANCK2018_LAMBDA_FRACTIONAL_SIGMA": PLANCK2018_LAMBDA_FRACTIONAL_SIGMA,
-    "PLANCK2018_ALPHA_EM_INV_MZ": PLANCK2018_ALPHA_EM_INV_MZ,
-    "PLANCK2018_SIN2_THETA_W_MZ": PLANCK2018_SIN2_THETA_W_MZ,
-    "PLANCK2018_ALPHA_S_MZ": PLANCK2018_ALPHA_S_MZ,
-}
 
-TIER_3_DERIVED_RESIDUES = {
-    "GEOMETRIC_KAPPA": GEOMETRIC_KAPPA,
-    "PLANCK_HOLOGRAPHIC_BITS": PLANCK_HOLOGRAPHIC_BITS,
-    "HOLOGRAPHIC_BITS": HOLOGRAPHIC_BITS,
-    "HOLOGRAPHIC_BITS_FRACTIONAL_SIGMA": HOLOGRAPHIC_BITS_FRACTIONAL_SIGMA,
-    "R_GUT": R_GUT,
-    "BENCHMARK_C_DARK_RESIDUE_FRACTION": BENCHMARK_C_DARK_RESIDUE_FRACTION,
-    "BENCHMARK_C_DARK_RESIDUE": BENCHMARK_C_DARK_RESIDUE,
-    "BENCHMARK_REFERENCE_COSET_CENTRAL_CHARGE_FRACTION": BENCHMARK_REFERENCE_COSET_CENTRAL_CHARGE_FRACTION,
-    "BENCHMARK_REFERENCE_COSET_CENTRAL_CHARGE": BENCHMARK_REFERENCE_COSET_CENTRAL_CHARGE,
-}
+def _validate_benchmark_tier_metadata(
+    tiers: tuple[BenchmarkConstantTier, ...],
+    legacy_classifications: dict[str, str],
+) -> None:
+    seen_identifiers: set[str] = set()
+    declared_constants: dict[str, str] = {}
+
+    for tier in tiers:
+        if tier.identifier in seen_identifiers:
+            raise RuntimeError(f"Duplicate strict benchmark tier identifier '{tier.identifier}'.")
+        seen_identifiers.add(tier.identifier)
+
+        if not tier.constants:
+            raise RuntimeError(f"Strict benchmark tier '{tier.label}' must declare at least one constant.")
+
+        for constant in tier.constants:
+            previous_tier = declared_constants.get(constant.name)
+            if previous_tier is not None:
+                raise RuntimeError(
+                    f"Strict benchmark constant '{constant.name}' is declared in both '{previous_tier}' and '{tier.label}'."
+                )
+            declared_constants[constant.name] = tier.label
+
+            if not legacy_classifications or not constant.legacy_metadata_paths:
+                continue
+            if not constant.allowed_legacy_classifications:
+                raise RuntimeError(
+                    f"Strict benchmark constant '{constant.name}' declares legacy metadata paths without allowed classifications."
+                )
+
+            for metadata_path in constant.legacy_metadata_paths:
+                classification = legacy_classifications.get(metadata_path)
+                if classification is None:
+                    raise RuntimeError(
+                        f"Strict benchmark constant '{constant.name}' expects legacy metadata path '{metadata_path}'."
+                    )
+                if classification not in constant.allowed_legacy_classifications:
+                    allowed = ", ".join(sorted(constant.allowed_legacy_classifications))
+                    raise RuntimeError(
+                        f"Strict benchmark constant '{constant.name}' expects '{metadata_path}' to use one of [{allowed}], "
+                        f"received '{classification}'."
+                    )
+
+
+_validate_benchmark_tier_metadata(STRICT_BENCHMARK_TIER_DEFINITIONS, BENCHMARK_PARAMETER_CLASSIFICATIONS)
+
+TIER_1_TOPOLOGICAL_COORDINATES = STRICT_BENCHMARK_TIER_DEFINITIONS[0].values
+TIER_2_OBSERVATIONAL_BOUNDARY_CONDITIONS = STRICT_BENCHMARK_TIER_DEFINITIONS[1].values
+TIER_3_DERIVED_RESIDUES = STRICT_BENCHMARK_TIER_DEFINITIONS[2].values
 
 STRICT_BENCHMARK_CONSTANT_TIERS = {
-    **{name: "Tier 1: Topological Coordinates" for name in TIER_1_TOPOLOGICAL_COORDINATES},
-    **{name: "Tier 2: Observational Boundary Conditions" for name in TIER_2_OBSERVATIONAL_BOUNDARY_CONDITIONS},
-    **{name: "Tier 3: Derived Residues" for name in TIER_3_DERIVED_RESIDUES},
+    constant.name: tier.label
+    for tier in STRICT_BENCHMARK_TIER_DEFINITIONS
+    for constant in tier.constants
 }
-
-if len(STRICT_BENCHMARK_CONSTANT_TIERS) != (
-    len(TIER_1_TOPOLOGICAL_COORDINATES)
-    + len(TIER_2_OBSERVATIONAL_BOUNDARY_CONDITIONS)
-    + len(TIER_3_DERIVED_RESIDUES)
-):
-    raise RuntimeError("Strict benchmark constant tiers must form a disjoint partition.")
 
 SM_RUNNING_CONTENT = _coerce_str(_MODEL_CONSTANTS_CONFIG, "sm_running_content")
 RHN_THRESHOLD_MATCHING_ANGLE_SHIFTS_DEG = _coerce_float_sequence(_MODEL_CONSTANTS_CONFIG, "rhn_threshold_matching_angle_shifts_deg")
