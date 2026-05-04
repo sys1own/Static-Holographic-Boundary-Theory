@@ -150,6 +150,25 @@ class MassBridgeDerivation:
     live_neutrino_floor_ev: Decimal
 
 
+@dataclass(frozen=True)
+class UnityOfScaleDerivation:
+    branch_planck_mass_ev: Decimal
+    holographic_bits: Decimal
+    lambda_holo_ev2: Decimal
+    g_newton_topological_ev_minus2: Decimal
+    kappa_fourth: Decimal
+    expanded_theorem_rhs_ev2: Decimal
+    reduced_theorem_rhs_ev2: Decimal
+    identity_ratio: Decimal
+    epsilon_lambda: Decimal
+    decimal_tolerance: Decimal
+    register_noise_floor: Decimal
+
+    @property
+    def passed(self) -> bool:
+        return self.epsilon_lambda <= self.decimal_tolerance
+
+
 def derive_alpha_surface(*, precision: int = DEFAULT_PRECISION) -> AlphaSurfaceDerivation:
     del precision
     visible_support = LEPTON_LEVEL + QUARK_LEVEL
@@ -225,10 +244,58 @@ def derive_mass_bridge(*, precision: int = DEFAULT_PRECISION, kappa: Decimal | N
         )
 
 
+def derive_unity_of_scale(
+    *,
+    precision: int = DEFAULT_PRECISION,
+    kappa: Decimal | None = None,
+    mass_bridge: MassBridgeDerivation | None = None,
+) -> UnityOfScaleDerivation:
+    with localcontext() as context:
+        context.prec = precision + _GUARD_DIGITS
+        resolved_kappa = derive_kappa_d5(precision=context.prec).kappa if kappa is None else _decimal(kappa)
+        resolved_mass_bridge = derive_mass_bridge(precision=context.prec, kappa=resolved_kappa) if mass_bridge is None else mass_bridge
+        three_pi = Decimal(3) * decimal_pi(context.prec)
+        branch_planck_mass_ev = resolved_mass_bridge.branch_planck_mass_ev
+        holographic_bits = resolved_mass_bridge.holographic_bits
+        lambda_holo_ev2 = three_pi * branch_planck_mass_ev * branch_planck_mass_ev / holographic_bits
+        g_newton_topological_ev_minus2 = Decimal(1) / (branch_planck_mass_ev * branch_planck_mass_ev)
+        kappa_fourth = resolved_kappa**4
+        expanded_theorem_rhs_ev2 = (
+            (three_pi / kappa_fourth)
+            * g_newton_topological_ev_minus2
+            * (resolved_mass_bridge.neutrino_floor_ev**4)
+        )
+        reduced_theorem_rhs_ev2 = three_pi * branch_planck_mass_ev * branch_planck_mass_ev / holographic_bits
+        identity_ratio = lambda_holo_ev2 / expanded_theorem_rhs_ev2
+        epsilon_lambda = abs(Decimal(1) - identity_ratio)
+        decimal_tolerance = Decimal(1).scaleb(-(precision - _GUARD_DIGITS))
+        register_noise_floor = Decimal(1) / holographic_bits
+        context.prec = precision
+        derivation = UnityOfScaleDerivation(
+            branch_planck_mass_ev=+branch_planck_mass_ev,
+            holographic_bits=+holographic_bits,
+            lambda_holo_ev2=+lambda_holo_ev2,
+            g_newton_topological_ev_minus2=+g_newton_topological_ev_minus2,
+            kappa_fourth=+kappa_fourth,
+            expanded_theorem_rhs_ev2=+expanded_theorem_rhs_ev2,
+            reduced_theorem_rhs_ev2=+reduced_theorem_rhs_ev2,
+            identity_ratio=+identity_ratio,
+            epsilon_lambda=+epsilon_lambda,
+            decimal_tolerance=+decimal_tolerance,
+            register_noise_floor=+register_noise_floor,
+        )
+    assert derivation.passed, (
+        "Unity of Scale Identity no longer closes within the Decimal audit tolerance: "
+        f"epsilon_Lambda={derivation.epsilon_lambda}, tolerance={derivation.decimal_tolerance}."
+    )
+    return derivation
+
+
 def build_derivation_ledger(*, precision: int = DEFAULT_PRECISION) -> str:
     alpha = derive_alpha_surface(precision=precision)
     kappa = derive_kappa_d5(precision=precision)
     mass = derive_mass_bridge(precision=precision, kappa=kappa.kappa)
+    unity = derive_unity_of_scale(precision=precision, kappa=kappa.kappa, mass_bridge=mass)
 
     lines = [
         "Derivation Ledger",
@@ -269,6 +336,18 @@ def build_derivation_ledger(*, precision: int = DEFAULT_PRECISION) -> str:
         f"- neutrino floor = {_format_decimal(mass.neutrino_floor_mev, places=24)} meV",
         f"- tn.py live mass bridge = {_format_decimal(mass.live_neutrino_floor_ev, places=24)} eV",
         f"- mass-bridge drift = {_format_decimal(mass.neutrino_floor_ev - mass.live_neutrino_floor_ev, places=24)} eV",
+        "",
+        "Unity of Scale Identity",
+        f"- Lambda_holo(lhs) = 3*pi*M_P^2/N = {_format_decimal(unity.lambda_holo_ev2, places=24)} eV^2",
+        f"- G_N = M_P^(-2) = {_format_decimal(unity.g_newton_topological_ev_minus2, places=24)} eV^(-2)",
+        f"- kappa_D5^4 = {_format_decimal(unity.kappa_fourth, places=24)}",
+        f"- Lambda_holo(rhs, expanded) = (3*pi/kappa_D5^4) * G_N * m_nu^4 = {_format_decimal(unity.expanded_theorem_rhs_ev2, places=24)} eV^2",
+        f"- Lambda_holo(rhs, reduced) = 3*pi*M_P^2/N = {_format_decimal(unity.reduced_theorem_rhs_ev2, places=24)} eV^2",
+        f"- lhs/rhs(expanded) = {_format_decimal(unity.identity_ratio, places=24)}",
+        f"- epsilon_Lambda = {_format_decimal(unity.epsilon_lambda, places=24)}",
+        f"- Decimal audit tolerance = {_format_decimal(unity.decimal_tolerance, places=24)}",
+        f"- register noise floor = 1/N = {_format_decimal(unity.register_noise_floor, places=24)}",
+        f"- closes in Decimal arithmetic = {unity.passed}",
     ]
     return "\n".join(lines)
 
