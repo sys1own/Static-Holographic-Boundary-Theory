@@ -1,0 +1,285 @@
+from __future__ import annotations
+
+import argparse
+import sys
+from dataclasses import dataclass
+from decimal import Decimal, localcontext
+from fractions import Fraction
+from functools import lru_cache
+from pathlib import Path
+from typing import Sequence
+
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    __package__ = "pub"
+
+from .tn import (
+    CODATA_FINE_STRUCTURE_ALPHA_INVERSE,
+    G_SM,
+    HOLOGRAPHIC_BITS,
+    KAPPA_D5,
+    LEPTON_LEVEL,
+    PLANCK_MASS_EV,
+    PARENT_LEVEL,
+    QUARK_LEVEL,
+    surface_tension_gauge_alpha_inverse,
+    topological_mass_coordinate_ev,
+    topological_planck_mass_ev,
+)
+
+DEFAULT_PRECISION = 80
+_GUARD_DIGITS = 12
+
+
+def _decimal(value: Decimal | Fraction | float | int | str) -> Decimal:
+    if isinstance(value, Decimal):
+        return value
+    if isinstance(value, Fraction):
+        return Decimal(value.numerator) / Decimal(value.denominator)
+    if isinstance(value, float):
+        return Decimal(str(value))
+    return Decimal(value)
+
+
+def _fraction_to_decimal(value: Fraction) -> Decimal:
+    return Decimal(value.numerator) / Decimal(value.denominator)
+
+
+def _format_decimal(value: Decimal, *, places: int = 18) -> str:
+    if value.is_zero():
+        return "0"
+    adjusted = value.adjusted()
+    if adjusted >= 6 or adjusted <= -4:
+        return f"{value:.{places}E}"
+    return f"{value:.{places}f}".rstrip("0").rstrip(".")
+
+
+@lru_cache(maxsize=None)
+def decimal_pi(precision: int = DEFAULT_PRECISION) -> Decimal:
+    with localcontext() as context:
+        context.prec = precision + _GUARD_DIGITS
+        one = Decimal(1)
+        two = Decimal(2)
+        four = Decimal(4)
+        a_term = one
+        b_term = one / two.sqrt()
+        t_term = Decimal("0.25")
+        p_term = one
+        pi_value = Decimal(0)
+        for _ in range(8):
+            a_next = (a_term + b_term) / two
+            b_term = (a_term * b_term).sqrt()
+            delta = a_term - a_next
+            t_term -= p_term * delta * delta
+            a_term = a_next
+            p_term *= two
+            pi_value = ((a_term + b_term) * (a_term + b_term)) / (four * t_term)
+        context.prec = precision
+        return +pi_value
+
+
+def decimal_sin(value: Decimal, *, precision: int = DEFAULT_PRECISION) -> Decimal:
+    with localcontext() as context:
+        context.prec = precision + _GUARD_DIGITS
+        term = value
+        result = value
+        threshold = Decimal(1).scaleb(-(precision + _GUARD_DIGITS // 2))
+        index = 1
+        while True:
+            denominator = Decimal((2 * index) * (2 * index + 1))
+            term *= -(value * value) / denominator
+            result += term
+            if abs(term) <= threshold:
+                break
+            index += 1
+        context.prec = precision
+        return +result
+
+
+def su2_total_quantum_dimension_decimal(level: int, *, precision: int = DEFAULT_PRECISION) -> Decimal:
+    with localcontext() as context:
+        context.prec = precision + _GUARD_DIGITS
+        level_plus_two = Decimal(level + 2)
+        prefactor = (level_plus_two / Decimal(2)).sqrt()
+        theta = decimal_pi(context.prec) / level_plus_two
+        dimension = prefactor / decimal_sin(theta, precision=context.prec)
+        context.prec = precision
+        return +dimension
+
+
+def quarter_power_inverse(value: Decimal, *, precision: int = DEFAULT_PRECISION) -> Decimal:
+    with localcontext() as context:
+        context.prec = precision + _GUARD_DIGITS
+        if value <= 0:
+            raise ValueError("Quarter-power inverse requires a positive Decimal.")
+        result = Decimal(1) / value.sqrt().sqrt()
+        context.prec = precision
+        return +result
+
+
+@dataclass(frozen=True)
+class AlphaSurfaceDerivation:
+    visible_support: int
+    level_density_ratio: Fraction
+    alpha_inverse_fraction: Fraction
+    alpha_inverse_decimal: Decimal
+    live_alpha_inverse: Decimal
+    codata_alpha_inverse: Decimal
+
+
+@dataclass(frozen=True)
+class KappaDerivation:
+    simplex_fraction: Fraction
+    sqrt_ten: Decimal
+    weight_simplex_hyperarea: Decimal
+    su2_total_quantum_dimension: Decimal
+    beta: Decimal
+    eta_spin: Decimal
+    kappa: Decimal
+    live_kappa: Decimal
+
+
+@dataclass(frozen=True)
+class MassBridgeDerivation:
+    branch_planck_mass_ev: Decimal
+    configured_planck_mass_ev: Decimal
+    holographic_bits: Decimal
+    holographic_bits_quarter_inverse: Decimal
+    neutrino_floor_ev: Decimal
+    neutrino_floor_mev: Decimal
+    live_neutrino_floor_ev: Decimal
+
+
+def derive_alpha_surface(*, precision: int = DEFAULT_PRECISION) -> AlphaSurfaceDerivation:
+    del precision
+    visible_support = LEPTON_LEVEL + QUARK_LEVEL
+    level_density_ratio = Fraction(PARENT_LEVEL, visible_support)
+    alpha_inverse_fraction = Fraction(G_SM, 1) * level_density_ratio
+    alpha_inverse_decimal = _fraction_to_decimal(alpha_inverse_fraction)
+    live_alpha_inverse = _decimal(
+        surface_tension_gauge_alpha_inverse(
+            parent_level=PARENT_LEVEL,
+            lepton_level=LEPTON_LEVEL,
+            quark_level=QUARK_LEVEL,
+        )
+    )
+    codata_alpha_inverse = _decimal(CODATA_FINE_STRUCTURE_ALPHA_INVERSE)
+    return AlphaSurfaceDerivation(
+        visible_support=visible_support,
+        level_density_ratio=level_density_ratio,
+        alpha_inverse_fraction=alpha_inverse_fraction,
+        alpha_inverse_decimal=alpha_inverse_decimal,
+        live_alpha_inverse=live_alpha_inverse,
+        codata_alpha_inverse=codata_alpha_inverse,
+    )
+
+
+def derive_kappa_d5(*, precision: int = DEFAULT_PRECISION) -> KappaDerivation:
+    with localcontext() as context:
+        context.prec = precision + _GUARD_DIGITS
+        simplex_fraction = Fraction(160, 1521)
+        sqrt_ten = Decimal(10).sqrt()
+        weight_simplex_hyperarea = _fraction_to_decimal(simplex_fraction) * sqrt_ten
+        total_quantum_dimension = su2_total_quantum_dimension_decimal(LEPTON_LEVEL, precision=context.prec)
+        beta = total_quantum_dimension.ln() / Decimal(2)
+        eta_spin = (_decimal(Fraction(347, 1)) - _decimal(Fraction(8, 1)) * beta * beta) / _decimal(Fraction(351, 1))
+        kappa = (_decimal(Fraction(16, 5)) * weight_simplex_hyperarea * eta_spin).sqrt()
+        context.prec = precision
+        return KappaDerivation(
+            simplex_fraction=simplex_fraction,
+            sqrt_ten=+sqrt_ten,
+            weight_simplex_hyperarea=+weight_simplex_hyperarea,
+            su2_total_quantum_dimension=+total_quantum_dimension,
+            beta=+beta,
+            eta_spin=+eta_spin,
+            kappa=+kappa,
+            live_kappa=_decimal(KAPPA_D5),
+        )
+
+
+def derive_mass_bridge(*, precision: int = DEFAULT_PRECISION, kappa: Decimal | None = None) -> MassBridgeDerivation:
+    with localcontext() as context:
+        context.prec = precision + _GUARD_DIGITS
+        resolved_kappa = derive_kappa_d5(precision=context.prec).kappa if kappa is None else _decimal(kappa)
+        branch_planck_mass_ev = _decimal(topological_planck_mass_ev())
+        configured_planck_mass_ev = _decimal(PLANCK_MASS_EV)
+        holographic_bits = _decimal(HOLOGRAPHIC_BITS)
+        holographic_bits_quarter_inverse = quarter_power_inverse(holographic_bits, precision=context.prec)
+        neutrino_floor_ev = resolved_kappa * branch_planck_mass_ev * holographic_bits_quarter_inverse
+        neutrino_floor_mev = neutrino_floor_ev * Decimal(1000)
+        live_neutrino_floor_ev = _decimal(
+            topological_mass_coordinate_ev(
+                bit_count=HOLOGRAPHIC_BITS,
+                kappa_geometric=float(resolved_kappa),
+            )
+        )
+        context.prec = precision
+        return MassBridgeDerivation(
+            branch_planck_mass_ev=+branch_planck_mass_ev,
+            configured_planck_mass_ev=+configured_planck_mass_ev,
+            holographic_bits=+holographic_bits,
+            holographic_bits_quarter_inverse=+holographic_bits_quarter_inverse,
+            neutrino_floor_ev=+neutrino_floor_ev,
+            neutrino_floor_mev=+neutrino_floor_mev,
+            live_neutrino_floor_ev=+live_neutrino_floor_ev,
+        )
+
+
+def build_derivation_ledger(*, precision: int = DEFAULT_PRECISION) -> str:
+    alpha = derive_alpha_surface(precision=precision)
+    kappa = derive_kappa_d5(precision=precision)
+    mass = derive_mass_bridge(precision=precision, kappa=kappa.kappa)
+
+    lines = [
+        "Derivation Ledger",
+        "=================",
+        "",
+        "Branch Integers",
+        f"- k_l = {LEPTON_LEVEL}",
+        f"- k_q = {QUARK_LEVEL}",
+        f"- K = {PARENT_LEVEL}",
+        f"- G_SM = {G_SM}",
+        "",
+        "Alpha Surface Inverse",
+        f"- visible support = k_l + k_q = {alpha.visible_support}",
+        f"- level-density ratio = K/(k_l + k_q) = {alpha.level_density_ratio.numerator}/{alpha.level_density_ratio.denominator}",
+        f"- alpha_surf^-1 = G_SM * K/(k_l + k_q) = {alpha.alpha_inverse_fraction.numerator}/{alpha.alpha_inverse_fraction.denominator}",
+        f"- alpha_surf^-1 [decimal] = {_format_decimal(alpha.alpha_inverse_decimal, places=24)}",
+        f"- tn.py live check = {_format_decimal(alpha.live_alpha_inverse, places=24)}",
+        f"- CODATA alpha^-1 = {_format_decimal(alpha.codata_alpha_inverse, places=12)}",
+        f"- topological minus CODATA = {_format_decimal(alpha.alpha_inverse_decimal - alpha.codata_alpha_inverse, places=24)}",
+        "",
+        "D5 Hyperarea Invariant",
+        f"- simplex hyperarea prefactor = {kappa.simplex_fraction.numerator}/{kappa.simplex_fraction.denominator}",
+        f"- sqrt(10) = {_format_decimal(kappa.sqrt_ten, places=24)}",
+        f"- R_01^(par/vis) = (160/1521)*sqrt(10) = {_format_decimal(kappa.weight_simplex_hyperarea, places=24)}",
+        f"- D_SU(2)({LEPTON_LEVEL}) = sqrt((k_l+2)/2)/sin(pi/(k_l+2)) = {_format_decimal(kappa.su2_total_quantum_dimension, places=24)}",
+        f"- beta = 1/2 ln D_SU(2) = {_format_decimal(kappa.beta, places=24)}",
+        f"- eta_spin = (347 - 8 beta^2)/351 = {_format_decimal(kappa.eta_spin, places=24)}",
+        f"- kappa_D5 = sqrt((16/5) * R_01^(par/vis) * eta_spin) = {_format_decimal(kappa.kappa, places=24)}",
+        f"- tn.py benchmark kappa = {_format_decimal(kappa.live_kappa, places=24)}",
+        f"- derivation drift = {_format_decimal(kappa.kappa - kappa.live_kappa, places=24)}",
+        "",
+        "Finite-Capacity Mass Bridge",
+        f"- topological_planck_mass_ev() = {_format_decimal(mass.branch_planck_mass_ev, places=18)} eV",
+        f"- PLANCK_MASS_EV from tn.py = {_format_decimal(mass.configured_planck_mass_ev, places=18)} eV",
+        f"- HOLOGRAPHIC_BITS = {_format_decimal(mass.holographic_bits, places=18)}",
+        f"- N_holo^(-1/4) = {_format_decimal(mass.holographic_bits_quarter_inverse, places=24)}",
+        f"- m_nu = kappa_D5 * M_P * N_holo^(-1/4) = {_format_decimal(mass.neutrino_floor_ev, places=24)} eV",
+        f"- neutrino floor = {_format_decimal(mass.neutrino_floor_mev, places=24)} meV",
+        f"- tn.py live mass bridge = {_format_decimal(mass.live_neutrino_floor_ev, places=24)} eV",
+        f"- mass-bridge drift = {_format_decimal(mass.neutrino_floor_ev - mass.live_neutrino_floor_ev, places=24)} eV",
+    ]
+    return "\n".join(lines)
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Derive branch-fixed universe constants from the (26, 8, 312) ledger.")
+    parser.add_argument("--precision", type=int, default=DEFAULT_PRECISION, help="Decimal precision used for the derivation ledger.")
+    args = parser.parse_args(tuple(argv) if argv is not None else None)
+    print(build_derivation_ledger(precision=max(args.precision, 32)))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
