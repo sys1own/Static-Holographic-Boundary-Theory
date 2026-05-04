@@ -253,6 +253,32 @@ def write_audit_statement(
             )
         )
 
+        if all(
+            key in diagnostics
+            for key in (
+                "benchmark_anchor_lepton_central_charge_fraction",
+                "benchmark_anchor_quark_central_charge_fraction",
+                "benchmark_anchor_structural_ratio_fraction",
+                "benchmark_anchor_structural_ratio",
+                "benchmark_anchor_pressure_loading",
+                "benchmark_anchor_pressure_loading_formula",
+                "benchmark_anchor_geometric_friction_formula",
+                "benchmark_anchor_geometric_friction_factor",
+                "benchmark_anchor_mu_symbolic_formula",
+            )
+        ):
+            report_lines.append(
+                (
+                    "Benchmark-anchor symbolic closure: "
+                    f"c_l={diagnostics['benchmark_anchor_lepton_central_charge_fraction']}, "
+                    f"c_q={diagnostics['benchmark_anchor_quark_central_charge_fraction']}, "
+                    f"(c_q/c_l)/V_pix={diagnostics['benchmark_anchor_structural_ratio_fraction']}={diagnostics['benchmark_anchor_structural_ratio']:.6f}, "
+                    f"{diagnostics['benchmark_anchor_pressure_loading_formula']}={diagnostics['benchmark_anchor_pressure_loading']:.6f}, "
+                    f"F_geom={diagnostics['benchmark_anchor_geometric_friction_formula']}={diagnostics['benchmark_anchor_geometric_friction_factor']:.6f}, "
+                    f"and mu_pix={diagnostics['benchmark_anchor_mu_symbolic_formula']}."
+                )
+            )
+
     elif all(
         key in diagnostics
         for key in (
