@@ -129,6 +129,14 @@ Read the JSON as a branch diagnosis rather than as an error-budget knob. The pub
 
 The standalone `derive_*.py` scripts are publication-facing spot checks for the same benchmark branch. Where an external CODATA comparator exists, the script prints it directly; where no external CODATA entry exists, the script instead audits the branch-fixed theorem closure against the live `tn.py` benchmark.
 
+### Derive-Script CODATA Map
+
+| Script | Branch-fixed output | CODATA / external comparator | Tier interpretation |
+| --- | --- | --- | --- |
+| `python pub/derive_universe.py` | `alpha_surf^-1 = 2340/17` from the branch-fixed gauge-density ratio | CODATA `alpha^-1 = 137.035999084` | Reads the gauge-side discrepancy as a disclosed Tier 3 residual evaluated against a Tier 2 electromagnetic anchor. |
+| `python pub/derive_universe.py` | `kappa_D5`, `m_nu = kappa_D5 M_P N^{-1/4}`, and `epsilon_Lambda` from the Unity of Scale Identity | No standalone CODATA constant; audited against theorem closure and the live `tn.py` benchmark | Shows that these are Tier 3 derived residues fixed once the Tier 1 branch and Tier 2 cosmology inputs are supplied. |
+| `python pub/derive_proton_ratio.py` | `mu_audit = (c_q/c_l) V_{\rm px}^{-1} \mathcal P_\mu = (896/99) \mathcal P_\mu` | CODATA `m_p/m_e` from `scipy.constants.proton_mass / scipy.constants.electron_mass` | Exposes the proton/electron mass ratio as a Tier 3 residue computed from Tier 1 current-algebra data and compared directly to the CODATA mass ratio. |
+
 | Script | Ledger output | Comparator / anchor | What the comparison seals |
 | --- | --- | --- | --- |
 | `python pub/derive_universe.py` | `alpha_surf^-1 = 2340/17` from the branch-fixed gauge-density ratio | CODATA `alpha^-1 = 137.035999084` | Confirms that the disclosed gauge-side residue is reported against the standard electromagnetic reference rather than hidden behind a retuned threshold. |
@@ -148,6 +156,14 @@ The benchmark configuration is locked by the checked-in YAML at `config/benchmar
 - **Pinned scientific stack:** `PyYAML==6.0.3`, `Jinja2==3.1.6`, `mpmath==1.3.0`, `numpy==1.26.4`, `scipy==1.12.0`, `matplotlib==3.8.3`, `sympy==1.12`
 
 ### Constant Tiers
+
+The strict benchmark taxonomy lives in `pub/constants.py` as `STRICT_BENCHMARK_TIER_DEFINITIONS`. The complete branch-facing constant registry is:
+
+| Tier | Registry key | Constants carried in the tier | Interpretation |
+| --- | --- | --- | --- |
+| **Tier 1** | `TIER_1_TOPOLOGICAL_COORDINATES` | `LEPTON_LEVEL`, `QUARK_LEVEL`, `PARENT_LEVEL`, `G_SM` | Discrete branch coordinates that identify the anomaly-free cell `(26, 8, 312)` and its visible-current count. |
+| **Tier 2** | `TIER_2_OBSERVATIONAL_BOUNDARY_CONDITIONS` | `PLANCK2018_H0_KM_S_MPC`, `PLANCK2018_H0_SIGMA_KM_S_MPC`, `PLANCK2018_OMEGA_LAMBDA`, `PLANCK2018_OMEGA_LAMBDA_SIGMA`, `PLANCK2018_LAMBDA_SI_M2`, `PLANCK2018_LAMBDA_FRACTIONAL_SIGMA`, `PLANCK2018_ALPHA_EM_INV_MZ`, `PLANCK2018_SIN2_THETA_W_MZ`, `PLANCK2018_ALPHA_S_MZ` | External observational anchors supplied to the verifier as boundary data rather than reopened as free phenomenological parameters. |
+| **Tier 3** | `TIER_3_DERIVED_RESIDUES` | `GEOMETRIC_KAPPA`, `PLANCK_HOLOGRAPHIC_BITS`, `HOLOGRAPHIC_BITS`, `HOLOGRAPHIC_BITS_FRACTIONAL_SIGMA`, `R_GUT`, `BENCHMARK_C_DARK_RESIDUE_FRACTION`, `BENCHMARK_C_DARK_RESIDUE`, `BENCHMARK_REFERENCE_COSET_CENTRAL_CHARGE_FRACTION`, `BENCHMARK_REFERENCE_COSET_CENTRAL_CHARGE` | Quantities fixed after Tier 1 is chosen and Tier 2 is supplied, together with the branch-fixed residues used throughout the verifier and manuscript exports. |
 
 - **Topological Coordinates** are the branch-fixed integers and discrete support counts carried by `TIER_1_TOPOLOGICAL_COORDINATES`: `(k_{\ell}, k_q, K) = (26, 8, 312)` together with `G_SM = 15`. Changing these is not recalibration; it is a coordinate detuning that moves the run off the published branch.
 - **Observational Boundary Conditions** are the external anchors carried by `TIER_2_OBSERVATIONAL_BOUNDARY_CONDITIONS`, such as `\Lambda_{\rm obs}`, the late-time cosmology inputs, and the electroweak comparison data. These are supplied to the verifier as boundary data, not opened as hidden fit directions.
