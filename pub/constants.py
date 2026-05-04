@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
@@ -101,6 +102,8 @@ def _format_latex_scientific(value: float) -> str:
 
 _PHYSICS_CONFIG = DEFAULT_CONFIG_LOADER.load_physics_constants()
 _EXPERIMENTAL_CONFIG = DEFAULT_CONFIG_LOADER.load_experimental_bounds()
+# Legacy config-level provenance tags are retained as metadata. The strict
+# benchmark hierarchy used by the repository is declared explicitly below.
 BENCHMARK_PARAMETER_CLASSIFICATIONS = DEFAULT_CONFIG_LOADER.load_parameter_classifications()
 
 _SOLVER_CONFIG = _require_mapping(_PHYSICS_CONFIG, "solver")
@@ -149,6 +152,7 @@ LEPTON_FIXED_POINT_INDEX = _coerce_int(_MODEL_CONFIG, "lepton_fixed_point_index"
 QUARK_FIXED_POINT_INDEX = _coerce_int(_MODEL_CONFIG, "quark_fixed_point_index")
 LEPTON_LEVEL = PARENT_LEVEL // (2 * LEPTON_FIXED_POINT_INDEX)
 QUARK_LEVEL = PARENT_LEVEL // (3 * QUARK_FIXED_POINT_INDEX)
+G_SM = 15
 DIRAC_HIGGS_BENCHMARK_MASS_GEV = _coerce_float(_MODEL_CONFIG, "dirac_higgs_benchmark_mass_gev")
 
 SM_GUT_YUKAWA_BENCHMARKS = _coerce_float_mapping(_BENCHMARKS_CONFIG, "sm_gut_yukawa")
@@ -190,6 +194,77 @@ SO10_TO_SU3_EMBEDDING_INDEX = _coerce_int(_GROUP_THEORY_CONFIG, "so10_to_su3_emb
 SO10_RANK = _coerce_int(_GROUP_THEORY_CONFIG, "so10_rank")
 SU3_RANK = _coerce_int(_GROUP_THEORY_CONFIG, "su3_rank")
 R_GUT = QUARK_LEVEL / (LEPTON_LEVEL + SU2_DUAL_COXETER)
+
+BENCHMARK_C_DARK_RESIDUE_FRACTION = (
+    Fraction(PARENT_LEVEL * SU3_DIMENSION, PARENT_LEVEL + SU3_DUAL_COXETER)
+    + Fraction(PARENT_LEVEL * SU2_DIMENSION, PARENT_LEVEL + SU2_DUAL_COXETER)
+    - Fraction(QUARK_LEVEL * SU3_DIMENSION, QUARK_LEVEL + SU3_DUAL_COXETER)
+    - Fraction(LEPTON_LEVEL * SU2_DIMENSION, LEPTON_LEVEL + SU2_DUAL_COXETER)
+)
+BENCHMARK_C_DARK_RESIDUE = float(BENCHMARK_C_DARK_RESIDUE_FRACTION)
+BENCHMARK_REFERENCE_COSET_CENTRAL_CHARGE_FRACTION = (
+    Fraction(PARENT_LEVEL * SO10_DIMENSION, PARENT_LEVEL + SO10_DUAL_COXETER)
+    - (
+        Fraction(LEPTON_LEVEL * SU2_DIMENSION, LEPTON_LEVEL + SU2_DUAL_COXETER)
+        + Fraction(QUARK_LEVEL * SU3_DIMENSION, QUARK_LEVEL + SU3_DUAL_COXETER)
+    )
+    - BENCHMARK_C_DARK_RESIDUE_FRACTION
+)
+BENCHMARK_REFERENCE_COSET_CENTRAL_CHARGE = float(BENCHMARK_REFERENCE_COSET_CENTRAL_CHARGE_FRACTION)
+
+# Strict benchmark hierarchy
+# --------------------------
+# Tier 1 constants are the branch-fixed discrete coordinates that identify the
+# anomaly-free benchmark cell.
+# Tier 2 constants are external observational boundary conditions used as input
+# anchors; they are not promoted as predictions.
+# Tier 3 constants are derived residues computed once Tier 1 is fixed and Tier
+# 2 is supplied. Numerical tolerances, reporting strings, and artifact
+# filenames remain auxiliary runtime infrastructure and are declared below.
+
+TIER_1_TOPOLOGICAL_COORDINATES = {
+    "LEPTON_LEVEL": LEPTON_LEVEL,
+    "QUARK_LEVEL": QUARK_LEVEL,
+    "PARENT_LEVEL": PARENT_LEVEL,
+    "G_SM": G_SM,
+}
+
+TIER_2_OBSERVATIONAL_BOUNDARY_CONDITIONS = {
+    "PLANCK2018_H0_KM_S_MPC": PLANCK2018_H0_KM_S_MPC,
+    "PLANCK2018_H0_SIGMA_KM_S_MPC": PLANCK2018_H0_SIGMA_KM_S_MPC,
+    "PLANCK2018_OMEGA_LAMBDA": PLANCK2018_OMEGA_LAMBDA,
+    "PLANCK2018_OMEGA_LAMBDA_SIGMA": PLANCK2018_OMEGA_LAMBDA_SIGMA,
+    "PLANCK2018_LAMBDA_SI_M2": PLANCK2018_LAMBDA_SI_M2,
+    "PLANCK2018_LAMBDA_FRACTIONAL_SIGMA": PLANCK2018_LAMBDA_FRACTIONAL_SIGMA,
+    "PLANCK2018_ALPHA_EM_INV_MZ": PLANCK2018_ALPHA_EM_INV_MZ,
+    "PLANCK2018_SIN2_THETA_W_MZ": PLANCK2018_SIN2_THETA_W_MZ,
+    "PLANCK2018_ALPHA_S_MZ": PLANCK2018_ALPHA_S_MZ,
+}
+
+TIER_3_DERIVED_RESIDUES = {
+    "GEOMETRIC_KAPPA": GEOMETRIC_KAPPA,
+    "PLANCK_HOLOGRAPHIC_BITS": PLANCK_HOLOGRAPHIC_BITS,
+    "HOLOGRAPHIC_BITS": HOLOGRAPHIC_BITS,
+    "HOLOGRAPHIC_BITS_FRACTIONAL_SIGMA": HOLOGRAPHIC_BITS_FRACTIONAL_SIGMA,
+    "R_GUT": R_GUT,
+    "BENCHMARK_C_DARK_RESIDUE_FRACTION": BENCHMARK_C_DARK_RESIDUE_FRACTION,
+    "BENCHMARK_C_DARK_RESIDUE": BENCHMARK_C_DARK_RESIDUE,
+    "BENCHMARK_REFERENCE_COSET_CENTRAL_CHARGE_FRACTION": BENCHMARK_REFERENCE_COSET_CENTRAL_CHARGE_FRACTION,
+    "BENCHMARK_REFERENCE_COSET_CENTRAL_CHARGE": BENCHMARK_REFERENCE_COSET_CENTRAL_CHARGE,
+}
+
+STRICT_BENCHMARK_CONSTANT_TIERS = {
+    **{name: "Tier 1: Topological Coordinates" for name in TIER_1_TOPOLOGICAL_COORDINATES},
+    **{name: "Tier 2: Observational Boundary Conditions" for name in TIER_2_OBSERVATIONAL_BOUNDARY_CONDITIONS},
+    **{name: "Tier 3: Derived Residues" for name in TIER_3_DERIVED_RESIDUES},
+}
+
+if len(STRICT_BENCHMARK_CONSTANT_TIERS) != (
+    len(TIER_1_TOPOLOGICAL_COORDINATES)
+    + len(TIER_2_OBSERVATIONAL_BOUNDARY_CONDITIONS)
+    + len(TIER_3_DERIVED_RESIDUES)
+):
+    raise RuntimeError("Strict benchmark constant tiers must form a disjoint partition.")
 
 SM_RUNNING_CONTENT = _coerce_str(_MODEL_CONSTANTS_CONFIG, "sm_running_content")
 RHN_THRESHOLD_MATCHING_ANGLE_SHIFTS_DEG = _coerce_float_sequence(_MODEL_CONSTANTS_CONFIG, "rhn_threshold_matching_angle_shifts_deg")
