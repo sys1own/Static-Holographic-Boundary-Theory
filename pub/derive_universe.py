@@ -27,8 +27,9 @@ from .tn import (
     topological_planck_mass_ev,
 )
 
-DEFAULT_PRECISION = 80
+DEFAULT_PRECISION = 50
 _GUARD_DIGITS = 12
+D5_WEIGHT_SIMPLEX_HYPERAREA_FRACTION = Fraction(160, 1521)
 
 
 def _decimal(value: Decimal | Fraction | float | int | str) -> Decimal:
@@ -196,7 +197,7 @@ def derive_alpha_surface(*, precision: int = DEFAULT_PRECISION) -> AlphaSurfaceD
 def derive_kappa_d5(*, precision: int = DEFAULT_PRECISION) -> KappaDerivation:
     with localcontext() as context:
         context.prec = precision + _GUARD_DIGITS
-        simplex_fraction = Fraction(160, 1521)
+        simplex_fraction = D5_WEIGHT_SIMPLEX_HYPERAREA_FRACTION
         sqrt_ten = Decimal(10).sqrt()
         weight_simplex_hyperarea = _fraction_to_decimal(simplex_fraction) * sqrt_ten
         total_quantum_dimension = su2_total_quantum_dimension_decimal(LEPTON_LEVEL, precision=context.prec)
@@ -319,7 +320,7 @@ def build_derivation_ledger(*, precision: int = DEFAULT_PRECISION) -> str:
         "D5 Hyperarea Invariant",
         f"- simplex hyperarea prefactor = {kappa.simplex_fraction.numerator}/{kappa.simplex_fraction.denominator}",
         f"- sqrt(10) = {_format_decimal(kappa.sqrt_ten, places=24)}",
-        f"- R_01^(par/vis) = (160/1521)*sqrt(10) = {_format_decimal(kappa.weight_simplex_hyperarea, places=24)}",
+        f"- R_01^(par/vis) = 160*sqrt(10)/1521 = {_format_decimal(kappa.weight_simplex_hyperarea, places=24)}",
         f"- D_SU(2)({LEPTON_LEVEL}) = sqrt((k_l+2)/2)/sin(pi/(k_l+2)) = {_format_decimal(kappa.su2_total_quantum_dimension, places=24)}",
         f"- beta = 1/2 ln D_SU(2) = {_format_decimal(kappa.beta, places=24)}",
         f"- eta_spin = (347 - 8 beta^2)/351 = {_format_decimal(kappa.eta_spin, places=24)}",
@@ -356,7 +357,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Derive branch-fixed universe constants from the (26, 8, 312) ledger.")
     parser.add_argument("--precision", type=int, default=DEFAULT_PRECISION, help="Decimal precision used for the derivation ledger.")
     args = parser.parse_args(tuple(argv) if argv is not None else None)
-    print(build_derivation_ledger(precision=max(args.precision, 32)))
+    print(build_derivation_ledger(precision=max(args.precision, DEFAULT_PRECISION)))
     return 0
 
 
