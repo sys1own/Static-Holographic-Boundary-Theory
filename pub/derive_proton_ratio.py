@@ -86,6 +86,14 @@ class CentralChargeGeometry:
     inverse_pixel_volume_fraction: Fraction
     inverse_pixel_volume_decimal: Decimal
 
+    @property
+    def structural_prefactor_fraction(self) -> Fraction:
+        return self.central_charge_ratio_fraction * self.inverse_pixel_volume_fraction
+
+    @property
+    def structural_prefactor_decimal(self) -> Decimal:
+        return self.central_charge_ratio_decimal * self.inverse_pixel_volume_decimal
+
 
 @dataclass(frozen=True)
 class VacuumPressureDerivation:
@@ -114,6 +122,10 @@ class ProtonRatioDerivation:
     absolute_delta: Decimal
     relative_error: Decimal
     tolerance: Decimal
+
+    @property
+    def structural_mu(self) -> Decimal:
+        return self.mu_audit
 
 
 def derive_central_charge_geometry() -> CentralChargeGeometry:
@@ -228,6 +240,7 @@ def build_proton_ratio_ledger(*, precision: int = DEFAULT_PRECISION) -> str:
         f"- I_Q = K/(3*k_q) = {geometry.quark_branching_index}",
         f"- V_px = h^vee_SU(3)/I_Q = {geometry.branch_pixel_simplex_volume_fraction.numerator}/{geometry.branch_pixel_simplex_volume_fraction.denominator}",
         f"- V_px^(-1) = {geometry.inverse_pixel_volume_fraction.numerator}/{geometry.inverse_pixel_volume_fraction.denominator}",
+        f"- (c_q/c_l) * V_px^(-1) = {geometry.structural_prefactor_fraction.numerator}/{geometry.structural_prefactor_fraction.denominator}",
         "",
         "SU(3)_8 Branching Pressure",
         f"- |S_00^(low)| = {_format_decimal(pressure.visible_reference_entry_magnitude, places=24)}",
@@ -235,11 +248,11 @@ def build_proton_ratio_ledger(*, precision: int = DEFAULT_PRECISION) -> str:
         f"- kappa_D5 = {_format_decimal(derivation.kappa_d5, places=24)}",
         f"- kappa_D5^(1/3) = {_format_decimal(derivation.kappa_d5_cuberoot, places=24)}",
         f"- geometric friction = (1-kappa_D5) * kappa_D5^(1/3) = {_format_decimal(derivation.geometric_friction_factor, places=24)}",
-        f"- pressure load = Pi_vac^2 / [(1-kappa_D5) * kappa_D5^(1/3)] = {_format_decimal(derivation.pressure_loading, places=24)}",
-        f"- Pi_branch^(SU(3)_8) = V_px^(-1) * pressure load = {_format_decimal(derivation.su3_branching_pressure_scale, places=24)}",
+        f"- P_mu = Pi_vac^2 / [(1-kappa_D5) * kappa_D5^(1/3)] = {_format_decimal(derivation.pressure_loading, places=24)}",
+        f"- Pi_branch^(SU(3)_8) = V_px^(-1) * P_mu = {_format_decimal(derivation.su3_branching_pressure_scale, places=24)}",
         "",
         "Mu Audit",
-        f"- mu_audit = (c_q/c_l) * Pi_branch^(SU(3)_8) = {_format_decimal(derivation.mu_audit, places=24)}",
+        f"- mu_audit = (c_q/c_l) * Pi_branch^(SU(3)_8) = mu_struct = ({geometry.structural_prefactor_fraction.numerator}/{geometry.structural_prefactor_fraction.denominator}) * P_mu = {_format_decimal(derivation.mu_audit, places=24)}",
         "",
         "Audit vs. CODATA",
         f"- scipy.constants.proton_mass = {_format_decimal(codata.proton_mass_kg, places=24)} kg",
