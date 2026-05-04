@@ -9881,7 +9881,8 @@ def verify_dark_energy_tension(
 
     lambda_surface_tension_si_m2 = holographic_surface_tension_lambda_si_m2(model=resolved_model)
     lambda_scaling_identity_si_m2 = holographic_lambda_scaling_identity_si_m2(model=resolved_model)
-    rho_vac_surface_tension_ev4 = c_dark_completion * PLANCK_MASS_EV**4 / resolved_model.bit_count
+    branch_planck_mass_ev = topological_planck_mass_ev()
+    rho_vac_surface_tension_ev4 = c_dark_completion * branch_planck_mass_ev**4 / resolved_model.bit_count
     rho_vac_from_defect_scale_ev4 = c_dark_completion * scales.m_0_uv_ev**4 / (resolved_model.kappa_geometric**4)
     surface_tension_prefactor = float(lambda_surface_tension_si_m2 / lambda_scaling_identity_si_m2)
     surface_tension_deviation_percent = float(
@@ -9906,16 +9907,15 @@ def verify_dark_energy_tension(
         bit_count=resolved_model.bit_count,
         kappa_geometric=resolved_model.kappa_geometric,
     )
-    bridge_planck_mass_ev = topological_planck_mass_ev()
     assert math.isclose(
         benchmark_m_nu_topological,
-        (bridge_planck_mass_ev / (HOLOGRAPHIC_BITS**0.25)) * KAPPA_D5,
+        (branch_planck_mass_ev / (HOLOGRAPHIC_BITS**0.25)) * KAPPA_D5,
         rel_tol=1.0e-15,
         abs_tol=1.0e-18,
     )
     assert math.isclose(
         m_nu_topological,
-        (bridge_planck_mass_ev / (resolved_model.bit_count**0.25)) * resolved_model.kappa_geometric,
+        (branch_planck_mass_ev / (resolved_model.bit_count**0.25)) * resolved_model.kappa_geometric,
         rel_tol=1.0e-15,
         abs_tol=1.0e-18,
     )
@@ -10217,11 +10217,10 @@ def verify_unitary_bounds(
         and triple_match_audit.saturated
     )
     assert dark_energy_audit.alpha_locked_under_bit_shift
-    # FIX: Use topological_planck_mass_ev() to ensure consistency with the
-    # bridge-derived coordinate.
+    branch_planck_mass_ev = topological_planck_mass_ev()
     assert math.isclose(
         dark_energy_audit.topological_mass_coordinate_ev,
-        (topological_planck_mass_ev() / (resolved_model.bit_count**0.25)) * resolved_model.kappa_geometric,
+        (branch_planck_mass_ev / (resolved_model.bit_count**0.25)) * resolved_model.kappa_geometric,
         rel_tol=1.0e-14,
         abs_tol=1.0e-18,
     )
