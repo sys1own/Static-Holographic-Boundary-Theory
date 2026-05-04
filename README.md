@@ -1,16 +1,15 @@
-# Static Holographic Boundary Theory
+# Static Holographic Boundary Theory: 
 ## Universal Source Code v1.0
 
 Static Holographic Boundary Theory (SHBT) is an executable proof architecture for a **Zero Free Parameter** boundary construction. In SHBT, Standard Model observables are treated as mandatory residues of effective 4D gravity on a finite-capacity horizon, not as outputs of a detached fit sector. The retained construction is anchored to the unique anomaly-free branch $(26, 8, 312)$, and every benchmark artifact in this repository is read as a consequence of that branch-fixed closure.
 
-Once the disclosed structural residues are fixed,
+The benchmark constants are tracked in `pub/constants.py` as a strict three-tier catalog.
 
-- $(k_{\ell}, k_q, K) = (26, 8, 312)$,
-- $\langle \Sigma_{126} \rangle / \langle \phi_{10} \rangle = 64/312$,
-- $G_{\rm SM} = 15$,
-- and the finite bit-capacity $N$ anchored to $\Lambda_{\rm obs}$,
+- `TIER_1_TOPOLOGICAL_COORDINATES` contains the branch-defining discrete coordinates: `LEPTON_LEVEL = 26`, `QUARK_LEVEL = 8`, `PARENT_LEVEL = 312`, and `G_SM = 15`.
+- `TIER_2_OBSERVATIONAL_BOUNDARY_CONDITIONS` contains the external observational anchors supplied to the verifier, including the Planck 2018 late-time cosmology inputs and the electroweak gauge data.
+- `TIER_3_DERIVED_RESIDUES` contains the quantities fixed once Tier 1 is chosen and Tier 2 is supplied, including `GEOMETRIC_KAPPA`, `HOLOGRAPHIC_BITS`, `R_GUT`, and the positive `c_{\rm dark}` completion residue.
 
-the framework retains no continuous phenomenological fit coordinates. SHBT is therefore presented here as executable proof, not as a fittable model.
+This is the precise sense in which SHBT retains no continuous phenomenological fit coordinates: Tier 1 identifies the unique anomaly-free cell, Tier 2 is boundary data rather than model freedom, and Tier 3 is computed consequence rather than adjustable input. SHBT is therefore presented here as executable proof, not as a fittable model.
 
 
 ## Framework Identity
@@ -101,7 +100,7 @@ The repository includes a production-grade diagnostic stack to ensure the mathem
 
 ### Topological Visualization (`plot_local_moat.py`)
 
-`plot_local_moat.py` generates a high-precision map of the **Local Moat** surrounding the anomaly-free island and writes `results/local_moat_topology.png`. The figure provides visual confirmation that the anomaly-free island is a zero-dimensional point in parameter space. By plotting the steep, non-linear rise of the framing anomaly $\Delta_{\rm fr}$ under any off-shell coordinate shift away from $(26, 8, 312)$, the engine demonstrates that there are no "nearby" admissible models. The "Moat" represents a terminal logical barrier where the Equivalence Principle is destroyed for any coordinate detuning.
+`plot_local_moat.py` generates a high-precision map of the Local Moat surrounding the anomaly-free island and writes `results/local_moat_topology.png`. The figure makes the moat visually explicit by showing the steep rise of the framing anomaly $\Delta_{\rm fr}$ under any off-shell coordinate shift away from $(26, 8, 312)$.
 
 ### Formal Exception Testing (`test_anomaly_logic.py`)
 
@@ -109,24 +108,29 @@ The repository includes a production-grade diagnostic stack to ensure the mathem
 
 ## Operational Usage
 
-Run the universal verifier from the repository root to execute the non-invertible derivation:
+Run the universal verifier from the repository root:
+
 ```bash
 python tn.py --output-dir results/
 ```
-The repository-root driver forwards into `pub/tn.py` and regenerates the benchmark-facing artifacts, numerical audits, manuscript exports, and reviewer packets from the disclosed branch data. The intended use is the **automated verification of a rigid branch-fixed theorem stack**, not a parameter search or curve-fitting exercise.
-Interpret `results/residuals.json` as the benchmark's **Audit Ledger**:
+
+The repository-root driver forwards into `pub/tn.py` and regenerates the benchmark-facing artifacts, numerical audits, manuscript exports, and reviewer packets from the disclosed branch data. The intended use is verification of a rigid branch-fixed theorem stack, not parameter search.
+
+Interpret `results/residuals.json` as the benchmark's audit ledger:
+
 - `unity_of_scale_identity.epsilon_lambda` is the closed Unity-of-Scale residue, not a tunable tolerance.
 - `gauge_residual_bookkeeping` discloses the separate gauge-coupling closure residue, including the topological mismatch, fractional residual, pull, and closure status.
-- `theoretical_uncertainty_fractions`: These are the disclosed two-loop transport residuals actually used by the verifier, representing the internal error-correction of the manifold.
-- `informational_costs.delta_s_red_nat`: This measures the finite one-copy redundancy cost ($\ln 2$) for forcing inverted support, acting as a mathematical rejection of non-minimal hierarchies.
-Read the JSON as a **Branch Diagnosis** rather than as an error-budget knob. The publication-facing summary in `results/final/benchmark_diagnostics.json` acts as the final signature of the audit. If these artifacts differ from the benchmark export, the run has exited the physical shell and is evaluating a non-physical, off-shell computation that is **not certified** by the SHBT framework.
+- `theoretical_uncertainty_fractions` and `transport_residuals` are the disclosed two-loop transport residuals actually used by the verifier, not adjustable padding for the pull table.
+- `informational_costs.delta_s_red_nat` is the finite one-copy redundancy cost for forcing inverted support, not a fit parameter.
+
+Read the JSON as a branch diagnosis rather than as an error-budget knob. The publication-facing summary in `results/benchmark_diagnostics.json` and `results/final/benchmark_diagnostics.json` now mirrors the same nested `unity_of_scale_identity.epsilon_lambda` payload. If these artifacts differ from the benchmark export, then the run is no longer evaluating the physical branch and should be treated as an unphysical off-shell computation.
 
 ## Reproducibility
 
 The benchmark configuration is locked by the checked-in YAML at `config/benchmark_v1.yaml` and the standard package configuration in `pyproject.toml`.
 
 - **Benchmark lockfile:** `config/benchmark_v1.yaml`
-- **SHA-256:** `37a8b88a5045e98a699638efae6f8f8b718b8fb8753aeabd8619d9deb4169604`
+- **SHA-256:** `737667c8d0a2925f09ae89e40a68f7d26d2177df383f4a220e7d9c2c6b55dbf4`
 - **Build backend:** `setuptools.build_meta`
 - **Python requirement:** `>=3.11`
 - **Pinned scientific stack:** `PyYAML==6.0.3`, `Jinja2==3.1.6`, `mpmath==1.3.0`, `numpy==1.26.4`, `scipy==1.12.0`, `matplotlib==3.8.3`
