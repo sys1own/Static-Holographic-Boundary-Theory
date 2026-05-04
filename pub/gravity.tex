@@ -119,10 +119,23 @@ bookkeeping are therefore two boundary images of the same completion residue.
 This also removes the usual fine-tuning reading of the cosmological term in the
 present framework. Here $\Lambda_{\rm holo}$ is not a tiny vacuum counter-term
 balanced against a separate large bare contribution; it is the
-\emph{Holographic Surface Tension} required to hold the topological moir\'e
-pattern of the $(26,8)$ cell on a finite branch-compatible horizon and to bind
-the completed $SO(10)_{312}$ partition function to the finite one-copy
-register $N_{\rm sat}$. If one were to send $\Lambda_{\rm holo}\to0^+$, then
+\emph{Holographic Surface Tension} required to bind the completed
+$SO(10)_{312}$ partition function to the finite one-copy register
+$N_{\rm sat}$ and to keep the anomaly-free $(26,8,312)$ cell inside the
+fixed-parent local moat singled out by $\Delta_{\rm fr}=0$. The neighboring
+cells $(25,8,312)$ and $(27,8,312)$ are not nearby vacua of the same branch:
+they already sit outside that moat because their vacuum modular-$T$ powers are
+fractional and therefore reopen the framing defect. On the retained de Sitter
+branch this closure requirement is equivalently the finite-capacity statement
+\begin{equation}
+\label{eq:gravity-surface-tension-necessity}
+ \Lambda_{\rm holo}>0
+ \qquad\Longleftrightarrow\qquad
+ R_H<\infty
+ \qquad\Longleftrightarrow\qquad
+ N_{\rm sat}<\infty.
+\end{equation}
+If one were to send $\Lambda_{\rm holo}\to0^+$, then
 Eq.~\eqref{eq:gravity-bit-budget-derived} would force $N_{\rm sat}\to\infty$,
 so the completed partition function would become divergent rather than
 natural. Equivalently, the mass bridge of
@@ -241,13 +254,21 @@ Equation~\eqref{eq:gravity-closure-tensor-local} defines the Bulk Closure Tensor
 \label{eq:gravity-topological-identity-local}
  \mathcal E_{\mu\nu}=\mathcal Q_{\rm iso}\,\Delta_{\rm fr}\,g_{\mu\nu},
 \end{equation}
-with $\mathcal Q_{\rm iso}\neq 0$ the branch-fixed isotropic anomaly density determined by the parent, visible, and completion central charges. The branch identity therefore reads
+with $\mathcal Q_{\rm iso}\neq 0$ the branch-fixed isotropic anomaly density
+determined by the parent, visible, and completion central charges. The branch
+identity therefore reads
 \begin{equation}
  \mathcal E_{\mu\nu}=0
  \qquad\Longleftrightarrow\qquad
  \Delta_{\rm fr}=0.
 \end{equation}
-Bulk diffeomorphism invariance is therefore not an independent postulate in this benchmark appendix: the contracted Bianchi identity is the bulk Ward identity of the same boundary framing condition that sets $\Delta_{\rm fr}=0$.
+Bulk diffeomorphism invariance is therefore not an independent postulate in
+this benchmark appendix: it is the branch's \emph{Noether bridge}, namely the
+transport of the boundary framing Ward identity into the bulk, with the
+contracted Bianchi identity as its covariant image. In this narrow
+appendix-level sense, ``Noether bridge'' refers only to conservation-law
+transport inside the static SHBT bookkeeping; it is not a separate microscopic
+derivation beyond the branch-fixed closure assumptions.
 Equivalently, the effective Einstein system is not an extra dynamical postulate but the covariant restatement of the branch closure,
 \begin{equation}
 \label{eq:gravity-effective-einstein-local}
@@ -843,8 +864,9 @@ solution is
 Therefore the isotropic Hubble friction $3H_{\Lambda}$ is the unique mechanism
 that absorbs the packing deficit $\delta_{\rm topo}$ into the positive vacuum
 loading rather than leaving a residual source in $\nabla^{\mu}T^{\rm vis}_{\mu\nu}$.
-Section~G.3 gives the expanded contradiction proof in the moir\'e-consistency
-language, but the lock itself is already forced by the Topological EFE identity.
+Section~G.3 gives the expanded contradiction proof in the local-moat and
+tilt-consistency language, but the lock itself is already forced by the
+Topological EFE identity.
 
 Let $B$ be a ball-shaped boundary region, let $H_{\rm mod}(B)$ be its modular Hamiltonian, and let $\xi_B$ be the associated modular-flow vector field that acts as the local boost/isometry at the entangling cut. The first law of entanglement requires
 \begin{equation}
@@ -974,13 +996,19 @@ code subspace.
 
 \manualappendixlabel{G.3}{app:gwb-tilt-corollary}
 \manualappendixlabel{G.3}{app:gwb-tilt-requirement}
+\manualappendixlabel{G.3}{app:topological-moat-consistency}
 \manualappendixlabel{G.3}{app:topological-moire-consistency}
-\subsection*{G.3: Topological Moir\'e Consistency, Vacuum Loading, and the Bianchi Lock}
+\subsection*{G.3: Local-Moat Selection, Topological Moir\'e Tilt, Vacuum Loading, and the Bianchi Lock}
 
-The scalar departure from exact scale invariance is the long-wavelength
-\emph{Topological Moir\'e Pattern} generated when the discrete $K=312$
-boundary lattice is mapped into a continuous four-dimensional horizon
-geometry. Writing the scalar mismatch as
+The branch-selection problem and the scalar-tilt problem are related but not
+identical. In the discrete visible-level scan, the anomaly-free cell
+$(26,8,312)$ is isolated by the fixed-parent local moat: the nearest
+neighbors $(25,8,312)$ and $(27,8,312)$ already carry
+$\Delta_{\rm fr}=0.24$ and $2/9$, so they are excluded before any
+phenomenological ranking is attempted. Once that moat-selected lattice is
+projected onto a smooth four-dimensional horizon geometry, the scalar
+departure from exact scale invariance appears as the long-wavelength
+\emph{Topological Moir\'e Pattern}. Writing the scalar mismatch as
 \begin{equation}
 \label{eq:gravity-moire-scalar}
  \Delta_{\rm Moire}
@@ -1061,9 +1089,14 @@ putative mismatch as
 \end{equation}
 the anomaly-free branch requires $\Delta_{\rm lock}=0$. Here
 $\Delta_{\rm lock}$ is the uncancelled FRW lift of the branch-fixed packing
-deficit $\delta_{\rm topo}=1-\kappa_{D_5}$. If the Hubble friction $3H_{\Lambda}$
-did not exactly match the geometric cancellation required by
-$\delta_{\rm topo}$, then $\Delta_{\rm lock}\neq0$ and therefore
+deficit $\delta_{\rm topo}=1-\kappa_{D_5}$. If the Hubble friction
+$3H_{\Lambda}$ did not exactly match the geometric cancellation required by
+$\delta_{\rm topo}$, then $\Delta_{\rm lock}\neq0$, so
+Eq.~\eqref{eq:gravity-frw-lock-mismatch} would imply
+$\nabla^{\mu}T^{\rm vis}_{\mu 0}\neq0$ in contradiction with
+Eq.~\eqref{eq:gravity-visible-stress-conservation}. This is the
+Bianchi/friction contradiction that fixes the isotropic damping coefficient on
+the anomaly-free branch.
 \paragraph{Geometric Friction Identity.}
 To make the uniqueness claim explicit, replace the de Sitter damping coefficient
 by a general isotropic rate $\Gamma$ and write
