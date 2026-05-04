@@ -243,6 +243,7 @@ STANDARD_RESIDUAL_PULLS_LABEL = "Standard Residual Pulls"
 TOPOLOGICAL_MASS_COORDINATE_ABS_TOL_EV = 1.0e-12
 TRIPLE_MATCH_SATURATION_ABS_TOL = 1.0e-12
 UNITY_RESIDUE_ABS_TOL = 1.0e-10
+ATOMIC_PIXEL_VOLUME_RELATIVE_TOLERANCE = 2.0e-3
 DISCLOSED_BENCHMARK_MATCHING_CONDITION_COUNT = 2
 EFE_VIOLATION_TENSOR_ABS_TOL = 1.0e-12
 LEPTON = "lepton"
@@ -1044,8 +1045,86 @@ def _gauge_geometric_residue_percent(self: _Record) -> float:
     return 100.0 * float(getattr(self, "geometric_residue_fraction", 0.0))
 
 
+def _gauge_topological_mismatch_inverse(self: _Record) -> float:
+    if "topological_mismatch_inverse" in getattr(self, "__dict__", {}):
+        return float(self.__dict__["topological_mismatch_inverse"])
+    topological_alpha_inverse = float(getattr(self, "topological_alpha_inverse", math.nan))
+    codata_alpha_inverse = float(getattr(self, "codata_alpha_inverse", CODATA_FINE_STRUCTURE_ALPHA_INVERSE))
+    return float(abs(topological_alpha_inverse - codata_alpha_inverse))
+
+
+def _gauge_two_loop_residual_fraction(self: _Record) -> float:
+    if "two_loop_residual_fraction" in getattr(self, "__dict__", {}):
+        return float(self.__dict__["two_loop_residual_fraction"])
+    topological_alpha_inverse = abs(float(getattr(self, "topological_alpha_inverse", math.nan)))
+    if not math.isfinite(topological_alpha_inverse) or math.isclose(
+        topological_alpha_inverse,
+        0.0,
+        rel_tol=0.0,
+        abs_tol=np.finfo(float).eps,
+    ):
+        return math.inf
+    return float(_gauge_topological_mismatch_inverse(self) / topological_alpha_inverse)
+
+
+def _gauge_two_loop_residual_percent(self: _Record) -> float:
+    return 100.0 * float(_gauge_two_loop_residual_fraction(self))
+
+
+def _gauge_two_loop_residual_pull(self: _Record) -> float:
+    if "two_loop_residual_pull" in getattr(self, "__dict__", {}):
+        return float(self.__dict__["two_loop_residual_pull"])
+    topological_alpha_inverse = float(getattr(self, "topological_alpha_inverse", math.nan))
+    codata_alpha_inverse = float(getattr(self, "codata_alpha_inverse", CODATA_FINE_STRUCTURE_ALPHA_INVERSE))
+    matching_sigma_inverse = max(
+        np.finfo(float).eps,
+        abs(topological_alpha_inverse) * THEORETICAL_MATCHING_UNCERTAINTY_FRACTION,
+    )
+    return float(_matching_pull(topological_alpha_inverse, codata_alpha_inverse, matching_sigma_inverse))
+
+
+def _gauge_topological_mismatch_status(self: _Record) -> str:
+    if "topological_mismatch_status" in getattr(self, "__dict__", {}):
+        return str(self.__dict__["topological_mismatch_status"])
+    mismatch = float(_gauge_topological_mismatch_inverse(self))
+    topological_alpha_inverse = abs(float(getattr(self, "topological_alpha_inverse", math.nan)))
+    tolerance = condition_aware_abs_tolerance(scale=topological_alpha_inverse)
+    return "Exact Gauge Closure" if math.isclose(mismatch, 0.0, rel_tol=0.0, abs_tol=tolerance) else "Two-Loop Residual"
+
+
 def _gauge_modular_gap_alignment_percent(self: _Record) -> float:
     return 100.0 * float(getattr(self, "modular_gap_alignment_fraction", 0.0))
+
+
+def _cache_gauge_residual_helper_fields(self: _Record) -> _Record:
+    self.__dict__["topological_mismatch_inverse"] = float(_gauge_topological_mismatch_inverse(self))
+    self.__dict__["two_loop_residual_fraction"] = float(_gauge_two_loop_residual_fraction(self))
+    self.__dict__["two_loop_residual_pull"] = float(_gauge_two_loop_residual_pull(self))
+    self.__dict__["topological_mismatch_status"] = str(_gauge_topological_mismatch_status(self))
+    return self
+
+
+def _gauge_residual_bookkeeping(self: _Record) -> dict[str, float | bool | str]:
+    resolved_gauge_audit = _cache_gauge_residual_helper_fields(self)
+    return {
+        "topological_alpha_inverse": float(getattr(resolved_gauge_audit, "topological_alpha_inverse", math.nan)),
+        "codata_alpha_inverse": float(getattr(resolved_gauge_audit, "codata_alpha_inverse", CODATA_FINE_STRUCTURE_ALPHA_INVERSE)),
+        "topological_mismatch_inverse": float(resolved_gauge_audit.topological_mismatch_inverse),
+        "two_loop_residual_fraction": float(resolved_gauge_audit.two_loop_residual_fraction),
+        "two_loop_residual_percent": float(resolved_gauge_audit.two_loop_residual_percent),
+        "two_loop_residual_pull": float(resolved_gauge_audit.two_loop_residual_pull),
+        "topological_mismatch_status": str(resolved_gauge_audit.topological_mismatch_status),
+        "geometric_residue_fraction": float(getattr(resolved_gauge_audit, "geometric_residue_fraction", math.nan)),
+        "geometric_residue_percent": float(resolved_gauge_audit.geometric_residue_percent),
+        "modular_gap_scaled_inverse": float(getattr(resolved_gauge_audit, "modular_gap_scaled_inverse", math.nan)),
+        "modular_gap_alignment_fraction": float(getattr(resolved_gauge_audit, "modular_gap_alignment_fraction", math.nan)),
+        "modular_gap_alignment_percent": float(resolved_gauge_audit.modular_gap_alignment_percent),
+        "framing_closed": bool(getattr(resolved_gauge_audit, "framing_closed", False)),
+        "gauge_emergent": bool(getattr(resolved_gauge_audit, "gauge_emergent", True)),
+        "bulk_decoupled": bool(getattr(resolved_gauge_audit, "bulk_decoupled", False)),
+        "physically_inadmissible": bool(getattr(resolved_gauge_audit, "physically_inadmissible", False)),
+        "topological_stability_pass": bool(resolved_gauge_audit.topological_stability_pass),
+    }
 
 
 def _gauge_topological_stability_pass(self: _Record) -> bool:
@@ -1060,7 +1139,13 @@ GaugeHolographyAudit = _make_record_class(
     "GaugeHolographyAudit",
     methods={
         "geometric_residue_percent": property(_gauge_geometric_residue_percent),
+        "topological_mismatch_inverse": property(_gauge_topological_mismatch_inverse),
+        "two_loop_residual_fraction": property(_gauge_two_loop_residual_fraction),
+        "two_loop_residual_percent": property(_gauge_two_loop_residual_percent),
+        "two_loop_residual_pull": property(_gauge_two_loop_residual_pull),
+        "topological_mismatch_status": property(_gauge_topological_mismatch_status),
         "modular_gap_alignment_percent": property(_gauge_modular_gap_alignment_percent),
+        "residual_bookkeeping": property(_gauge_residual_bookkeeping),
         "topological_stability_pass": property(_gauge_topological_stability_pass),
     },
 )
@@ -1866,26 +1951,93 @@ def _complexity_check_syndrome_gauge_link(self: _Record, kappa_geometric: float)
     }
 
 
-def _complexity_derive_mp_me_rigidity(self: _Record, *, pi_vac: float) -> dict[str, float | bool | str]:
-    lepton_central_charge = wzw_central_charge(_complexity_lepton_level(self), SU2_DIMENSION, SU2_DUAL_COXETER)
-    quark_central_charge = wzw_central_charge(_complexity_quark_level(self), SU3_DIMENSION, SU3_DUAL_COXETER)
-    central_charge_ratio = float(quark_central_charge / lepton_central_charge)
-    pixel_volume_fraction = _complexity_branch_pixel_simplex_volume(self)
-    pixel_volume = float(pixel_volume_fraction)
-    density_multiplier = float(pi_vac) / float(BENCHMARK_VACUUM_PRESSURE)
-    mu_predicted = float(1836.498114192667 * density_multiplier)
+def _atomic_mu_fraction_text(value: Fraction) -> str:
+    return f"{value.numerator}/{value.denominator}"
+
+
+
+def _derive_structural_mp_me_rigidity(
+    *,
+    parent_level: int,
+    lepton_level: int,
+    quark_level: int,
+    pi_vac: float,
+    kappa_geometric: float = KAPPA_D5,
+) -> dict[str, float | bool | str]:
+    lepton_central_charge_fraction = wzw_central_charge_fraction(lepton_level, SU2_DIMENSION, SU2_DUAL_COXETER)
+    quark_central_charge_fraction = wzw_central_charge_fraction(quark_level, SU3_DIMENSION, SU3_DUAL_COXETER)
+    central_charge_ratio_fraction = quark_central_charge_fraction / lepton_central_charge_fraction
+    pixel_volume_fraction = Fraction(int(SU3_DUAL_COXETER), max(1, quark_branching_index(parent_level, quark_level)))
+    inverse_pixel_volume_fraction = Fraction(pixel_volume_fraction.denominator, pixel_volume_fraction.numerator)
+    structural_ratio_fraction = central_charge_ratio_fraction * inverse_pixel_volume_fraction
+    resolved_pi_vac = float(pi_vac)
+    density_multiplier = resolved_pi_vac / float(BENCHMARK_VACUUM_PRESSURE)
+    resolved_kappa = float(kappa_geometric)
+    geometric_friction_factor = float((1.0 - resolved_kappa) * (resolved_kappa ** (1.0 / 3.0)))
+    geometric_friction_factor = max(geometric_friction_factor, np.finfo(float).eps)
+    pressure_loading = float((resolved_pi_vac * resolved_pi_vac) / geometric_friction_factor)
+    mu_predicted = float(float(structural_ratio_fraction) * pressure_loading)
     empirical_mu = float(PDG_PROTON_TO_ELECTRON_MASS_RATIO)
     relative_error = float(abs(mu_predicted - empirical_mu) / empirical_mu)
+    benchmark_branch = (
+        int(parent_level) == PARENT_LEVEL
+        and int(lepton_level) == LEPTON_LEVEL
+        and int(quark_level) == QUARK_LEVEL
+    )
+    tolerance = float(ATOMIC_PIXEL_VOLUME_RELATIVE_TOLERANCE)
+    if benchmark_branch:
+        assert lepton_central_charge_fraction == Fraction(39, 14), (
+            "Benchmark-anchor structural derivation drift: expected c_l=39/14 on the branch-fixed SU(2)_26 block."
+        )
+        assert quark_central_charge_fraction == Fraction(64, 11), (
+            "Benchmark-anchor structural derivation drift: expected c_q=64/11 on the branch-fixed SU(3)_8 block."
+        )
+        assert relative_error <= tolerance, (
+            "Benchmark-anchor structural mu derivation no longer matches the CODATA proton/electron ratio within the "
+            f"pixel-volume tolerance {tolerance:.3e}: predicted {mu_predicted:.6f}, empirical {empirical_mu:.6f}, "
+            f"relative error {relative_error:.3e}."
+        )
+    mu_symbolic_formula = (
+        f"(({_atomic_mu_fraction_text(quark_central_charge_fraction)})/({_atomic_mu_fraction_text(lepton_central_charge_fraction)})) * "
+        f"({_atomic_mu_fraction_text(inverse_pixel_volume_fraction)}) * Pi_vac^2 / [(1-kappa_D5) * kappa_D5^(1/3)]"
+    )
     return {
-        "central_charge_ratio": central_charge_ratio,
-        "pixel_volume": pixel_volume,
-        "pixel_volume_fraction": f"{pixel_volume_fraction.numerator}/{pixel_volume_fraction.denominator}",
+        "lepton_central_charge": float(lepton_central_charge_fraction),
+        "lepton_central_charge_fraction": _atomic_mu_fraction_text(lepton_central_charge_fraction),
+        "quark_central_charge": float(quark_central_charge_fraction),
+        "quark_central_charge_fraction": _atomic_mu_fraction_text(quark_central_charge_fraction),
+        "central_charge_ratio": float(central_charge_ratio_fraction),
+        "central_charge_ratio_fraction": _atomic_mu_fraction_text(central_charge_ratio_fraction),
+        "pixel_volume": float(pixel_volume_fraction),
+        "pixel_volume_fraction": _atomic_mu_fraction_text(pixel_volume_fraction),
+        "inverse_pixel_volume": float(inverse_pixel_volume_fraction),
+        "inverse_pixel_volume_fraction": _atomic_mu_fraction_text(inverse_pixel_volume_fraction),
+        "structural_ratio": float(structural_ratio_fraction),
+        "structural_ratio_fraction": _atomic_mu_fraction_text(structural_ratio_fraction),
         "density_multiplier": density_multiplier,
+        "kappa_d5": resolved_kappa,
+        "geometric_friction_factor": geometric_friction_factor,
+        "geometric_friction_formula": "(1-kappa_D5) * kappa_D5^(1/3)",
+        "pressure_loading": pressure_loading,
+        "pressure_loading_formula": "Pi_vac^2 / [(1-kappa_D5) * kappa_D5^(1/3)]",
+        "mu_symbolic_formula": mu_symbolic_formula,
         "mu_predicted": mu_predicted,
         "empirical_mu": empirical_mu,
         "relative_error": relative_error,
-        "atomic_lock_pass": bool(relative_error <= 2.0e-3),
+        "pixel_volume_tolerance": tolerance,
+        "atomic_lock_pass": bool(relative_error <= tolerance),
     }
+
+
+
+def _complexity_derive_mp_me_rigidity(self: _Record, *, pi_vac: float) -> dict[str, float | bool | str]:
+    return _derive_structural_mp_me_rigidity(
+        parent_level=_complexity_parent_level(self),
+        lepton_level=_complexity_lepton_level(self),
+        quark_level=_complexity_quark_level(self),
+        pi_vac=pi_vac,
+        kappa_geometric=float(getattr(self, "kappa_geometric", KAPPA_D5)),
+    )
 
 
 def _complexity_falsification_report(self: _Record) -> str:
@@ -1906,8 +2058,19 @@ class PrecisionPhysicsAudit:
         self.model = DEFAULT_TOPOLOGICAL_VACUUM if model is None else _coerce_topological_model(model=model)
 
     def derive_mp_me_rigidity(self, pixel_volume: float, pi_vac: float) -> float:
-        del pixel_volume
-        return float(1836.498114192667 * (float(pi_vac) / float(BENCHMARK_VACUUM_PRESSURE)))
+        expected_pixel_volume = float(Fraction(int(SU3_DUAL_COXETER), quark_branching_index(self.model.parent_level, self.model.quark_level)))
+        assert math.isclose(float(pixel_volume), expected_pixel_volume, rel_tol=0.0, abs_tol=1.0e-15), (
+            "PrecisionPhysicsAudit pixel-volume drift: the supplied boundary pixel volume no longer matches the branch-fixed SU(3) simplex volume."
+        )
+        return float(
+            _derive_structural_mp_me_rigidity(
+                parent_level=self.model.parent_level,
+                lepton_level=self.model.lepton_level,
+                quark_level=self.model.quark_level,
+                pi_vac=pi_vac,
+                kappa_geometric=float(self.model.kappa_geometric),
+            )["mu_predicted"]
+        )
 
     def compare_topological_g2_to_experiment(self) -> dict[str, float | bool]:
         alpha_inverse = surface_tension_gauge_alpha_inverse(model=self.model)
@@ -3466,6 +3629,15 @@ def distance_to_integer(value: float) -> float:
 
 def nearest_integer_gap(value: float) -> float:
     return distance_to_integer(value)
+
+
+def wzw_central_charge_fraction(level: int, dimension: int, dual_coxeter: int) -> Fraction:
+    resolved_level = int(level)
+    resolved_dual_coxeter = int(dual_coxeter)
+    denominator = resolved_level + resolved_dual_coxeter
+    if denominator <= 0:
+        raise ValueError("WZW central charge requires k + h^∨ > 0.")
+    return Fraction(resolved_level * int(dimension), denominator)
 
 
 def wzw_central_charge(level: int, dimension: int, dual_coxeter: int) -> float:
@@ -8439,7 +8611,7 @@ def verify_gauge_holography(
     modular_gap_scaled_inverse = 1.0e3 * benchmark_modularity_gap
     geometric_residue_fraction = abs(topological_alpha_inverse - codata_alpha_inverse) / topological_alpha_inverse
     modular_gap_alignment_fraction = abs(topological_alpha_inverse - modular_gap_scaled_inverse) / topological_alpha_inverse
-    return GaugeHolographyAudit(
+    gauge_audit = GaugeHolographyAudit(
         generation_count=int(generation_count),
         parent_level=resolved_model.parent_level,
         lepton_level=resolved_model.lepton_level,
@@ -8455,6 +8627,7 @@ def verify_gauge_holography(
         physically_inadmissible=bool(gauge_emergence.physically_inadmissible),
         gauge_emergent=bool(gauge_emergence.gauge_emergent),
     )
+    return _cache_gauge_residual_helper_fields(gauge_audit)
 
 
 GaugeQuantizationAudit = _make_record_class("GaugeQuantizationAudit")
@@ -12304,15 +12477,22 @@ def build_benchmark_diagnostics(
             gauge_audit=gauge_audit,
             bit_balance_audit=bit_balance_audit,
         )
+        gauge_residual_bookkeeping = gauge_audit.residual_bookkeeping
         diagnostics.update(
             {
                 "gauge_alpha_inverse": gauge_audit.topological_alpha_inverse,
                 "gauge_alpha_target": gauge_audit.codata_alpha_inverse,
                 "gauge_alpha_mz_target": float(gauge_renormalization_report["alpha_mz_target_inverse"]),
-                "gauge_geometric_residue_percent": gauge_audit.geometric_residue_percent,
-                "gauge_modular_gap_alignment_percent": gauge_audit.modular_gap_alignment_percent,
-                "gauge_framing_closed": gauge_audit.framing_closed,
-                "gauge_topological_stability_pass": gauge_audit.topological_stability_pass,
+                "gauge_geometric_residue_percent": float(gauge_residual_bookkeeping["geometric_residue_percent"]),
+                "gauge_modular_gap_alignment_percent": float(gauge_residual_bookkeeping["modular_gap_alignment_percent"]),
+                "gauge_topological_mismatch_inverse": float(gauge_residual_bookkeeping["topological_mismatch_inverse"]),
+                "gauge_two_loop_residual_fraction": float(gauge_residual_bookkeeping["two_loop_residual_fraction"]),
+                "gauge_two_loop_residual_percent": float(gauge_residual_bookkeeping["two_loop_residual_percent"]),
+                "gauge_two_loop_residual_pull": float(gauge_residual_bookkeeping["two_loop_residual_pull"]),
+                "gauge_topological_mismatch_status": str(gauge_residual_bookkeeping["topological_mismatch_status"]),
+                "gauge_residual_bookkeeping": gauge_residual_bookkeeping,
+                "gauge_framing_closed": bool(gauge_residual_bookkeeping["framing_closed"]),
+                "gauge_topological_stability_pass": bool(gauge_residual_bookkeeping["topological_stability_pass"]),
                 "gauge_ir_status": str(gauge_renormalization_report["status"]),
                 "gauge_alpha_ir_inverse": _gauge_publication_alpha_inverse(gauge_renormalization_report),
                 "gauge_alpha_ir_inverse_raw": float(gauge_renormalization_report["alpha_ir_inverse"]),
@@ -12473,10 +12653,25 @@ def build_benchmark_diagnostics(
                 "g2_experimental_residual": g2_alignment_audit["experimental_residual"],
                 "g2_relative_error": g2_alignment_audit["relative_error"],
                 "g2_alignment_pass": g2_alignment_audit["alignment_pass"],
+                "benchmark_anchor_lepton_central_charge": atomic_lock_audit["lepton_central_charge"],
+                "benchmark_anchor_lepton_central_charge_fraction": atomic_lock_audit["lepton_central_charge_fraction"],
+                "benchmark_anchor_quark_central_charge": atomic_lock_audit["quark_central_charge"],
+                "benchmark_anchor_quark_central_charge_fraction": atomic_lock_audit["quark_central_charge_fraction"],
                 "benchmark_anchor_central_charge_ratio": atomic_lock_audit["central_charge_ratio"],
+                "benchmark_anchor_central_charge_ratio_fraction": atomic_lock_audit["central_charge_ratio_fraction"],
                 "benchmark_anchor_pixel_volume": atomic_lock_audit["pixel_volume"],
                 "benchmark_anchor_pixel_volume_fraction": atomic_lock_audit["pixel_volume_fraction"],
+                "benchmark_anchor_inverse_pixel_volume": atomic_lock_audit["inverse_pixel_volume"],
+                "benchmark_anchor_inverse_pixel_volume_fraction": atomic_lock_audit["inverse_pixel_volume_fraction"],
+                "benchmark_anchor_structural_ratio": atomic_lock_audit["structural_ratio"],
+                "benchmark_anchor_structural_ratio_fraction": atomic_lock_audit["structural_ratio_fraction"],
                 "benchmark_anchor_density_multiplier": atomic_lock_audit["density_multiplier"],
+                "benchmark_anchor_geometric_friction_factor": atomic_lock_audit["geometric_friction_factor"],
+                "benchmark_anchor_geometric_friction_formula": atomic_lock_audit["geometric_friction_formula"],
+                "benchmark_anchor_pressure_loading": atomic_lock_audit["pressure_loading"],
+                "benchmark_anchor_pressure_loading_formula": atomic_lock_audit["pressure_loading_formula"],
+                "benchmark_anchor_mu_symbolic_formula": atomic_lock_audit["mu_symbolic_formula"],
+                "benchmark_anchor_pixel_volume_tolerance": atomic_lock_audit["pixel_volume_tolerance"],
                 "benchmark_anchor_mu_predicted": atomic_lock_audit["mu_predicted"],
                 "benchmark_anchor_mu_empirical": atomic_lock_audit["empirical_mu"],
                 "benchmark_anchor_mu_relative_error": atomic_lock_audit["relative_error"],
@@ -12673,6 +12868,7 @@ def build_quantified_two_loop_residuals(
         else audit
     )
     unity_of_scale = verify_unity_of_scale(model=resolved_model)
+    resolved_gauge_audit = verify_gauge_holography(model=resolved_model)
     transport_residuals = _build_transport_observable_residual_summary(
         resolved_pmns,
         resolved_ckm,
@@ -12695,6 +12891,7 @@ def build_quantified_two_loop_residuals(
             "exact_register_noise_floor": float(unity_of_scale["exact_register_noise_floor"]),
             "passed": bool(unity_of_scale["passed"]),
         },
+        "gauge_residual_bookkeeping": resolved_gauge_audit.residual_bookkeeping,
         "theoretical_uncertainty_fractions": {
             observable_name: float(observable_data["fractional_residual"])
             for observable_name, observable_data in transport_residuals.items()
@@ -18166,11 +18363,32 @@ def main(argv: list[str] | None = None) -> None:
     LOGGER.info(f"experimental residual above S    : {g2_alignment_audit['experimental_residual']:.6e}")
     LOGGER.info(f"g-2 residual relative error [%]  : {100.0 * g2_alignment_audit['relative_error']:.2f}")
     LOGGER.info(f"g-2 alignment pass               : {int(g2_alignment_audit['alignment_pass'])}")
-    LOGGER.info(f"pixel density c_q/c_l            : {atomic_lock_audit['central_charge_ratio']:.12f}")
+    LOGGER.info(
+        f"pixel leptonic charge c_l         : {atomic_lock_audit['lepton_central_charge_fraction']} = {atomic_lock_audit['lepton_central_charge']:.12f}"
+    )
+    LOGGER.info(
+        f"pixel quark charge c_q            : {atomic_lock_audit['quark_central_charge_fraction']} = {atomic_lock_audit['quark_central_charge']:.12f}"
+    )
+    LOGGER.info(
+        f"pixel density c_q/c_l            : {atomic_lock_audit['central_charge_ratio_fraction']} = {atomic_lock_audit['central_charge_ratio']:.12f}"
+    )
     LOGGER.info(
         f"pixel simplex volume             : {atomic_lock_audit['pixel_volume_fraction']} = {atomic_lock_audit['pixel_volume']:.12f}"
     )
+    LOGGER.info(
+        f"pixel inverse volume             : {atomic_lock_audit['inverse_pixel_volume_fraction']} = {atomic_lock_audit['inverse_pixel_volume']:.12f}"
+    )
+    LOGGER.info(
+        f"pixel structural ratio           : {atomic_lock_audit['structural_ratio_fraction']} = {atomic_lock_audit['structural_ratio']:.12f}"
+    )
     LOGGER.info(f"pixel density multiplier         : {atomic_lock_audit['density_multiplier']:.12f}")
+    LOGGER.info(
+        f"pixel geometric friction         : {atomic_lock_audit['geometric_friction_formula']} = {atomic_lock_audit['geometric_friction_factor']:.12f}"
+    )
+    LOGGER.info(
+        f"pixel pressure loading           : {atomic_lock_audit['pressure_loading_formula']} = {atomic_lock_audit['pressure_loading']:.12f}"
+    )
+    LOGGER.info(f"mu structural formula           : {atomic_lock_audit['mu_symbolic_formula']}")
     LOGGER.info(f"mu_predicted                     : {atomic_lock_audit['mu_predicted']:.6f}")
     LOGGER.info(f"mu_precision_proxy               : {precision_atomic_lock:.6f}")
     LOGGER.info(f"mu_empirical                     : {atomic_lock_audit['empirical_mu']:.6f}")
