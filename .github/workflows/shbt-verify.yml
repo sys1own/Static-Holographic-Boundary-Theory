@@ -18,7 +18,7 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Install locked audit environment
+      - name: Bootstrap sector
         run: >-
           python -m pip install
           PyYAML==6.0.3
@@ -29,19 +29,17 @@ jobs:
           matplotlib==3.8.3
           sympy==1.12
 
+      - name: Universal Derivation Audit
+        run: |
+          python pub/derive_universe.py
+          python pub/derive_proton_ratio.py
+          python pub/verify_parity_sink.py
+          python pub/moat_stress_tester.py
+
       - name: Execute Sector Proof
         run: |
           mkdir -p results
           python pub/tn.py --sector ${{ matrix.sector }} --output-dir results/
-
-      - name: Run derive-universe integrity check
-        run: python pub/derive_universe.py
-
-      - name: Run proton-ratio integrity check
-        run: python pub/derive_proton_ratio.py
-
-      - name: Run parity-sink integrity check
-        run: python pub/verify_parity_sink.py
 
       - name: Upload audit artifacts
         uses: actions/upload-artifact@v4
