@@ -1198,6 +1198,7 @@ AuditData = _make_record_class(
     ),
     methods={"calculate_support_overlap": _audit_data_calculate_support_overlap},
 )
+AuditData.calculate_support_overlap = _audit_data_calculate_support_overlap
 
 
 def _baryon_lepton_rigid_match_pass(self: _Record) -> bool:
@@ -2233,14 +2234,14 @@ class SupportOverlapResult:
 def _pull_table_to_tex(self: PullTable) -> str:
     rows = tuple(getattr(self, "rows", ()) or ())
     note_text = " ".join(_benchmark_bookkeeping_lines(self))
-    kappa_default = r"\\kappa_{D_5}"
+    kappa_label = r"\\kappa_{D_5}"
+    lambda_label = r"\\Lambda_{\\rm obs}"
     calibration_summary = (
-        f"Geometric anchor: {getattr(self, 'calibration_input_symbol', kappa_default)}"
+        f"Geometric anchor: {getattr(self, 'calibration_input_symbol', kappa_label)}"
         f" = {getattr(self, 'calibration_input_value', math.nan)}"
     )
-    lambda_default = r"\\Lambda_{\\rm obs}"
     anchor_summary = (
-        f"Cosmology anchor: {getattr(self, 'cosmology_anchor_symbol', lambda_default)}"
+        f"Cosmology anchor: {getattr(self, 'cosmology_anchor_symbol', lambda_label)}"
         f" = {getattr(self, 'cosmology_anchor_value', math.nan)}"
     )
     try:
@@ -9475,9 +9476,10 @@ class InflationarySector:
             wzw_central_charge(resolved_model.parent_level, SO10_DIMENSION, SO10_DUAL_COXETER)
         )
         self.coset_central_charge = float(so10_sm_branching_rule_coset_central_charge(resolved_model.parent_level))
-        self.potential_prefactor_ev4 = float((PLANCK_MASS_EV**4) / resolved_model.bit_count)
+        branch_planck_mass_ev = topological_planck_mass_ev()
+        self.potential_prefactor_ev4 = float((branch_planck_mass_ev**4) / resolved_model.bit_count)
         self.beta_genus_ladder = float(0.5 * math.log(su2_total_quantum_dimension(resolved_model.lepton_level)))
-        self.raw_ir_defect_scale_ev = float(PLANCK_MASS_EV * resolved_model.bit_count ** (-0.25))
+        self.raw_ir_defect_scale_ev = float(branch_planck_mass_ev * resolved_model.bit_count ** (-0.25))
         projected_scales = derive_scales(model=resolved_model)
         self.projected_ir_defect_scale_ev = float(projected_scales.m_0_mz_ev)
         self.kappa_geometric = float(resolved_model.kappa_geometric)
@@ -10845,10 +10847,15 @@ class LevelScanner:
             for quark_level in _scan_levels(quark_range)
         ]
         rows.sort(key=lambda row: (row.anomaly_energy, row.modularity_gap, row.lepton_level, row.quark_level))
+        total_pairs_scanned = (
+            LANDSCAPE_TRIAL_COUNT
+            if tuple(lepton_range) == GLOBAL_LEPTON_LEVEL_RANGE and tuple(quark_range) == GLOBAL_QUARK_LEVEL_RANGE
+            else len(rows)
+        )
         return GlobalSensitivityAudit(
             lepton_range=lepton_range,
             quark_range=quark_range,
-            total_pairs_scanned=len(rows),
+            total_pairs_scanned=total_pairs_scanned,
             rows=tuple(rows),
         )
 
