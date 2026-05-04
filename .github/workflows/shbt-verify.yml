@@ -37,6 +37,9 @@ jobs:
       - name: Run derive-universe integrity check
         run: python pub/derive_universe.py
 
+      - name: Run proton-ratio integrity check
+        run: python pub/derive_proton_ratio.py
+
       - name: Run parity-sink integrity check
         run: python pub/verify_parity_sink.py
 
