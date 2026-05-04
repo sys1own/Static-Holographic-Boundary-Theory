@@ -8,16 +8,16 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Sequence
 
-from scipy.constants import physical_constants
+from scipy.constants import electron_mass, proton_mass
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
     __package__ = "pub"
 
 from . import algebra
+from .derive_universe import derive_kappa_d5 as derive_decimal_kappa_d5
 from .physics_engine import quark_branching_pressure
 from .tn import (
-    KAPPA_D5,
     LEPTON_LEVEL,
     PARENT_LEVEL,
     QUARK_LEVEL,
@@ -80,16 +80,24 @@ class CentralChargeGeometry:
     lepton_central_charge_fraction: Fraction
     quark_central_charge_fraction: Fraction
     central_charge_ratio_fraction: Fraction
+    central_charge_ratio_decimal: Decimal
     quark_branching_index: int
     branch_pixel_simplex_volume_fraction: Fraction
     inverse_pixel_volume_fraction: Fraction
-    structural_prefactor_fraction: Fraction
+    inverse_pixel_volume_decimal: Decimal
 
 
 @dataclass(frozen=True)
 class VacuumPressureDerivation:
     visible_reference_entry_magnitude: Decimal
     vacuum_pressure: Decimal
+
+
+@dataclass(frozen=True)
+class CodataMassRatioAudit:
+    proton_mass_kg: Decimal
+    electron_mass_kg: Decimal
+    mass_ratio: Decimal
 
 
 @dataclass(frozen=True)
@@ -100,8 +108,10 @@ class ProtonRatioDerivation:
     kappa_d5_cuberoot: Decimal
     geometric_friction_factor: Decimal
     pressure_loading: Decimal
-    structural_mu: Decimal
-    codata_mu: Decimal
+    su3_branching_pressure_scale: Decimal
+    mu_audit: Decimal
+    codata_audit: CodataMassRatioAudit
+    absolute_delta: Decimal
     relative_error: Decimal
     tolerance: Decimal
 
@@ -110,13 +120,14 @@ def derive_central_charge_geometry() -> CentralChargeGeometry:
     lepton_central_charge_fraction = wzw_central_charge_fraction(LEPTON_LEVEL, SU2_DIMENSION, SU2_DUAL_COXETER)
     quark_central_charge_fraction = wzw_central_charge_fraction(QUARK_LEVEL, SU3_DIMENSION, SU3_DUAL_COXETER)
     central_charge_ratio_fraction = quark_central_charge_fraction / lepton_central_charge_fraction
+    central_charge_ratio_decimal = _fraction_to_decimal(central_charge_ratio_fraction)
     resolved_quark_branching_index = quark_branching_index(PARENT_LEVEL, QUARK_LEVEL)
     branch_pixel_simplex_volume_fraction = Fraction(SU3_DUAL_COXETER, resolved_quark_branching_index)
     inverse_pixel_volume_fraction = Fraction(
         branch_pixel_simplex_volume_fraction.denominator,
         branch_pixel_simplex_volume_fraction.numerator,
     )
-    structural_prefactor_fraction = central_charge_ratio_fraction * inverse_pixel_volume_fraction
+    inverse_pixel_volume_decimal = _fraction_to_decimal(inverse_pixel_volume_fraction)
 
     assert lepton_central_charge_fraction == Fraction(39, 14)
     assert quark_central_charge_fraction == Fraction(64, 11)
@@ -126,10 +137,11 @@ def derive_central_charge_geometry() -> CentralChargeGeometry:
         lepton_central_charge_fraction=lepton_central_charge_fraction,
         quark_central_charge_fraction=quark_central_charge_fraction,
         central_charge_ratio_fraction=central_charge_ratio_fraction,
+        central_charge_ratio_decimal=central_charge_ratio_decimal,
         quark_branching_index=resolved_quark_branching_index,
         branch_pixel_simplex_volume_fraction=branch_pixel_simplex_volume_fraction,
         inverse_pixel_volume_fraction=inverse_pixel_volume_fraction,
-        structural_prefactor_fraction=structural_prefactor_fraction,
+        inverse_pixel_volume_decimal=inverse_pixel_volume_decimal,
     )
 
 
@@ -143,8 +155,15 @@ def derive_vacuum_pressure() -> VacuumPressureDerivation:
     )
 
 
-def codata_proton_electron_ratio() -> Decimal:
-    return _decimal(physical_constants["proton-electron mass ratio"][0])
+def derive_codata_mass_ratio() -> CodataMassRatioAudit:
+    proton_mass_kg = _decimal(proton_mass)
+    electron_mass_kg = _decimal(electron_mass)
+    mass_ratio = proton_mass_kg / electron_mass_kg
+    return CodataMassRatioAudit(
+        proton_mass_kg=proton_mass_kg,
+        electron_mass_kg=electron_mass_kg,
+        mass_ratio=mass_ratio,
+    )
 
 
 def derive_proton_ratio(
@@ -154,21 +173,23 @@ def derive_proton_ratio(
 ) -> ProtonRatioDerivation:
     geometry = derive_central_charge_geometry()
     vacuum_pressure = derive_vacuum_pressure()
+    codata_audit = derive_codata_mass_ratio()
 
     with localcontext() as context:
         context.prec = precision + _GUARD_DIGITS
-        kappa_d5 = _decimal(KAPPA_D5)
+        kappa_d5 = derive_decimal_kappa_d5(precision=context.prec).kappa
         kappa_d5_cuberoot = decimal_cuberoot(kappa_d5, precision=context.prec)
         geometric_friction_factor = (Decimal(1) - kappa_d5) * kappa_d5_cuberoot
         pressure_loading = (vacuum_pressure.vacuum_pressure * vacuum_pressure.vacuum_pressure) / geometric_friction_factor
-        structural_mu = _fraction_to_decimal(geometry.structural_prefactor_fraction) * pressure_loading
-        codata_mu = codata_proton_electron_ratio()
-        relative_error = abs(structural_mu - codata_mu) / codata_mu
+        su3_branching_pressure_scale = geometry.inverse_pixel_volume_decimal * pressure_loading
+        mu_audit = geometry.central_charge_ratio_decimal * su3_branching_pressure_scale
+        absolute_delta = abs(mu_audit - codata_audit.mass_ratio)
+        relative_error = absolute_delta / codata_audit.mass_ratio
         context.prec = precision
 
     assert relative_error <= tolerance, (
         "Branch proton/electron residue no longer matches the CODATA value within the one-copy dictionary tolerance: "
-        f"predicted {structural_mu}, CODATA {codata_mu}, relative error {relative_error}."
+        f"predicted {mu_audit}, CODATA {codata_audit.mass_ratio}, relative error {relative_error}."
     )
 
     return ProtonRatioDerivation(
@@ -178,8 +199,10 @@ def derive_proton_ratio(
         kappa_d5_cuberoot=+kappa_d5_cuberoot,
         geometric_friction_factor=+geometric_friction_factor,
         pressure_loading=+pressure_loading,
-        structural_mu=+structural_mu,
-        codata_mu=+codata_mu,
+        su3_branching_pressure_scale=+su3_branching_pressure_scale,
+        mu_audit=+mu_audit,
+        codata_audit=codata_audit,
+        absolute_delta=+absolute_delta,
         relative_error=+relative_error,
         tolerance=+tolerance,
     )
@@ -189,6 +212,7 @@ def build_proton_ratio_ledger(*, precision: int = DEFAULT_PRECISION) -> str:
     derivation = derive_proton_ratio(precision=precision)
     geometry = derivation.geometry
     pressure = derivation.vacuum_pressure
+    codata = derivation.codata_audit
 
     lines = [
         "Proton Ratio Ledger",
@@ -204,19 +228,25 @@ def build_proton_ratio_ledger(*, precision: int = DEFAULT_PRECISION) -> str:
         f"- I_Q = K/(3*k_q) = {geometry.quark_branching_index}",
         f"- V_px = h^vee_SU(3)/I_Q = {geometry.branch_pixel_simplex_volume_fraction.numerator}/{geometry.branch_pixel_simplex_volume_fraction.denominator}",
         f"- V_px^(-1) = {geometry.inverse_pixel_volume_fraction.numerator}/{geometry.inverse_pixel_volume_fraction.denominator}",
-        f"- structural prefactor = (c_q/c_l) * V_px^(-1) = {geometry.structural_prefactor_fraction.numerator}/{geometry.structural_prefactor_fraction.denominator}",
         "",
-        "SU(3)_8 Vacuum Pressure",
+        "SU(3)_8 Branching Pressure",
         f"- |S_00^(low)| = {_format_decimal(pressure.visible_reference_entry_magnitude, places=24)}",
         f"- Pi_vac = -(Delta r/8) * log|S_00^(low)| = {_format_decimal(pressure.vacuum_pressure, places=24)}",
-        "",
-        "Mandatory Residue",
         f"- kappa_D5 = {_format_decimal(derivation.kappa_d5, places=24)}",
         f"- kappa_D5^(1/3) = {_format_decimal(derivation.kappa_d5_cuberoot, places=24)}",
         f"- geometric friction = (1-kappa_D5) * kappa_D5^(1/3) = {_format_decimal(derivation.geometric_friction_factor, places=24)}",
         f"- pressure load = Pi_vac^2 / [(1-kappa_D5) * kappa_D5^(1/3)] = {_format_decimal(derivation.pressure_loading, places=24)}",
-        f"- mu_struct = (c_q/c_l) * V_px^(-1) * pressure load = {_format_decimal(derivation.structural_mu, places=24)}",
-        f"- CODATA mu = {_format_decimal(derivation.codata_mu, places=12)}",
+        f"- Pi_branch^(SU(3)_8) = V_px^(-1) * pressure load = {_format_decimal(derivation.su3_branching_pressure_scale, places=24)}",
+        "",
+        "Mu Audit",
+        f"- mu_audit = (c_q/c_l) * Pi_branch^(SU(3)_8) = {_format_decimal(derivation.mu_audit, places=24)}",
+        "",
+        "Audit vs. CODATA",
+        f"- scipy.constants.proton_mass = {_format_decimal(codata.proton_mass_kg, places=24)} kg",
+        f"- scipy.constants.electron_mass = {_format_decimal(codata.electron_mass_kg, places=24)} kg",
+        f"- m_p/m_e via scipy.constants.proton_mass / electron_mass = {_format_decimal(codata.mass_ratio, places=12)}",
+        f"- audit minus CODATA = {_format_decimal(derivation.mu_audit - codata.mass_ratio, places=24)}",
+        f"- |audit - CODATA| = {_format_decimal(derivation.absolute_delta, places=24)}",
         f"- relative error = {_format_decimal(derivation.relative_error, places=24)}",
         f"- tolerance = {_format_decimal(derivation.tolerance, places=12)}",
         f"- within one-copy tolerance = {derivation.relative_error <= derivation.tolerance}",
