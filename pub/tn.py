@@ -1046,6 +1046,10 @@ def _gauge_topological_mismatch_inverse(self: _Record) -> float:
     return float(abs(topological_alpha_inverse - codata_alpha_inverse))
 
 
+def _gauge_two_loop_residual_inverse(self: _Record) -> float:
+    return float(_gauge_topological_mismatch_inverse(self))
+
+
 def _gauge_two_loop_residual_fraction(self: _Record) -> float:
     if "two_loop_residual_fraction" in getattr(self, "__dict__", {}):
         return float(self.__dict__["two_loop_residual_fraction"])
@@ -1085,6 +1089,24 @@ def _gauge_topological_mismatch_status(self: _Record) -> str:
     return "Exact Gauge Closure" if math.isclose(mismatch, 0.0, rel_tol=0.0, abs_tol=tolerance) else "Two-Loop Residual"
 
 
+def _gauge_known_transport_gap_note(self: _Record) -> str:
+    if "known_transport_gap_note" in getattr(self, "__dict__", {}):
+        return str(self.__dict__["known_transport_gap_note"])
+    mismatch = float(_gauge_two_loop_residual_inverse(self))
+    if not math.isfinite(mismatch):
+        return "Gauge transport gap unresolved."
+    topological_alpha_inverse = float(getattr(self, "topological_alpha_inverse", math.nan))
+    codata_alpha_inverse = float(getattr(self, "codata_alpha_inverse", CODATA_FINE_STRUCTURE_ALPHA_INVERSE))
+    tolerance = condition_aware_abs_tolerance(scale=abs(topological_alpha_inverse))
+    if math.isclose(mismatch, 0.0, rel_tol=0.0, abs_tol=tolerance):
+        return "No unresolved gauge-transport gap."
+    return (
+        "Two-Loop Residual: current one-loop transport leaves "
+        f"alpha_surf^-1={topological_alpha_inverse:.12f} offset from "
+        f"CODATA alpha^-1={codata_alpha_inverse:.12f} by {mismatch:.12f}."
+    )
+
+
 def _gauge_modular_gap_alignment_percent(self: _Record) -> float:
     return 100.0 * float(getattr(self, "modular_gap_alignment_fraction", 0.0))
 
@@ -1094,6 +1116,7 @@ def _cache_gauge_residual_helper_fields(self: _Record) -> _Record:
     self.__dict__["two_loop_residual_fraction"] = float(_gauge_two_loop_residual_fraction(self))
     self.__dict__["two_loop_residual_pull"] = float(_gauge_two_loop_residual_pull(self))
     self.__dict__["topological_mismatch_status"] = str(_gauge_topological_mismatch_status(self))
+    self.__dict__["known_transport_gap_note"] = str(_gauge_known_transport_gap_note(self))
     return self
 
 
@@ -1103,10 +1126,12 @@ def _gauge_residual_bookkeeping(self: _Record) -> dict[str, float | bool | str]:
         "topological_alpha_inverse": float(getattr(resolved_gauge_audit, "topological_alpha_inverse", math.nan)),
         "codata_alpha_inverse": float(getattr(resolved_gauge_audit, "codata_alpha_inverse", CODATA_FINE_STRUCTURE_ALPHA_INVERSE)),
         "topological_mismatch_inverse": float(resolved_gauge_audit.topological_mismatch_inverse),
+        "two_loop_residual_inverse": float(resolved_gauge_audit.two_loop_residual_inverse),
         "two_loop_residual_fraction": float(resolved_gauge_audit.two_loop_residual_fraction),
         "two_loop_residual_percent": float(resolved_gauge_audit.two_loop_residual_percent),
         "two_loop_residual_pull": float(resolved_gauge_audit.two_loop_residual_pull),
         "topological_mismatch_status": str(resolved_gauge_audit.topological_mismatch_status),
+        "known_transport_gap_note": str(resolved_gauge_audit.known_transport_gap_note),
         "geometric_residue_fraction": float(getattr(resolved_gauge_audit, "geometric_residue_fraction", math.nan)),
         "geometric_residue_percent": float(resolved_gauge_audit.geometric_residue_percent),
         "modular_gap_scaled_inverse": float(getattr(resolved_gauge_audit, "modular_gap_scaled_inverse", math.nan)),
@@ -1133,10 +1158,12 @@ GaugeHolographyAudit = _make_record_class(
     methods={
         "geometric_residue_percent": property(_gauge_geometric_residue_percent),
         "topological_mismatch_inverse": property(_gauge_topological_mismatch_inverse),
+        "two_loop_residual_inverse": property(_gauge_two_loop_residual_inverse),
         "two_loop_residual_fraction": property(_gauge_two_loop_residual_fraction),
         "two_loop_residual_percent": property(_gauge_two_loop_residual_percent),
         "two_loop_residual_pull": property(_gauge_two_loop_residual_pull),
         "topological_mismatch_status": property(_gauge_topological_mismatch_status),
+        "known_transport_gap_note": property(_gauge_known_transport_gap_note),
         "modular_gap_alignment_percent": property(_gauge_modular_gap_alignment_percent),
         "residual_bookkeeping": property(_gauge_residual_bookkeeping),
         "topological_stability_pass": property(_gauge_topological_stability_pass),
@@ -8574,7 +8601,7 @@ def verify_gauge_holography(
     lepton_level: int | None = None,
     quark_level: int | None = None,
     generation_count: int = NON_SINGLET_WEYL_COUNT,
-    codata_alpha_inverse: float = ALPHA_INV_BENCHMARK,
+    codata_alpha_inverse: float = CODATA_FINE_STRUCTURE_ALPHA_INVERSE,
     *,
     model: TopologicalModel | None = None,
 ) -> GaugeHolographyAudit:
@@ -11606,6 +11633,7 @@ class ComprehensiveAudit:
             f"({gauge_audit.lepton_level}+{gauge_audit.quark_level}) = {gauge_audit.topological_alpha_inverse:.12f}"
         )
         LOGGER.info(f"alpha^-1 benchmark anchor      : {gauge_audit.codata_alpha_inverse:.12f}")
+        LOGGER.info(f"known one-loop transport gap   : {gauge_audit.two_loop_residual_inverse:.12f} [{gauge_audit.topological_mismatch_status}]")
         LOGGER.info(f"10^3 Delta_mod                  : {gauge_audit.modular_gap_scaled_inverse:.12f}")
         LOGGER.info(f"gauge geometric residue         : {gauge_audit.geometric_residue_percent:.2f}%")
         LOGGER.info(f"modular-gap alignment           : {gauge_audit.modular_gap_alignment_percent:.2f}%")
@@ -16603,6 +16631,7 @@ def final_audit_check(
     LOGGER.info(f"BARYON STABILITY (tau_p): {gravity_audit.baryon_stability.proton_lifetime_years:.2e} years [PROTECTED BY DELTA_FR=0]")
     LOGGER.info(f"alpha^-1 level density           : {gauge_audit.topological_alpha_inverse:.12f}")
     LOGGER.info(f"alpha^-1 benchmark anchor        : {gauge_audit.codata_alpha_inverse:.12f}")
+    LOGGER.info(f"known one-loop transport gap     : {gauge_audit.two_loop_residual_inverse:.12f} [{gauge_audit.topological_mismatch_status}]")
     LOGGER.info(f"10^3 Delta_mod                   : {gauge_audit.modular_gap_scaled_inverse:.12f}")
     LOGGER.info(f"gauge geometric residue          : {gauge_audit.geometric_residue_percent:.2f}%")
     LOGGER.info(f"[VERIFIED] Gauge Coupling Residue (Alpha) -> Delta: {gauge_audit.geometric_residue_percent:.2f}%")
