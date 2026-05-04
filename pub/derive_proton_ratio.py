@@ -30,7 +30,7 @@ from .tn import (
     wzw_central_charge_fraction,
 )
 
-DEFAULT_PRECISION = 80
+DEFAULT_PRECISION = 50
 DEFAULT_RELATIVE_TOLERANCE = Decimal("1e-3")
 _GUARD_DIGITS = 12
 
@@ -112,6 +112,7 @@ class CodataMassRatioAudit:
 class ProtonRatioDerivation:
     geometry: CentralChargeGeometry
     vacuum_pressure: VacuumPressureDerivation
+    structural_prefactor: Decimal
     kappa_d5: Decimal
     kappa_d5_cuberoot: Decimal
     geometric_friction_factor: Decimal
@@ -189,12 +190,13 @@ def derive_proton_ratio(
 
     with localcontext() as context:
         context.prec = precision + _GUARD_DIGITS
+        structural_prefactor = geometry.structural_prefactor_decimal
         kappa_d5 = derive_decimal_kappa_d5(precision=context.prec).kappa
         kappa_d5_cuberoot = decimal_cuberoot(kappa_d5, precision=context.prec)
         geometric_friction_factor = (Decimal(1) - kappa_d5) * kappa_d5_cuberoot
         pressure_loading = (vacuum_pressure.vacuum_pressure * vacuum_pressure.vacuum_pressure) / geometric_friction_factor
         su3_branching_pressure_scale = geometry.inverse_pixel_volume_decimal * pressure_loading
-        mu_audit = geometry.central_charge_ratio_decimal * su3_branching_pressure_scale
+        mu_audit = structural_prefactor * pressure_loading
         absolute_delta = abs(mu_audit - codata_audit.mass_ratio)
         relative_error = absolute_delta / codata_audit.mass_ratio
         context.prec = precision
@@ -207,6 +209,7 @@ def derive_proton_ratio(
     return ProtonRatioDerivation(
         geometry=geometry,
         vacuum_pressure=vacuum_pressure,
+        structural_prefactor=+structural_prefactor,
         kappa_d5=+kappa_d5,
         kappa_d5_cuberoot=+kappa_d5_cuberoot,
         geometric_friction_factor=+geometric_friction_factor,
@@ -245,6 +248,7 @@ def build_proton_ratio_ledger(*, precision: int = DEFAULT_PRECISION) -> str:
         "SU(3)_8 Branching Pressure",
         f"- |S_00^(low)| = {_format_decimal(pressure.visible_reference_entry_magnitude, places=24)}",
         f"- Pi_vac = -(Delta r/8) * log|S_00^(low)| = {_format_decimal(pressure.vacuum_pressure, places=24)}",
+        f"- (c_q/c_l) * V_px^(-1) = {_format_decimal(derivation.structural_prefactor, places=24)}",
         f"- kappa_D5 = {_format_decimal(derivation.kappa_d5, places=24)}",
         f"- kappa_D5^(1/3) = {_format_decimal(derivation.kappa_d5_cuberoot, places=24)}",
         f"- geometric friction = (1-kappa_D5) * kappa_D5^(1/3) = {_format_decimal(derivation.geometric_friction_factor, places=24)}",
@@ -252,7 +256,7 @@ def build_proton_ratio_ledger(*, precision: int = DEFAULT_PRECISION) -> str:
         f"- Pi_branch^(SU(3)_8) = V_px^(-1) * P_mu = {_format_decimal(derivation.su3_branching_pressure_scale, places=24)}",
         "",
         "Mu Audit",
-        f"- mu_audit = (c_q/c_l) * Pi_branch^(SU(3)_8) = mu_struct = ({geometry.structural_prefactor_fraction.numerator}/{geometry.structural_prefactor_fraction.denominator}) * P_mu = {_format_decimal(derivation.mu_audit, places=24)}",
+        f"- mu_audit = (c_q/c_l) * V_px^(-1) * Pi_vac^2 / [(1-kappa_D5) * kappa_D5^(1/3)] = ({geometry.structural_prefactor_fraction.numerator}/{geometry.structural_prefactor_fraction.denominator}) * P_mu = {_format_decimal(derivation.mu_audit, places=24)}",
         "",
         "Audit vs. CODATA",
         f"- scipy.constants.proton_mass = {_format_decimal(codata.proton_mass_kg, places=24)} kg",
@@ -271,7 +275,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Derive the proton-to-electron mass ratio from branch geometry.")
     parser.add_argument("--precision", type=int, default=DEFAULT_PRECISION, help="Decimal precision used for the structural ledger.")
     args = parser.parse_args(tuple(argv) if argv is not None else None)
-    print(build_proton_ratio_ledger(precision=max(args.precision, 32)))
+    print(build_proton_ratio_ledger(precision=max(args.precision, DEFAULT_PRECISION)))
     return 0
 
 
