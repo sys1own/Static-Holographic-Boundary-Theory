@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import math
 import sys
 from dataclasses import dataclass
 from decimal import Decimal, localcontext
@@ -197,10 +198,15 @@ def derive_proton_ratio(
         pressure_loading = (vacuum_pressure.vacuum_pressure * vacuum_pressure.vacuum_pressure) / geometric_friction_factor
         su3_branching_pressure_scale = geometry.inverse_pixel_volume_decimal * pressure_loading
         mu_audit = structural_prefactor * pressure_loading
+        derived_mu = float(mu_audit)
         absolute_delta = abs(mu_audit - codata_audit.mass_ratio)
         relative_error = absolute_delta / codata_audit.mass_ratio
         context.prec = precision
 
+    assert math.isclose(derived_mu, 1836.152, rel_tol=1e-3), (
+        "Atomic lock failed: derived branch ratio no longer tracks the benchmark proton/electron mass target "
+        f"within 1e-3 relative tolerance; derived_mu={derived_mu:.12f}."
+    )
     assert relative_error <= tolerance, (
         "Branch proton/electron residue no longer matches the CODATA value within the one-copy dictionary tolerance: "
         f"predicted {mu_audit}, CODATA {codata_audit.mass_ratio}, relative error {relative_error}."
