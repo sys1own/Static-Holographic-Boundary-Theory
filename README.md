@@ -115,7 +115,8 @@ python tn.py --output-dir results/
 ```
 The repository-root driver forwards into `pub/tn.py` and regenerates the benchmark-facing artifacts, numerical audits, manuscript exports, and reviewer packets from the disclosed branch data. The intended use is the **automated verification of a rigid branch-fixed theorem stack**, not a parameter search or curve-fitting exercise.
 Interpret `results/residuals.json` as the benchmark's **Audit Ledger**:
-- `unity_of_scale_identity.epsilon_lambda`: This is the closed Unity-of-Scale residue, currently evaluated at $O(10^{-199})$, which serves as a fixed identity rather than a tunable tolerance.
+- `unity_of_scale_identity.epsilon_lambda` is the closed Unity-of-Scale residue, not a tunable tolerance.
+- `gauge_residual_bookkeeping` discloses the separate gauge-coupling closure residue, including the topological mismatch, fractional residual, pull, and closure status.
 - `theoretical_uncertainty_fractions`: These are the disclosed two-loop transport residuals actually used by the verifier, representing the internal error-correction of the manifold.
 - `informational_costs.delta_s_red_nat`: This measures the finite one-copy redundancy cost ($\ln 2$) for forcing inverted support, acting as a mathematical rejection of non-minimal hierarchies.
 Read the JSON as a **Branch Diagnosis** rather than as an error-budget knob. The publication-facing summary in `results/final/benchmark_diagnostics.json` acts as the final signature of the audit. If these artifacts differ from the benchmark export, the run has exited the physical shell and is evaluating a non-physical, off-shell computation that is **not certified** by the SHBT framework.
