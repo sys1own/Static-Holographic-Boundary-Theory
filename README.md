@@ -26,7 +26,7 @@ $$
 \Delta_{\rm fr} = 0,
 $$
 
-so the closure tensor vanishes on-shell and the anomalous bulk source remains absent. Detune any coordinate and the framing defect reopens, the closure tensor becomes non-zero, an anomalous source $J_{\mu\nu}^{(a)}$ is induced, and the Equivalence Principle in the bulk is destroyed. In SHBT, attempted coordinate detuning is therefore a proof of failure, not a path to a better fit.
+so the closure tensor vanishes on-shell and the anomalous bulk source remains absent. Detune any coordinate and the framing defect reopens, the closure tensor becomes non-zero, an anomalous source $J_{\mu\nu}^{(a)}$ is induced, and the Equivalence Principle in the bulk is destroyed. In SHBT, attempted coordinate detuning is therefore a proof of failure, not a path to a better fit. The sealing clause is explicit: if a coordinate detuning drives any Tier 3 Derived Residue beyond the quantified two-loop limits disclosed in `results/residuals.json`, then the detuned proposal is treated as falsified rather than as a nearby admissible variant of the benchmark branch.
 
 ## Unity of Scale
 
@@ -125,6 +125,18 @@ Interpret `results/residuals.json` as the benchmark's audit ledger:
 
 Read the JSON as a branch diagnosis rather than as an error-budget knob. The publication-facing summary in `results/benchmark_diagnostics.json` and `results/final/benchmark_diagnostics.json` now mirrors the same nested `unity_of_scale_identity.epsilon_lambda` payload. If these artifacts differ from the benchmark export, then the run is no longer evaluating the physical branch and should be treated as an unphysical off-shell computation.
 
+## Derivation Ledger
+
+The standalone `derive_*.py` scripts are publication-facing spot checks for the same benchmark branch. Where an external CODATA comparator exists, the script prints it directly; where no external CODATA entry exists, the script instead audits the branch-fixed theorem closure against the live `tn.py` benchmark.
+
+| Script | Ledger output | Comparator / anchor | What the comparison seals |
+| --- | --- | --- | --- |
+| `python pub/derive_universe.py` | `alpha_surf^-1 = 2340/17` from the branch-fixed gauge-density ratio | CODATA `alpha^-1 = 137.035999084` | Confirms that the disclosed gauge-side residue is reported against the standard electromagnetic reference rather than hidden behind a retuned threshold. |
+| `python pub/derive_universe.py` | `kappa_D5`, `m_nu = kappa_D5 M_P N^{-1/4}`, and `epsilon_Lambda` from the Unity of Scale Identity | No standalone CODATA constant; audited against the theorem closure and the live `tn.py` benchmark export | Confirms that the D5 hyperarea residue, finite-capacity mass bridge, and gravity-side closure remain branch-fixed derived residues rather than floating normalizations. |
+| `python pub/derive_proton_ratio.py` | `mu_audit = (c_q/c_l) \Pi_{\rm branch}^{SU(3)_8}` with `c_q = 64/11` and `c_l = 39/14` | CODATA `m_p/m_e` from `scipy.constants.proton_mass / scipy.constants.electron_mass` | Makes the proton/electron mass-ratio audit transparent by comparing the branch-derived residue to the standard CODATA mass ratio in the script output itself. |
+
+Treat these ledgers as sealed diagnostics. They are not auxiliary fit scripts: they are short-form disclosures of the same branch-fixed outputs exported by the main verifier.
+
 ## Reproducibility
 
 The benchmark configuration is locked by the checked-in YAML at `config/benchmark_v1.yaml` and the standard package configuration in `pyproject.toml`.
@@ -133,7 +145,17 @@ The benchmark configuration is locked by the checked-in YAML at `config/benchmar
 - **SHA-256:** `737667c8d0a2925f09ae89e40a68f7d26d2177df383f4a220e7d9c2c6b55dbf4`
 - **Build backend:** `setuptools.build_meta`
 - **Python requirement:** `>=3.11`
-- **Pinned scientific stack:** `PyYAML==6.0.3`, `Jinja2==3.1.6`, `mpmath==1.3.0`, `numpy==1.26.4`, `scipy==1.12.0`, `matplotlib==3.8.3`
+- **Pinned scientific stack:** `PyYAML==6.0.3`, `Jinja2==3.1.6`, `mpmath==1.3.0`, `numpy==1.26.4`, `scipy==1.12.0`, `matplotlib==3.8.3`, `sympy==1.12`
+
+### Constant Tiers
+
+- **Topological Coordinates** are the branch-fixed integers and discrete support counts carried by `TIER_1_TOPOLOGICAL_COORDINATES`: `(k_{\ell}, k_q, K) = (26, 8, 312)` together with `G_SM = 15`. Changing these is not recalibration; it is a coordinate detuning that moves the run off the published branch.
+- **Observational Boundary Conditions** are the external anchors carried by `TIER_2_OBSERVATIONAL_BOUNDARY_CONDITIONS`, such as `\Lambda_{\rm obs}`, the late-time cosmology inputs, and the electroweak comparison data. These are supplied to the verifier as boundary data, not opened as hidden fit directions.
+- **Derived Residues** are the theorem outputs carried by `TIER_3_DERIVED_RESIDUES` and the generated audit artifacts: `kappa_{D_5}`, `N_{\rm holo}`, `R_{\rm GUT}`, `c_{\rm dark}`, `epsilon_\Lambda`, the two-loop transport residual fractions, and the informational costs written under `results/`. These quantities are consequences of Tier 1 plus Tier 2 and are therefore the objects that must remain numerically stable under rerun.
+
+### Reviewer Trap Clause
+
+The repository's falsification rule is strict. If any **Derived Residue** drifts beyond the quantified two-loop limits disclosed in `results/residuals.json` during a coordinate detuning, then SHBT counts that detuned run as falsified. In particular, a failure of `unity_of_scale_identity.epsilon_lambda`, the gauge residual bookkeeping, the disclosed transport residual fractions, or the one-copy informational costs is not interpreted as a better neighboring fit. It is interpreted as proof that the computation has exited the anomaly-free shell and no longer represents the physical `(26, 8, 312)` branch.
 
 These locks matter. The benchmark is only meaningful if the same structural residues, the same transport tolerances, and the same reporting stack reproduce the same published artifacts. Reproducibility in SHBT is therefore a proof obligation, not a convenience feature.
 
