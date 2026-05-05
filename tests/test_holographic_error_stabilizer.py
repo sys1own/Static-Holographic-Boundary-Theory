@@ -5,6 +5,7 @@ import pytest
 from shbt.core.holographic_error_stabilizer import (
     BENCHMARK_BRANCH,
     FAILED_BRANCHES,
+    HolographicStabilizer,
     build_holographic_error_stabilizer_audit,
     simulate_failed_checksum,
 )
@@ -23,6 +24,25 @@ def test_benchmark_branch_is_self_correcting_error_stabilizer() -> None:
     assert audit.recovery.recovery_threshold_ev > 0
     assert audit.recovery.dimensionless_syndrome_threshold > 0
     assert audit.reference_failure.closure_equivalence_verified
+
+
+def test_holographic_stabilizer_bulk_checksum_locks_benchmark_branch() -> None:
+    verification = HolographicStabilizer().verify_bulk_checksum()
+
+    assert verification.benchmark_branch == BENCHMARK_BRANCH
+    assert verification.charge_checksum_passed
+    assert verification.momentum_checksum_passed
+    assert verification.parity_checksum_passed
+    assert verification.passed
+
+
+def test_holographic_stabilizer_can_simulate_boundary_decoherence() -> None:
+    verification = HolographicStabilizer(simulate_boundary_decoherence=True).verify_bulk_checksum()
+
+    assert verification.charge_checksum_passed
+    assert verification.momentum_checksum_passed
+    assert verification.parity_checksum_passed
+    assert not verification.passed
 
 
 @pytest.mark.parametrize("law", ("charge", "momentum", "parity"))
