@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import math
 import sys
 from dataclasses import dataclass
 from decimal import Decimal, localcontext
@@ -34,6 +33,15 @@ from .tn import (
 DEFAULT_PRECISION = 50
 DEFAULT_RELATIVE_TOLERANCE = Decimal("1e-3")
 _GUARD_DIGITS = 12
+LEPTON_CENTRAL_CHARGE_FRACTION = Fraction(39, 14)
+QUARK_CENTRAL_CHARGE_FRACTION = Fraction(64, 11)
+BRANCH_PIXEL_VOLUME_FRACTION = Fraction(3, 13)
+BRANCH_PIXEL_VOLUME_INVERSE_FRACTION = Fraction(
+    BRANCH_PIXEL_VOLUME_FRACTION.denominator,
+    BRANCH_PIXEL_VOLUME_FRACTION.numerator,
+)
+BRANCH_CENTRAL_CHARGE_RATIO_FRACTION = QUARK_CENTRAL_CHARGE_FRACTION / LEPTON_CENTRAL_CHARGE_FRACTION
+BRANCH_STRUCTURAL_PREFRACTOR_FRACTION = BRANCH_CENTRAL_CHARGE_RATIO_FRACTION * BRANCH_PIXEL_VOLUME_INVERSE_FRACTION
 
 
 def _decimal(value: Decimal | Fraction | float | int | str) -> Decimal:
@@ -143,9 +151,11 @@ def derive_central_charge_geometry() -> CentralChargeGeometry:
     )
     inverse_pixel_volume_decimal = _fraction_to_decimal(inverse_pixel_volume_fraction)
 
-    assert lepton_central_charge_fraction == Fraction(39, 14)
-    assert quark_central_charge_fraction == Fraction(64, 11)
-    assert branch_pixel_simplex_volume_fraction == Fraction(3, 13)
+    assert lepton_central_charge_fraction == LEPTON_CENTRAL_CHARGE_FRACTION
+    assert quark_central_charge_fraction == QUARK_CENTRAL_CHARGE_FRACTION
+    assert central_charge_ratio_fraction == BRANCH_CENTRAL_CHARGE_RATIO_FRACTION
+    assert branch_pixel_simplex_volume_fraction == BRANCH_PIXEL_VOLUME_FRACTION
+    assert inverse_pixel_volume_fraction == BRANCH_PIXEL_VOLUME_INVERSE_FRACTION
 
     return CentralChargeGeometry(
         lepton_central_charge_fraction=lepton_central_charge_fraction,
@@ -193,21 +203,20 @@ def derive_proton_ratio(
         context.prec = precision + _GUARD_DIGITS
         central_charge_ratio = geometry.central_charge_ratio_decimal
         inverse_pixel_volume = geometry.inverse_pixel_volume_decimal
-        structural_prefactor = central_charge_ratio * inverse_pixel_volume
+        structural_prefactor = _fraction_to_decimal(BRANCH_STRUCTURAL_PREFRACTOR_FRACTION)
         kappa_d5 = derive_decimal_kappa_d5(precision=context.prec).kappa
         kappa_d5_cuberoot = decimal_cuberoot(kappa_d5, precision=context.prec)
         geometric_friction_factor = (Decimal(1) - kappa_d5) * kappa_d5_cuberoot
         pressure_loading = (vacuum_pressure.vacuum_pressure * vacuum_pressure.vacuum_pressure) / geometric_friction_factor
         su3_branching_pressure_scale = inverse_pixel_volume * pressure_loading
         mu_audit = central_charge_ratio * su3_branching_pressure_scale
-        derived_mu = float(mu_audit)
         absolute_delta = abs(mu_audit - codata_audit.mass_ratio)
         relative_error = absolute_delta / codata_audit.mass_ratio
         context.prec = precision
 
-    assert math.isclose(derived_mu, 1836.152, rel_tol=1e-3), (
-        "Atomic lock failed: derived branch ratio no longer tracks the benchmark proton/electron mass target "
-        f"within 1e-3 relative tolerance; derived_mu={derived_mu:.12f}."
+    assert geometry.structural_prefactor_fraction == BRANCH_STRUCTURAL_PREFRACTOR_FRACTION, (
+        "SO(10)_312 structural prefactor drift: the branch-fixed proton/electron ratio no longer closes to the expected "
+        f"(c_q/c_l) * V_px^(-1) factor {BRANCH_STRUCTURAL_PREFRACTOR_FRACTION}."
     )
     assert relative_error <= tolerance, (
         "Branch proton/electron residue no longer matches the CODATA value within the one-copy dictionary tolerance: "
