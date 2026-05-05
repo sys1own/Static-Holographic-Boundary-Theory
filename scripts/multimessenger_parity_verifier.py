@@ -23,6 +23,7 @@ from shbt.paths import resolve_resource_path
 
 DEFAULT_PRECISION = 50
 DEFAULT_CMB_BENCHMARK_FILENAME = "cmb_power_spectrum_benchmarks.json"
+DEFAULT_CMB_BENCHMARK_PATH = resolve_resource_path("data", "cmb_power_spectrum_benchmarks.json")
 _GUARD_DIGITS = 12
 _FLOAT_MATCH_TOLERANCE = Decimal("1e-12")
 
@@ -131,6 +132,10 @@ class MultimessengerParityAudit:
     gravitational_wave: GravitationalWaveAudit
     executable_proof_pass: bool
 
+    @property
+    def automated_physical_audit_passed(self) -> bool:
+        return self.executable_proof_pass
+
 
 def _load_json(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
@@ -146,8 +151,8 @@ def load_nufit_anchor() -> DatasetAnchor:
     )
 
 
-def load_cmb_benchmark(*, filename: str = DEFAULT_CMB_BENCHMARK_FILENAME) -> tuple[DatasetAnchor, CMBBenchmark]:
-    benchmark_path = resolve_resource_path("data", filename)
+def load_cmb_benchmark(*, path: Path | None = None) -> tuple[DatasetAnchor, CMBBenchmark]:
+    benchmark_path = DEFAULT_CMB_BENCHMARK_PATH if path is None else Path(path)
     payload = _load_json(benchmark_path)
     cmb_payload = dict(payload.get("cmb_power_spectrum", {}))
     gw_payload = dict(payload.get("gravitational_wave", {}))
@@ -167,9 +172,29 @@ def load_cmb_benchmark(*, filename: str = DEFAULT_CMB_BENCHMARK_FILENAME) -> tup
     return anchor, benchmark
 
 
+def audit_topological_ghost_bao_peaks(
+    *,
+    topological_ghost_debt: Decimal,
+    cmb_benchmark: CMBBenchmark,
+) -> BAOMappingAudit:
+    predicted_baryon_fraction = Decimal("1") / (Decimal("1") + topological_ghost_debt)
+    observed_baryon_fraction = Decimal("1") / (Decimal("1") + cmb_benchmark.bao_dark_to_baryon_ratio)
+    ratio_residual = topological_ghost_debt - cmb_benchmark.bao_dark_to_baryon_ratio
+    return BAOMappingAudit(
+        proxy_label=cmb_benchmark.bao_proxy_label,
+        predicted_dark_to_baryon_ratio=topological_ghost_debt,
+        observed_dark_to_baryon_ratio=cmb_benchmark.bao_dark_to_baryon_ratio,
+        predicted_baryon_fraction=predicted_baryon_fraction,
+        observed_baryon_fraction=observed_baryon_fraction,
+        ratio_residual=ratio_residual,
+        baryon_fraction_residual=predicted_baryon_fraction - observed_baryon_fraction,
+        within_tolerance=bool(abs(ratio_residual) <= cmb_benchmark.bao_ratio_tolerance),
+    )
+
+
 def build_multimessenger_parity_audit(
     *,
-    cmb_benchmark_filename: str = DEFAULT_CMB_BENCHMARK_FILENAME,
+    cmb_benchmark_path: Path | None = None,
     precision: int = DEFAULT_PRECISION,
 ) -> MultimessengerParityAudit:
     vacuum = TopologicalVacuum()
@@ -177,7 +202,7 @@ def build_multimessenger_parity_audit(
     cosmology_audit = vacuum.derive_cosmology_audit()
     gw_audit = DarkSectorGWBAudit(vacuum)
     nufit_anchor = load_nufit_anchor()
-    cmb_anchor, cmb_benchmark = load_cmb_benchmark(filename=cmb_benchmark_filename)
+    cmb_anchor, cmb_benchmark = load_cmb_benchmark(path=cmb_benchmark_path)
 
     topological_ghost_debt = _decimal(calculate_dark_debt(vacuum.lepton_level))
     live_gravity_dark_debt = _decimal(gravity_audit.omega_dm_ratio)
@@ -191,18 +216,9 @@ def build_multimessenger_parity_audit(
         benchmark_locked=bool(abs(debt_residual) <= _FLOAT_MATCH_TOLERANCE),
     )
 
-    predicted_baryon_fraction = Decimal("1") / (Decimal("1") + topological_ghost_debt)
-    observed_baryon_fraction = Decimal("1") / (Decimal("1") + cmb_benchmark.bao_dark_to_baryon_ratio)
-    ratio_residual = topological_ghost_debt - cmb_benchmark.bao_dark_to_baryon_ratio
-    bao_mapping = BAOMappingAudit(
-        proxy_label=cmb_benchmark.bao_proxy_label,
-        predicted_dark_to_baryon_ratio=topological_ghost_debt,
-        observed_dark_to_baryon_ratio=cmb_benchmark.bao_dark_to_baryon_ratio,
-        predicted_baryon_fraction=predicted_baryon_fraction,
-        observed_baryon_fraction=observed_baryon_fraction,
-        ratio_residual=ratio_residual,
-        baryon_fraction_residual=predicted_baryon_fraction - observed_baryon_fraction,
-        within_tolerance=bool(abs(ratio_residual) <= cmb_benchmark.bao_ratio_tolerance),
+    bao_mapping = audit_topological_ghost_bao_peaks(
+        topological_ghost_debt=topological_ghost_debt,
+        cmb_benchmark=cmb_benchmark,
     )
 
     predicted_scalar_tilt = _decimal(cosmology_audit.n_s_locked)
@@ -252,15 +268,7 @@ def build_multimessenger_parity_audit(
     )
 
 
-def build_multimessenger_report(
-    *,
-    cmb_benchmark_filename: str = DEFAULT_CMB_BENCHMARK_FILENAME,
-    precision: int = DEFAULT_PRECISION,
-) -> str:
-    audit = build_multimessenger_parity_audit(
-        cmb_benchmark_filename=cmb_benchmark_filename,
-        precision=precision,
-    )
+def render_multimessenger_report(audit: MultimessengerParityAudit) -> str:
     lines = [
         "Multimessenger Parity Verifier",
         "===============================",
@@ -285,6 +293,7 @@ def build_multimessenger_report(
         f"- observed baryon fraction = {_format_decimal(audit.bao_mapping.observed_baryon_fraction, places=12)}",
         f"- BAO ratio residual = {_format_decimal(audit.bao_mapping.ratio_residual, places=12)}",
         f"- BAO mapping within tolerance = {audit.bao_mapping.within_tolerance}",
+        f"- automated BAO audit = {'PASS' if audit.bao_mapping.within_tolerance else 'FAIL'}",
         "",
         "CMB Power Spectrum Lock",
         f"- predicted n_s = {_format_decimal(audit.scalar_tilt.predicted_scalar_tilt, places=12)}",
@@ -303,10 +312,37 @@ def build_multimessenger_report(
         f"- below current ceiling = {audit.gravitational_wave.below_current_ceiling}",
         f"- above Stage-4 floor = {audit.gravitational_wave.above_design_floor}",
         "",
+        f"Automated Physical Audit        : {'PASS' if audit.automated_physical_audit_passed else 'FAIL'}",
         f"Executable Proof                 : {'PASS' if audit.executable_proof_pass else 'CHECK'}",
+        "The Topological Ghost debt is compared directly against the BAO proxy loaded from data/cmb_power_spectrum_benchmarks.json.",
         "Global cosmological patterns are therefore audited as mandatory residues of the anomaly-free (26, 8, 312) branch.",
     ]
     return "\n".join(lines)
+
+
+def build_multimessenger_report(
+    *,
+    cmb_benchmark_path: Path | None = None,
+    precision: int = DEFAULT_PRECISION,
+) -> str:
+    audit = build_multimessenger_parity_audit(
+        cmb_benchmark_path=cmb_benchmark_path,
+        precision=precision,
+    )
+    return render_multimessenger_report(audit)
+
+
+def run_automated_physical_audit(
+    *,
+    cmb_benchmark_path: Path | None = None,
+    precision: int = DEFAULT_PRECISION,
+) -> int:
+    audit = build_multimessenger_parity_audit(
+        cmb_benchmark_path=cmb_benchmark_path,
+        precision=precision,
+    )
+    print(render_multimessenger_report(audit))
+    return 0 if audit.automated_physical_audit_passed else 1
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -314,9 +350,9 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         description="Benchmark the parity-debt branch against CMB acoustic loading and gravitational-wave tensor data."
     )
     parser.add_argument(
-        "--cmb-benchmark-file",
-        default=DEFAULT_CMB_BENCHMARK_FILENAME,
-        help="Filename under data/ for the CMB power-spectrum benchmark bundle.",
+        "--cmb-benchmark-path",
+        default=None,
+        help="Optional explicit path for the CMB power-spectrum benchmark bundle. Defaults to the shared data resource.",
     )
     parser.add_argument(
         "--precision",
@@ -329,13 +365,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
-    print(
-        build_multimessenger_report(
-            cmb_benchmark_filename=str(args.cmb_benchmark_file),
-            precision=max(int(args.precision), 32),
-        )
+    resolved_path = None if args.cmb_benchmark_path in (None, "") else Path(str(args.cmb_benchmark_path))
+    return run_automated_physical_audit(
+        cmb_benchmark_path=resolved_path,
+        precision=max(int(args.precision), 32),
     )
-    return 0
 
 
 __all__ = [
@@ -343,15 +377,19 @@ __all__ = [
     "CMBBenchmark",
     "DarkDebtAudit",
     "DatasetAnchor",
+    "DEFAULT_CMB_BENCHMARK_PATH",
     "GravitationalWaveAudit",
     "MultimessengerParityAudit",
     "ScalarTiltAudit",
+    "audit_topological_ghost_bao_peaks",
     "build_multimessenger_parity_audit",
     "build_multimessenger_report",
     "load_cmb_benchmark",
     "load_nufit_anchor",
     "main",
     "parse_args",
+    "render_multimessenger_report",
+    "run_automated_physical_audit",
 ]
 
 
