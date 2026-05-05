@@ -58,7 +58,7 @@ from shbt.physics_engine import (
     majorana_mass_matrix_from_pmns,
     takagi_diagonalize_symmetric,
 )
-from shbt.resource_paths import resolve_resource_path
+from shbt.paths import resolve_resource_path
 from shbt.runtime_config import DEFAULT_SOLVER_CONFIG, Sector
 from shbt.topological_kernel import pdg_parameters, pdg_unitary, polar_unitary
 
