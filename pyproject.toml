@@ -18,11 +18,12 @@ dependencies = [
 ]
 
 [project.scripts]
-so10-312-review = "pub.main:main"
-so10-312-referee = "pub.main:main"
+so10-312-review = "shbt.main:main"
+so10-312-referee = "shbt.main:main"
 
 [tool.setuptools.packages.find]
-include = ["pub"]
+where = ["src"]
+include = ["shbt", "shbt.*"]
 
 [tool.setuptools.package-data]
-pub = ["config/*.yaml", "templates/*.tex.j2"]
+shbt = ["config/*.yaml", "templates/*.tex.j2"]
