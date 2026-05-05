@@ -8606,7 +8606,7 @@ def verify_gauge_holography(
     *,
     model: TopologicalModel | None = None,
 ) -> GaugeHolographyAudit:
-    r"""Evaluate the emergent fine-structure constant from fixed boundary levels."""
+    r"""Evaluate the emergent fine-structure constant against the CODATA anchor by default."""
 
     resolved_model = _coerce_topological_model(
         model=model,
