@@ -2,7 +2,7 @@ from __future__ import annotations
 
 """Numerically enforce the reviewer trap on the focused 3 x 3 visible moat.
 
-Each branch is seeded with ``tn.calculate_efe_violation_tensor()`` and then
+Each branch is seeded with ``calculate_efe_violation_tensor()`` and then
 lifted to the full visible bulk-closure tensor by enforcing the shared visible
 framing audit on both ``K/(2k_ell)`` and ``K/(3k_q)``. The trap passes only if
 the resulting ``E_mu_nu`` vanishes uniquely at ``(26, 8, 312)`` across the
@@ -26,8 +26,8 @@ if __package__ in (None, ""):
             sys.path.insert(0, str(candidate))
             break
 
-import shbt.main as tn
 from shbt.constants import LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
+from shbt.core.engine import calculate_efe_violation_tensor
 from shbt.core.noether_bridge import (
     DEFAULT_PRECISION,
     TensorSnapshot,
@@ -157,8 +157,13 @@ def calculate_visible_bulk_closure_tensor(
     """Lift the scalar EFE audit to the full visible reviewer-trap tensor."""
 
     lepton_level, quark_level, parent_level = branch
-    model = tn.TopologicalVacuum(k_l=lepton_level, k_q=quark_level, parent_level=parent_level)
-    lepton_efe_violation = float(tn.calculate_efe_violation_tensor(model=model))
+    lepton_efe_violation = float(
+        calculate_efe_violation_tensor(
+            parent_level=parent_level,
+            lepton_level=lepton_level,
+            quark_level=quark_level,
+        )
+    )
     defect = framing_defect(parent_level, lepton_level, quark_level)
     lepton_gap_float = float(_fraction_to_decimal(defect.lepton_gap))
     assert math.isclose(lepton_efe_violation, lepton_gap_float, rel_tol=0.0, abs_tol=ZERO_TOLERANCE), (
