@@ -3,9 +3,23 @@ from __future__ import annotations
 from pathlib import Path
 
 
+class ProjectPaths:
+    ROOT = Path(__file__).resolve().parents[2]
+    SRC = ROOT / "src"
+    DATA = ROOT / "data"
+    CONFIG = ROOT / "config"
+    SCRIPTS = ROOT / "scripts"
+    PAPERS = ROOT / "papers"
+    RESULTS = ROOT / "results"
+
+    @classmethod
+    def ensure_dirs(cls) -> None:
+        cls.RESULTS.mkdir(parents=True, exist_ok=True)
+
+
 PACKAGE_ROOT = Path(__file__).resolve().parent
-REPO_ROOT = PACKAGE_ROOT.parents[1]
-PAPERS_DIR = REPO_ROOT / "papers"
+REPO_ROOT = ProjectPaths.ROOT
+PAPERS_DIR = ProjectPaths.PAPERS
 
 
 def resolve_resource_path(*relative_parts: str) -> Path:
@@ -24,4 +38,10 @@ def resolve_resource_path(*relative_parts: str) -> Path:
     return candidates[0]
 
 
-__all__ = ["PAPERS_DIR", "PACKAGE_ROOT", "REPO_ROOT", "resolve_resource_path"]
+__all__ = [
+    "PACKAGE_ROOT",
+    "PAPERS_DIR",
+    "ProjectPaths",
+    "REPO_ROOT",
+    "resolve_resource_path",
+]
