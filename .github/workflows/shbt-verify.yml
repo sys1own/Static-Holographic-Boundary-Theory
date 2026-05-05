@@ -3,7 +3,8 @@ name: SHBT-Parallel-Audit
 on: [push, pull_request]
 
 jobs:
-  audit-sector:
+  # Job 1: Parallel Sector Proofs (Matrix)
+  audit-sectors:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     strategy:
@@ -18,42 +19,58 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Bootstrap sector
-        run: >-
-          python -m pip install
-          PyYAML==6.0.3
-          Jinja2==3.1.6
-          mpmath==1.3.0
-          numpy==1.26.4
-          scipy==1.12.0
-          matplotlib==3.8.3
-          sympy==1.12
+      - name: Install Dependencies
+        run: |
+          python -m pip install PyYAML==6.0.3 Jinja2==3.1.6 mpmath==1.3.0 \
+          numpy==1.26.4 scipy==1.12.0 matplotlib==3.8.3 sympy==1.12
 
       - name: Execute Sector Proof
         run: |
           mkdir -p results
-          # Point Python to the new src directory
           export PYTHONPATH=$PYTHONPATH:$(pwd)/src
-          # Execute the core engine via the module
           python -m shbt.main --sector ${{ matrix.sector }} --output-dir results/
 
-      - name: Universal Derivation Audit
+      - name: Upload Sector Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sector-audit-${{ matrix.sector }}
+          path: results/
+
+  # Job 2: Universal Proofs (Runs once per push, not parallel)
+  universal-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
         run: |
+          python -m pip install PyYAML==6.0.3 mpmath==1.3.0 \
+          numpy==1.26.4 scipy==1.12.0 matplotlib==3.8.3 sympy==1.12
+
+      - name: Run Universal Derivation Ledger
+        run: |
+          mkdir -p results
           export PYTHONPATH=$PYTHONPATH:$(pwd)/src
-          # Run scripts from their new locations
           python scripts/derive_universe.py
           python scripts/derive_lambda.py
           python scripts/derive_proton_ratio.py
+
+      - name: Run Multi-Messenger & Rigidity Audit
+        run: |
+          export PYTHONPATH=$PYTHONPATH:$(pwd)/src
+          python scripts/multimessenger_parity_verifier.py
+          python scripts/technological_scaling_limits.py
           python tests/verify_parity_sink.py
           python tests/moat_stress_tester.py
-          python scripts/technological_scaling_limits.py
-          python scripts/multimessenger_parity_verifier.py
 
-          - name: Technological Scaling Audit
-          run: python scripts/technological_scaling_limits.py
-  
-      - name: Upload audit artifacts
+      - name: Upload Universal Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: audit-${{ matrix.sector }}
+          name: universal-audit-results
           path: results/
