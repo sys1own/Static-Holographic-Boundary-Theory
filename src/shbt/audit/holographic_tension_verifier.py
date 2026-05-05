@@ -14,46 +14,32 @@ from typing import Sequence
 if __package__ in (None, ""):
     import sys
 
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    from pub.constants import (
-        ATMOSPHERIC_MASS_SPLITTING_NO_EV2,
-        LEPTON_LEVEL,
-        PARENT_LEVEL,
-        PLANCK2018_LAMBDA_SI_M2,
-        QUARK_LEVEL,
-        SOLAR_MASS_SPLITTING_EV2,
-    )
-    from pub.noether_bridge import (
-        DEFAULT_PRECISION,
-        NewtonLockAudit,
-        PI,
-        SaturationAudit,
-        UnityOfScaleAudit,
-        derive_kappa_d5,
-        newton_constant_lock,
-        saturation_audit,
-        unity_of_scale_audit,
-    )
-else:
-    from .constants import (
-        ATMOSPHERIC_MASS_SPLITTING_NO_EV2,
-        LEPTON_LEVEL,
-        PARENT_LEVEL,
-        PLANCK2018_LAMBDA_SI_M2,
-        QUARK_LEVEL,
-        SOLAR_MASS_SPLITTING_EV2,
-    )
-    from .noether_bridge import (
-        DEFAULT_PRECISION,
-        NewtonLockAudit,
-        PI,
-        SaturationAudit,
-        UnityOfScaleAudit,
-        derive_kappa_d5,
-        newton_constant_lock,
-        saturation_audit,
-        unity_of_scale_audit,
-    )
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent if parent.name == "src" else parent / "src"
+        if (candidate / "shbt").is_dir():
+            sys.path.insert(0, str(candidate))
+            break
+
+from shbt.constants import (
+    ATMOSPHERIC_MASS_SPLITTING_NO_EV2,
+    LEPTON_LEVEL,
+    PARENT_LEVEL,
+    PLANCK2018_LAMBDA_SI_M2,
+    QUARK_LEVEL,
+    SOLAR_MASS_SPLITTING_EV2,
+)
+from shbt.core.noether_bridge import (
+    DEFAULT_PRECISION,
+    NewtonLockAudit,
+    PI,
+    SaturationAudit,
+    UnityOfScaleAudit,
+    derive_kappa_d5,
+    newton_constant_lock,
+    saturation_audit,
+    unity_of_scale_audit,
+)
+from shbt.resource_paths import resolve_resource_path
 
 
 EXPECTED_BRANCH = (26, 8, 312)
@@ -154,7 +140,7 @@ def _parse_latex_number(text: str) -> float:
 
 @lru_cache(maxsize=1)
 def _load_physics_constant_macros() -> dict[str, str]:
-    macro_path = Path(__file__).with_name("physics_constants.tex")
+    macro_path = resolve_resource_path("physics_constants.tex")
     macros: dict[str, str] = {}
     for raw_line in macro_path.read_text(encoding="utf-8").splitlines():
         line = raw_line.strip()
