@@ -7,12 +7,12 @@ from typing import Any
 
 import yaml
 
-from shbt.paths import ProjectPaths
+from shbt.paths import ProjectPaths, resolve_resource_path
 
 
 VALID_PARAMETER_CLASSIFICATIONS = frozenset({"Topological Necessity", "Empirical Matching Ansatz"})
-DEFAULT_BENCHMARK_CONFIG_PATH = ProjectPaths.CONFIG / "benchmark_v1.yaml"
-DEFAULT_NUFIT_DATA_PATH = ProjectPaths.DATA / "nufit_5_3.json"
+DEFAULT_BENCHMARK_CONFIG_PATH = resolve_resource_path("config", "benchmark_v1.yaml")
+DEFAULT_NUFIT_DATA_PATH = resolve_resource_path("data", "nufit_5_3.json")
 
 
 class ConfigLoader:
