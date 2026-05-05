@@ -68,7 +68,7 @@ from shbt.core.algebra import (
 )
 from shbt.core.topology import solve_fraction_linear_system
 from shbt.physics_engine import quark_branching_pressure as _quark_branching_pressure
-from shbt.paths import PAPERS_DIR
+from shbt.paths import PAPERS_DIR, ProjectPaths
 from shbt.runtime_config import (
     DEFAULT_SOLVER_CONFIG,
     PerturbativeBreakdownException,
@@ -17720,7 +17720,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--manuscript-dir", type=Path, default=DEFAULT_MANUSCRIPT_DIR)
-    parser.add_argument("--output-dir", type=Path, default=Path("results"))
+    parser.add_argument("--output-dir", type=Path, default=ProjectPaths.RESULTS)
     parser.add_argument(
         "--sector",
         choices=TARGET_AUDIT_SECTORS,
@@ -17879,6 +17879,7 @@ def run_targeted_sector_audits(*, sector: str | None, output_dir: Path) -> tuple
 def main(argv: list[str] | None = None) -> None:
     """Run the full publication-facing verifier report."""
 
+    ProjectPaths.ensure_dirs()
     _ensure_audit_resources()
     args = parse_args(argv)
     manuscript_dir = args.manuscript_dir.expanduser()
