@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import numpy as np
 
-from .algebra import jarlskog_invariant, pdg_parameters, pdg_unitary
-from .constants import HIGGS_POLE_MASS_GEV, TOP_POLE_MASS_GEV
-from .physics_engine import (
+from shbt.constants import HIGGS_POLE_MASS_GEV, TOP_POLE_MASS_GEV
+from shbt.core.algebra import jarlskog_invariant, pdg_parameters, pdg_unitary
+from shbt.physics_engine import (
     charged_lepton_yukawa_diagonal,
     integrate_pmns_majorana_rge_numerically,
     majorana_mass_matrix_beta,
@@ -15,7 +15,7 @@ from .physics_engine import (
     takagi_diagonalize_symmetric,
     wrapped_angle_difference_deg,
 )
-from .runtime_config import DEFAULT_SOLVER_CONFIG, PhysicsDomainWarning, SolverConfig, solver_isclose
+from shbt.runtime_config import DEFAULT_SOLVER_CONFIG, PhysicsDomainWarning, SolverConfig, solver_isclose
 
 
 def quark_matching_thresholds(uv_scale_gev: float, ir_scale_gev: float) -> tuple[float, ...]:
