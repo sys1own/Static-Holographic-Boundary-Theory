@@ -6,7 +6,7 @@ from typing import Any, Callable
 
 import numpy as np
 
-from .plotting_runtime import managed_figure
+from shbt.plotting_runtime import managed_figure
 
 
 def transport_observable_vector(pmns: Any, ckm: Any) -> np.ndarray:
