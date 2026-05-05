@@ -6,7 +6,7 @@ import sys
 from dataclasses import dataclass
 from decimal import Decimal, localcontext
 from pathlib import Path
-from typing import Sequence
+from typing import Callable, Sequence
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -34,6 +34,7 @@ from .tn import (
 )
 
 _GUARD_DIGITS = 12
+BENCHMARK_COMPARISON_SKIPPED_MESSAGE = "Benchmark comparison skipped: artifacts not yet generated"
 
 
 def _decimal(value: Decimal | float | int | str) -> Decimal:
@@ -151,7 +152,10 @@ def _checked_in_diagnostics_paths() -> tuple[Path, ...]:
     )
 
 
-def load_checked_in_unity_payloads() -> tuple[CheckedInUnityPayload, ...]:
+def load_checked_in_unity_payloads(
+    *,
+    on_missing: Callable[[str], object] | None = print,
+) -> tuple[CheckedInUnityPayload, ...]:
     payloads: list[CheckedInUnityPayload] = []
 
     for diagnostics_path in _checked_in_diagnostics_paths():
@@ -178,8 +182,9 @@ def load_checked_in_unity_payloads() -> tuple[CheckedInUnityPayload, ...]:
         )
 
     if not payloads:
-        searched = ", ".join(str(path.relative_to(Path(__file__).resolve().parent.parent)) for path in _checked_in_diagnostics_paths())
-        raise FileNotFoundError(f"No checked-in benchmark diagnostics found; searched {searched}.")
+        if on_missing is not None:
+            on_missing(BENCHMARK_COMPARISON_SKIPPED_MESSAGE)
+        return ()
 
     reference_payload = payloads[0]
     for payload in payloads[1:]:
@@ -197,7 +202,7 @@ def build_lambda_ledger(*, precision: int = DEFAULT_PRECISION) -> str:
     mass = derive_mass_bridge(precision=precision, kappa=kappa.kappa)
     decimal_unity = derive_unity_of_scale(precision=precision, kappa=kappa.kappa, mass_bridge=mass)
     live_unity = verify_unity_of_scale()
-    checked_in_payloads = load_checked_in_unity_payloads()
+    checked_in_payloads = load_checked_in_unity_payloads(on_missing=None)
 
     live_epsilon_lambda = _decimal(live_unity["epsilon_lambda"])
     live_exact_epsilon_lambda = _decimal(live_unity["exact_epsilon_lambda"])
@@ -278,27 +283,30 @@ def build_lambda_ledger(*, precision: int = DEFAULT_PRECISION) -> str:
         f"- closes in benchmark verifier = {live_passed}",
         "",
         "Checked-In Benchmark Payloads",
-        f"- mirrored checked-in payloads = {len(checked_in_payloads)}",
     ]
 
-    for payload in checked_in_payloads:
-        lines.append(
-            "- "
-            f"{payload.source_path}: epsilon_Lambda={_format_decimal(payload.epsilon_lambda, places=24)}, "
-            f"exact_epsilon_Lambda={_format_decimal(payload.exact_epsilon_lambda, places=24)}, "
-            f"numerical_residual={_format_decimal(payload.numerical_residual, places=24)}, "
-            f"register_noise_floor={_format_decimal(payload.register_noise_floor, places=24)}, "
-            f"passed={payload.passed}"
-        )
+    if checked_in_payloads:
+        lines.append(f"- mirrored checked-in payloads = {len(checked_in_payloads)}")
+        for payload in checked_in_payloads:
+            lines.append(
+                "- "
+                f"{payload.source_path}: epsilon_Lambda={_format_decimal(payload.epsilon_lambda, places=24)}, "
+                f"exact_epsilon_Lambda={_format_decimal(payload.exact_epsilon_lambda, places=24)}, "
+                f"numerical_residual={_format_decimal(payload.numerical_residual, places=24)}, "
+                f"register_noise_floor={_format_decimal(payload.register_noise_floor, places=24)}, "
+                f"passed={payload.passed}"
+            )
 
-    lines.extend(
-        [
-            f"- live exact epsilon_Lambda - checked-in exact epsilon_Lambda = {_format_decimal(live_exact_epsilon_lambda - checked_in_payloads[0].exact_epsilon_lambda, places=24)}",
-            f"- live numerical residual - checked-in numerical residual = {_format_decimal(live_numerical_residual - checked_in_payloads[0].numerical_residual, places=24)}",
-            f"- live register noise floor - checked-in register noise floor = {_format_decimal(live_register_noise_floor - checked_in_payloads[0].register_noise_floor, places=24)}",
-            "- checked-in payloads mirror the live unity-of-scale benchmark = True",
-        ]
-    )
+        lines.extend(
+            [
+                f"- live exact epsilon_Lambda - checked-in exact epsilon_Lambda = {_format_decimal(live_exact_epsilon_lambda - checked_in_payloads[0].exact_epsilon_lambda, places=24)}",
+                f"- live numerical residual - checked-in numerical residual = {_format_decimal(live_numerical_residual - checked_in_payloads[0].numerical_residual, places=24)}",
+                f"- live register noise floor - checked-in register noise floor = {_format_decimal(live_register_noise_floor - checked_in_payloads[0].register_noise_floor, places=24)}",
+                "- checked-in payloads mirror the live unity-of-scale benchmark = True",
+            ]
+        )
+    else:
+        lines.append(f"- {BENCHMARK_COMPARISON_SKIPPED_MESSAGE}")
 
     return "\n".join(lines)
 
