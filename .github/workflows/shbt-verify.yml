@@ -32,15 +32,20 @@ jobs:
       - name: Execute Sector Proof
         run: |
           mkdir -p results
-          python pub/tn.py --sector ${{ matrix.sector }} --output-dir results/
+          # Point Python to the new src directory
+          export PYTHONPATH=$PYTHONPATH:$(pwd)/src
+          # Execute the core engine via the module
+          python -m shbt.main --sector ${{ matrix.sector }} --output-dir results/
 
       - name: Universal Derivation Audit
         run: |
-          python pub/derive_universe.py
-          python pub/derive_lambda.py
-          python pub/derive_proton_ratio.py
-          python pub/verify_parity_sink.py
-          python pub/moat_stress_tester.py
+          export PYTHONPATH=$PYTHONPATH:$(pwd)/src
+          # Run scripts from their new locations
+          python scripts/derive_universe.py
+          python scripts/derive_lambda.py
+          python scripts/derive_proton_ratio.py
+          python tests/verify_parity_sink.py
+          python tests/moat_stress_tester.py
 
       - name: Upload audit artifacts
         uses: actions/upload-artifact@v4
