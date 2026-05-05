@@ -20,64 +20,47 @@ from scipy.integrate import IntegrationWarning, solve_ivp
 if __package__ in (None, ""):
     import sys
 
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    from pub.constants import CHARGED_LEPTON_YUKAWA_RATIOS, Interval, LEPTON_INTERVALS, QUARK_INTERVALS, SM_MAJORANA_C_E
-    from pub.physics_engine import (
-        ONE_LOOP_FACTOR,
-        _pack_complex_matrix,
-        _unpack_complex_matrix,
-        majorana_mass_matrix_beta,
-        majorana_mass_matrix_from_pmns,
-        takagi_diagonalize_symmetric,
-    )
-    from pub.runtime_config import DEFAULT_SOLVER_CONFIG, Sector
-    from pub.topological_kernel import pdg_parameters, pdg_unitary, polar_unitary
-    from pub.tn import (
-        GEOMETRIC_KAPPA,
-        HOLOGRAPHIC_BITS,
-        LEPTON_LEVEL,
-        PARENT_LEVEL,
-        QUARK_LEVEL,
-        RunningCouplings,
-        derive_beta_function_data,
-        derive_boundary_bulk_interface,
-        derive_pmns,
-        derive_running_couplings,
-        derive_scales_for_bits,
-        derive_transport_curvature_audit,
-        normal_order_masses,
-        sm_one_loop_running_betas,
-        structural_majorana_phase_proxies,
-    )
-else:
-    from .constants import CHARGED_LEPTON_YUKAWA_RATIOS, Interval, LEPTON_INTERVALS, QUARK_INTERVALS, SM_MAJORANA_C_E
-    from .physics_engine import (
-        ONE_LOOP_FACTOR,
-        _pack_complex_matrix,
-        _unpack_complex_matrix,
-        majorana_mass_matrix_beta,
-        majorana_mass_matrix_from_pmns,
-        takagi_diagonalize_symmetric,
-    )
-    from .runtime_config import DEFAULT_SOLVER_CONFIG, Sector
-    from .topological_kernel import pdg_parameters, pdg_unitary, polar_unitary
-    from .tn import (
-        GEOMETRIC_KAPPA,
-        HOLOGRAPHIC_BITS,
-        LEPTON_LEVEL,
-        PARENT_LEVEL,
-        QUARK_LEVEL,
-        RunningCouplings,
-        derive_beta_function_data,
-        derive_boundary_bulk_interface,
-        derive_pmns,
-        derive_running_couplings,
-        derive_scales_for_bits,
-        derive_transport_curvature_audit,
-        normal_order_masses,
-        sm_one_loop_running_betas,
-        structural_majorana_phase_proxies,
-    )
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent if parent.name == "src" else parent / "src"
+        if (candidate / "shbt").is_dir():
+            sys.path.insert(0, str(candidate))
+            break
+
+from shbt.constants import (
+    CHARGED_LEPTON_YUKAWA_RATIOS,
+    GEOMETRIC_KAPPA,
+    HOLOGRAPHIC_BITS,
+    Interval,
+    LEPTON_INTERVALS,
+    LEPTON_LEVEL,
+    PARENT_LEVEL,
+    QUARK_INTERVALS,
+    QUARK_LEVEL,
+    SM_MAJORANA_C_E,
+)
+from shbt.main import (
+    RunningCouplings,
+    derive_beta_function_data,
+    derive_boundary_bulk_interface,
+    derive_pmns,
+    derive_running_couplings,
+    derive_scales_for_bits,
+    derive_transport_curvature_audit,
+    normal_order_masses,
+    sm_one_loop_running_betas,
+    structural_majorana_phase_proxies,
+)
+from shbt.physics_engine import (
+    ONE_LOOP_FACTOR,
+    _pack_complex_matrix,
+    _unpack_complex_matrix,
+    majorana_mass_matrix_beta,
+    majorana_mass_matrix_from_pmns,
+    takagi_diagonalize_symmetric,
+)
+from shbt.resource_paths import resolve_resource_path
+from shbt.runtime_config import DEFAULT_SOLVER_CONFIG, Sector
+from shbt.topological_kernel import pdg_parameters, pdg_unitary, polar_unitary
 
 
 M_GUT_AUDIT_GEV = 2.0e16
@@ -154,7 +137,7 @@ class SolverNecessityAudit:
 
 @lru_cache(maxsize=1)
 def _published_radau_crosscheck() -> PublishedRadauCrosscheck:
-    table_path = Path(__file__).with_name("supplementary_tolerance_table.tex")
+    table_path = resolve_resource_path("supplementary_tolerance_table.tex")
     table_text = table_path.read_text(encoding="utf-8")
     row_pattern = re.compile(
         r"\$10\^\{-(\d+)\}\$\s*&\s*\$10\^\{-(\d+)\}\$\s*&\s*([0-9.]+)\s*&\s*([0-9.eE+-]+)\s*&\s*([0-9.eE+-]+)"
