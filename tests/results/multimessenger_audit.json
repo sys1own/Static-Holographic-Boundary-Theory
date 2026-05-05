@@ -1,0 +1,132 @@
+{
+  "artifact_path": "results/multimessenger_audit.json",
+  "automated_physical_audit_passed": true,
+  "bao_mapping": {
+    "acoustic_scale_multipole": 301.0,
+    "baryon_fraction_residual": -0.009758620425095517,
+    "max_peak_position_residual": 5.772028809035496,
+    "observed_baryon_fraction": 0.15723270440251572,
+    "observed_dark_to_baryon_ratio": 5.36,
+    "peak_audits": [
+      {
+        "harmonic_index": 1,
+        "label": "TT peak 1",
+        "multipole_residual": 5.0272508981922055,
+        "observed_multipole": 220.0,
+        "predicted_multipole": 225.0272508981922,
+        "within_tolerance": true
+      },
+      {
+        "harmonic_index": 2,
+        "label": "TT peak 2",
+        "multipole_residual": 4.034213683734487,
+        "observed_multipole": 537.0,
+        "predicted_multipole": 541.0342136837345,
+        "within_tolerance": true
+      },
+      {
+        "harmonic_index": 3,
+        "label": "TT peak 3",
+        "multipole_residual": 5.772028809035496,
+        "observed_multipole": 810.0,
+        "predicted_multipole": 815.7720288090355,
+        "within_tolerance": true
+      }
+    ],
+    "peak_loading_model": "ell_m = ell_A * (m - alpha_m * f_b)",
+    "peak_position_tolerance": 6.0,
+    "peak_positions_locked": true,
+    "predicted_baryon_fraction": 0.1474740839774202,
+    "predicted_dark_to_baryon_ratio": 5.780852425251275,
+    "proxy_label": "CMB acoustic peak baryon-loading proxy",
+    "ratio_residual": 0.420852425251275,
+    "within_tolerance": true
+  },
+  "benchmark_branch": [
+    26,
+    8,
+    312
+  ],
+  "chi_squared_fit": {
+    "chi_squared": 2.788035061241205,
+    "components": [
+      {
+        "chi_squared_contribution": 0.70846705535952,
+        "label": "BAO dark-to-baryon ratio",
+        "normalized_residual": 0.84170485050255,
+        "observed_value": 5.36,
+        "predicted_value": 5.780852425251275,
+        "residual": 0.420852425251275,
+        "sigma": 0.5
+      },
+      {
+        "chi_squared_contribution": 0.7020347664826205,
+        "label": "TT peak 1 multipole",
+        "normalized_residual": 0.8378751496987009,
+        "observed_value": 220.0,
+        "predicted_value": 225.0272508981922,
+        "residual": 5.0272508981922055,
+        "sigma": 6.0
+      },
+      {
+        "chi_squared_contribution": 0.4520800012786272,
+        "label": "TT peak 2 multipole",
+        "normalized_residual": 0.6723689472890811,
+        "observed_value": 537.0,
+        "predicted_value": 541.0342136837345,
+        "residual": 4.034213683734487,
+        "sigma": 6.0
+      },
+      {
+        "chi_squared_contribution": 0.9254532381204369,
+        "label": "TT peak 3 multipole",
+        "normalized_residual": 0.962004801505916,
+        "observed_value": 810.0,
+        "predicted_value": 815.7720288090355,
+        "residual": 5.772028809035496,
+        "sigma": 6.0
+      }
+    ],
+    "degrees_of_freedom": 4,
+    "label": "Topological Ghost / BAO acoustic peak fit",
+    "observable_count": 4,
+    "reduced_chi_squared": 0.6970087653103012,
+    "rms_pull": 0.8348705081090727
+  },
+  "cmb_anchor": {
+    "label": "CMB/GW benchmark",
+    "path": "data/cmb_power_spectrum_benchmarks.json",
+    "release": "Planck 2018 CMB acoustic-loading proxy with BK18+WMAP+Planck tensor ceiling and archived CMB-S4 design floor"
+  },
+  "dark_debt": {
+    "benchmark_locked": true,
+    "debt_residual": 0.0,
+    "live_gravity_dark_debt": 5.780852425251275,
+    "modular_efficiency": 0.2674143332131554,
+    "topological_ghost_debt": 5.780852425251275
+  },
+  "executable_proof_pass": true,
+  "gravitational_wave": {
+    "above_design_floor": true,
+    "below_current_ceiling": true,
+    "dataset_label": "BK18+WMAP+Planck public tensor ceiling with archived CMB-S4 design sensitivity",
+    "normalized_current_ceiling": 0.18973665961010275,
+    "normalized_design_floor": 0.03162277660168379,
+    "normalized_strain_floor": 0.15499114396083408,
+    "observable_tensor_ratio": 0.02402225470628799,
+    "primordial_tensor_ratio": 0.089831589868969,
+    "tensor_tilt": -0.011228948733621125
+  },
+  "nufit_anchor": {
+    "label": "NuFIT benchmark",
+    "path": "data/nufit_5_3.json",
+    "release": "NuFIT 5.3 (2024), normal ordering with SK atmospheric data"
+  },
+  "scalar_tilt": {
+    "observed_scalar_tilt": 0.9649,
+    "observed_scalar_tilt_sigma": 0.0042,
+    "predicted_scalar_tilt": 0.9648515604044899,
+    "residual_sigma": -0.011533237026214286,
+    "within_reference_band": true
+  }
+}
