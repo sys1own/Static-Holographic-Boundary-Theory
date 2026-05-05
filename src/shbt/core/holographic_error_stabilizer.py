@@ -32,7 +32,7 @@ if __package__ in (None, ""):
             sys.path.insert(0, str(candidate))
             break
 
-from shbt.constants import LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
+from shbt.constants import GEOMETRIC_KAPPA, LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
 from shbt.core import noether_bridge
 
 
@@ -147,6 +147,81 @@ class ChecksumFailureSimulation:
     @property
     def equivalence_principle_destroyed(self) -> bool:
         return not self.effective_anomalous_source_si_m2.vanished
+
+
+@dataclass(frozen=True)
+class BulkChecksumVerification:
+    benchmark_branch: BenchmarkBranch
+    charge_residual: Decimal
+    momentum_residual: Decimal
+    parity_residual: Decimal
+    charge_checksum_passed: bool
+    momentum_checksum_passed: bool
+    parity_checksum_passed: bool
+    simulated_boundary_decoherence: bool
+    detail: str
+
+    @property
+    def passed(self) -> bool:
+        return bool(
+            self.charge_checksum_passed
+            and self.momentum_checksum_passed
+            and self.parity_checksum_passed
+            and not self.simulated_boundary_decoherence
+        )
+
+
+class HolographicStabilizer:
+    """Lightweight boundary checksum gate for physical bulk outputs."""
+
+    def __init__(self, *, precision: int = DEFAULT_PRECISION, simulate_boundary_decoherence: bool = False) -> None:
+        self.precision = max(int(precision), DEFAULT_PRECISION)
+        self.simulate_boundary_decoherence = bool(simulate_boundary_decoherence)
+
+    def verify_bulk_checksum(self) -> BulkChecksumVerification:
+        from shbt.core.engine import calculate_efe_violation_tensor
+
+        with localcontext() as context:
+            context.prec = self.precision
+            packing_deficiency = Decimal("1") - _decimal(GEOMETRIC_KAPPA)
+            parity_overhead = (Decimal(PARENT_LEVEL) * packing_deficiency) / Decimal(PARENT_LEVEL)
+            charge_residual = abs(packing_deficiency - parity_overhead)
+            momentum_residual = _decimal(
+                calculate_efe_violation_tensor(
+                    parent_level=PARENT_LEVEL,
+                    lepton_level=LEPTON_LEVEL,
+                    quark_level=QUARK_LEVEL,
+                )
+            )
+            parity_audit = noether_bridge.framing_defect(PARENT_LEVEL, LEPTON_LEVEL, QUARK_LEVEL)
+            parity_residual = Decimal(parity_audit.delta_fr.numerator) / Decimal(parity_audit.delta_fr.denominator)
+
+        charge_checksum_passed = bool(charge_residual == 0)
+        momentum_checksum_passed = bool(momentum_residual == 0)
+        parity_checksum_passed = bool(parity_residual == 0)
+
+        failure_modes: list[str] = []
+        if not charge_checksum_passed:
+            failure_modes.append(f"charge residual={_format_decimal(charge_residual)}")
+        if not momentum_checksum_passed:
+            failure_modes.append(f"momentum residual={_format_decimal(momentum_residual)}")
+        if not parity_checksum_passed:
+            failure_modes.append(f"parity residual={_format_decimal(parity_residual)}")
+        if self.simulate_boundary_decoherence:
+            failure_modes.append("simulated boundary decoherence")
+
+        detail = "bulk checksum locked" if not failure_modes else "; ".join(failure_modes)
+        return BulkChecksumVerification(
+            benchmark_branch=BENCHMARK_BRANCH,
+            charge_residual=charge_residual,
+            momentum_residual=momentum_residual,
+            parity_residual=parity_residual,
+            charge_checksum_passed=charge_checksum_passed,
+            momentum_checksum_passed=momentum_checksum_passed,
+            parity_checksum_passed=parity_checksum_passed,
+            simulated_boundary_decoherence=self.simulate_boundary_decoherence,
+            detail=detail,
+        )
 
 
 @dataclass(frozen=True)
@@ -437,9 +512,11 @@ def main(argv: Sequence[str] | None = None) -> None:
 
 __all__ = [
     "BENCHMARK_BRANCH",
+    "BulkChecksumVerification",
     "FAILED_BRANCHES",
     "ChecksumFailureSimulation",
     "HolographicErrorStabilizerAudit",
+    "HolographicStabilizer",
     "RecoveryThresholdAudit",
     "TopologicalChecksum",
     "build_holographic_error_stabilizer_audit",
