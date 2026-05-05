@@ -19,7 +19,7 @@ if __package__ in (None, ""):
 
 from derive_universe import derive_kappa_d5 as derive_decimal_kappa_d5
 from shbt.core import algebra
-from shbt.main import (
+from shbt.constants import (
     LEPTON_LEVEL,
     PARENT_LEVEL,
     QUARK_LEVEL,
@@ -28,6 +28,8 @@ from shbt.main import (
     SU2_DUAL_COXETER,
     SU3_DIMENSION,
     SU3_DUAL_COXETER,
+)
+from shbt.core.engine import (
     quark_branching_index,
     wzw_central_charge_fraction,
 )
