@@ -9,8 +9,9 @@ from shbt.core.temporal_emergence_kernel import (
     build_temporal_emergence_audit,
     cross_check_expansion,
     map_manifold_slice_bit_loading_density,
+    prove_perception_identity,
 )
-from shbt.core.topological_kernel import ModularKernel
+from shbt.core.topological_kernel import ModularKernel, sequence_bit_loading
 from shbt.precision_cosmology_engine import (
     build_precision_cosmology_audit,
     compute_metric_expansion,
@@ -23,6 +24,7 @@ def test_core_topological_kernel_wrapper_exposes_modular_kernel() -> None:
 
     assert lepton_block.shape == (3, 3)
     assert quark_block.shape == (3, 3)
+    assert len(sequence_bit_loading(lepton_level=26, quark_level=8)) == 9
 
 
 def test_manifold_slice_density_maps_are_normalized() -> None:
@@ -31,6 +33,7 @@ def test_manifold_slice_density_maps_are_normalized() -> None:
     assert density_map.loading_density_sum == Decimal("1")
     assert density_map.entanglement_density_sum == Decimal("1")
     assert len(density_map.dominant_loading_sequence) == 9
+    assert density_map.dominant_loading_sequence == sequence_bit_loading(lepton_level=26, quark_level=8)
 
 
 def test_temporal_emergence_exactly_locks_to_precision_cosmology() -> None:
@@ -51,6 +54,10 @@ def test_temporal_emergence_exactly_locks_to_precision_cosmology() -> None:
         assert abs(sample.arrow_of_time_gradient_km_s_mpc - sample.metric_expansion_rate_km_s_mpc) <= Decimal("1e-15")
         assert sample.derived_temporal_rate_km_s_mpc == sample.metric_expansion_rate_km_s_mpc
         assert sample.loading_law_consistent
+        assert sample.perception_identity is not None
+        assert sample.perception_identity.entanglement_monotonic
+        assert sample.perception_identity.exact_metric_lock
+        assert sample.perception_identity.statement == "Time is the direction of increasing bulk-boundary entanglement."
 
 
 def test_compute_metric_expansion_matches_cosmology_samples() -> None:
@@ -58,6 +65,25 @@ def test_compute_metric_expansion_matches_cosmology_samples() -> None:
 
     for sample in cosmology_audit.samples:
         assert compute_metric_expansion(sample.redshift, sample.hubble_km_s_mpc) == sample.metric_expansion
+
+
+def test_perception_identity_keeps_exact_metric_lock_under_reordered_witness() -> None:
+    audit = build_temporal_emergence_audit()
+    sample = audit.samples[0]
+
+    reordered_proof = prove_perception_identity(
+        metric_expansion=sample.bulk_metric_expansion,
+        bit_loading_rate_density=sample.local_bit_loading_rate_density,
+        local_entanglement_entropy_gradient=sample.local_entanglement_entropy_gradient,
+        bit_loading_sequence=tuple(reversed(audit.manifold_slice.dominant_loading_sequence)),
+        bit_budget=audit.bit_budget,
+    )
+
+    assert reordered_proof.exact_metric_lock
+    assert reordered_proof.entanglement_monotonic
+    assert reordered_proof.total_bulk_boundary_entanglement_gradient == sample.total_entanglement_entropy_gradient
+    assert reordered_proof.derived_temporal_gradient_km_s_mpc == sample.metric_expansion_rate_km_s_mpc
+    assert abs(reordered_proof.ordered_bit_loading_gradient_km_s_mpc - sample.metric_expansion_rate_km_s_mpc) <= Decimal("1e-15")
 
 
 def test_cross_check_expansion_detects_temporal_rate_mismatch() -> None:
