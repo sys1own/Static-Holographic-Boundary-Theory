@@ -4,7 +4,7 @@ import math
 from pathlib import Path
 from typing import Any, Mapping
 
-from .constants import (
+from shbt.constants import (
     AUDIT_STATEMENT_FILENAME,
     COROLLARY_REPORT_FILENAME,
     EIGENVECTOR_STABILITY_AUDIT_FILENAME,
