@@ -9,10 +9,13 @@ from pathlib import Path
 from typing import Sequence
 
 if __package__ in (None, ""):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    __package__ = "pub"
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent if parent.name == "src" else parent / "src"
+        if (candidate / "shbt").is_dir():
+            sys.path.insert(0, str(candidate))
+            break
 
-from .constants import (
+from shbt.constants import (
     LEPTON_LEVEL,
     PARENT_LEVEL,
     QUARK_LEVEL,
@@ -23,8 +26,8 @@ from .constants import (
     SU3_DIMENSION,
     SU3_DUAL_COXETER,
 )
-from .noether_bridge import load_c_dark_completion_fraction, newton_constant_lock
-from .tn import TopologicalVacuum, verify_dark_energy_tension, wzw_central_charge_fraction
+from shbt.core.noether_bridge import load_c_dark_completion_fraction, newton_constant_lock
+from shbt.main import TopologicalVacuum, verify_dark_energy_tension, wzw_central_charge_fraction
 
 DEFAULT_PRECISION = 80
 
