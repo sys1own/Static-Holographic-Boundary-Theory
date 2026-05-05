@@ -11,13 +11,15 @@ from typing import Sequence
 from scipy.constants import electron_mass, proton_mass
 
 if __package__ in (None, ""):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    __package__ = "pub"
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent if parent.name == "src" else parent / "src"
+        if (candidate / "shbt").is_dir():
+            sys.path.insert(0, str(candidate))
+            break
 
-from . import algebra
-from .derive_universe import derive_kappa_d5 as derive_decimal_kappa_d5
-from .physics_engine import quark_branching_pressure
-from .tn import (
+from derive_universe import derive_kappa_d5 as derive_decimal_kappa_d5
+from shbt.core import algebra
+from shbt.main import (
     LEPTON_LEVEL,
     PARENT_LEVEL,
     QUARK_LEVEL,
@@ -29,6 +31,7 @@ from .tn import (
     quark_branching_index,
     wzw_central_charge_fraction,
 )
+from shbt.physics_engine import quark_branching_pressure
 
 DEFAULT_PRECISION = 50
 DEFAULT_RELATIVE_TOLERANCE = Decimal("1e-3")
