@@ -15,9 +15,14 @@ from matplotlib.patches import Rectangle
 if __package__ in (None, ""):
     import sys
 
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    from pub.constants import LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
-    from pub.noether_bridge import (
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent if parent.name == "src" else parent / "src"
+        if (candidate / "shbt").is_dir():
+            sys.path.insert(0, str(candidate))
+            break
+
+    from shbt.constants import LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
+    from shbt.core.noether_bridge import (
         anomalous_source_tensor,
         bulk_closure_tensor,
         framing_defect,
@@ -25,10 +30,10 @@ if __package__ in (None, ""):
         newton_constant_lock,
         saturation_audit,
     )
-    from pub.plotting_runtime import managed_figure, plt
+    from shbt.plotting_runtime import managed_figure, plt
 else:
-    from .constants import LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
-    from .noether_bridge import (
+    from shbt.constants import LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
+    from shbt.core.noether_bridge import (
         anomalous_source_tensor,
         bulk_closure_tensor,
         framing_defect,
@@ -36,7 +41,7 @@ else:
         newton_constant_lock,
         saturation_audit,
     )
-    from .plotting_runtime import managed_figure, plt
+    from shbt.plotting_runtime import managed_figure, plt
 
 
 EXPECTED_BENCHMARK = (26, 8, 312)
