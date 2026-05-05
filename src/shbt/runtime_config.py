@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from .config_loader import DEFAULT_CONFIG_LOADER
+from shbt.config_loader import DEFAULT_CONFIG_LOADER
 
 
 def _require_mapping(config: dict[str, Any], key: str) -> dict[str, Any]:
@@ -108,7 +108,7 @@ class NumericalStabilityGuard:
     norm_floor: float = _coerce_float(_NUMERICAL_GUARD_CONFIG, "norm_floor")
     perturbative_condition_limit: float = _coerce_float(_NUMERICAL_GUARD_CONFIG, "perturbative_condition_limit")
     raise_on_violation: bool = False
-    logger_name: str = "pub.numerics"
+    logger_name: str = "shbt.numerics"
 
     def _handle(self, message: str) -> None:
         if self.raise_on_violation:
