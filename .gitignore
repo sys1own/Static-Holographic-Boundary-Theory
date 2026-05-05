@@ -1,0 +1,19 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.env
+
+# LaTeX artifacts
+*.aux
+*.log
+*.out
+*.pdf
+*.toc
+*.bbl
+*.blg
+
+# System/ZIP
+*.zip
+.DS_Store
