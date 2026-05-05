@@ -9,18 +9,21 @@ from pathlib import Path
 from typing import Sequence
 
 if __package__ in (None, ""):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    __package__ = "pub"
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent if parent.name == "src" else parent / "src"
+        if (candidate / "shbt").is_dir():
+            sys.path.insert(0, str(candidate))
+            break
 
-from .constants import BENCHMARK_DIAGNOSTICS_FILENAME
-from .derive_universe import (
+from derive_universe import (
     DEFAULT_PRECISION,
     decimal_pi,
     derive_kappa_d5,
     derive_mass_bridge,
     derive_unity_of_scale,
 )
-from .tn import (
+from shbt.main import (
+    BENCHMARK_DIAGNOSTICS_FILENAME,
     HOLOGRAPHIC_BITS,
     LEPTON_LEVEL,
     PARENT_LEVEL,
