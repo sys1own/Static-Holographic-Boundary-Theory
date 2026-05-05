@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .template_utils import render_template
+from shbt.template_utils import render_template
 
 
 def render_support_overlap_result(**context: object) -> str:
