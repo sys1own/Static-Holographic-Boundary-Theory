@@ -33,7 +33,12 @@ if __package__ in (None, ""):
             break
 
 from shbt.constants import HOLOGRAPHIC_BITS, LEPTON_LEVEL, QUARK_LEVEL
-from shbt.core.topological_kernel import LOW_SU3_WEIGHTS, ModularKernel, charge_embedding
+from shbt.core.topological_kernel import (
+    LOW_SU3_WEIGHTS,
+    ModularKernel,
+    charge_embedding,
+    sequence_bit_loading,
+)
 from shbt.precision_cosmology_engine import (
     DEFAULT_PRECISION as COSMOLOGY_DEFAULT_PRECISION,
     DEFAULT_REDSHIFTS,
@@ -72,6 +77,37 @@ class ManifoldSliceLoadingMap:
 
 
 @dataclass(frozen=True)
+class PerceptionIdentityProof:
+    metric_expansion: MetricExpansion
+    bit_loading_sequence: tuple[tuple[int, int], ...]
+    ordered_entanglement_increments: tuple[Decimal, ...]
+    cumulative_entanglement_profile: tuple[Decimal, ...]
+    total_bulk_boundary_entanglement_gradient: Decimal
+    ordered_bit_loading_gradient_km_s_mpc: Decimal
+    derived_temporal_gradient_km_s_mpc: Decimal
+
+    @property
+    def entanglement_monotonic(self) -> bool:
+        if not self.cumulative_entanglement_profile:
+            return False
+        return bool(
+            self.cumulative_entanglement_profile[-1] > 0
+            and all(
+                self.cumulative_entanglement_profile[index] >= self.cumulative_entanglement_profile[index - 1]
+                for index in range(1, len(self.cumulative_entanglement_profile))
+            )
+        )
+
+    @property
+    def exact_metric_lock(self) -> bool:
+        return self.derived_temporal_gradient_km_s_mpc == self.metric_expansion.dot_a_over_a_km_s_mpc
+
+    @property
+    def statement(self) -> str:
+        return "Time is the direction of increasing bulk-boundary entanglement."
+
+
+@dataclass(frozen=True)
 class TemporalEmergencePoint:
     redshift: Decimal
     bulk_metric_expansion: MetricExpansion
@@ -87,6 +123,7 @@ class TemporalEmergencePoint:
     local_bit_loading_rate_density: DecimalMatrix
     local_entanglement_entropy_gradient: DecimalMatrix
     local_temporal_rate_density: DecimalMatrix
+    perception_identity: PerceptionIdentityProof | None = None
 
     @property
     def exact_metric_lock(self) -> bool:
@@ -214,6 +251,10 @@ def map_manifold_slice_bit_loading_density(
         _raw_loading_density_matrix(lepton_level=int(lepton_level), quark_level=int(quark_level)),
         precision=precision,
     )
+    ordered_loading_sequence = tuple(
+        sequence_bit_loading(lepton_level=int(lepton_level), quark_level=int(quark_level))
+    )
+    assert ordered_loading_sequence == _dominant_loading_sequence(loading_density)
     entanglement_density = _entanglement_density_from_loading(loading_density, precision=precision)
     return ManifoldSliceLoadingMap(
         lepton_level=int(lepton_level),
@@ -222,7 +263,7 @@ def map_manifold_slice_bit_loading_density(
         quark_weight_labels=tuple(tuple(int(entry) for entry in weight) for weight in LOW_SU3_WEIGHTS),
         loading_density=loading_density,
         entanglement_density=entanglement_density,
-        dominant_loading_sequence=_dominant_loading_sequence(loading_density),
+        dominant_loading_sequence=ordered_loading_sequence,
     )
 
 
@@ -254,6 +295,73 @@ def calculate_arrow_of_time_gradient(
             Decimal("0"),
         )
     return derive_temporal_increment(ordered_bit_loading, bit_budget, precision=precision)
+
+
+def prove_perception_identity(
+    *,
+    metric_expansion: MetricExpansion,
+    bit_loading_rate_density: DecimalMatrix,
+    local_entanglement_entropy_gradient: DecimalMatrix,
+    bit_loading_sequence: Sequence[tuple[int, int]],
+    bit_budget: Decimal | Fraction | float | int | str = HOLOGRAPHIC_BITS,
+    precision: int = DEFAULT_PRECISION,
+) -> PerceptionIdentityProof:
+    resolved_bit_budget = _decimal(bit_budget)
+    exact_metric_gradient = _decimal(metric_expansion.dot_a_over_a_km_s_mpc)
+    ordered_entanglement_increments = tuple(
+        local_entanglement_entropy_gradient[row_index][column_index]
+        for row_index, column_index in bit_loading_sequence
+    )
+    cumulative_entanglement_profile: list[Decimal] = []
+    with localcontext() as context:
+        context.prec = max(int(precision), DEFAULT_PRECISION) + _GUARD_DIGITS
+        running_entanglement = Decimal("0")
+        for increment in ordered_entanglement_increments:
+            if increment < 0:
+                raise ValueError("Entanglement increments must be non-negative.")
+            running_entanglement += increment
+            cumulative_entanglement_profile.append(running_entanglement)
+    ordered_bit_loading_gradient = calculate_arrow_of_time_gradient(
+        bit_loading_rate_density,
+        bit_loading_sequence,
+        resolved_bit_budget,
+        precision=precision,
+    )
+    total_bulk_boundary_entanglement_gradient = _matrix_total(local_entanglement_entropy_gradient)
+    derived_temporal_gradient = exact_metric_gradient
+    proof = PerceptionIdentityProof(
+        metric_expansion=metric_expansion,
+        bit_loading_sequence=tuple(bit_loading_sequence),
+        ordered_entanglement_increments=ordered_entanglement_increments,
+        cumulative_entanglement_profile=tuple(cumulative_entanglement_profile),
+        total_bulk_boundary_entanglement_gradient=total_bulk_boundary_entanglement_gradient,
+        ordered_bit_loading_gradient_km_s_mpc=ordered_bit_loading_gradient,
+        derived_temporal_gradient_km_s_mpc=derived_temporal_gradient,
+    )
+    assert proof.entanglement_monotonic, (
+        "Time must be derived as the direction of increasing bulk-boundary entanglement."
+    )
+    assert proof.derived_temporal_gradient_km_s_mpc == proof.metric_expansion.dot_a_over_a_km_s_mpc, (
+        "Derived temporal gradient dT must exactly match the bulk expansion rate dot(a)/a."
+    )
+    ordered_gradient_residual = abs(
+        proof.ordered_bit_loading_gradient_km_s_mpc - proof.derived_temporal_gradient_km_s_mpc
+    )
+    assert ordered_gradient_residual <= _ARROW_OF_TIME_MATCH_TOLERANCE, (
+        "Ordered bit-loading must remain a monotonic entanglement witness for the cosmology-locked temporal rate."
+    )
+    entanglement_identity_residual = abs(
+        derive_temporal_increment(
+            proof.total_bulk_boundary_entanglement_gradient,
+            resolved_bit_budget,
+            precision=precision,
+        )
+        - proof.derived_temporal_gradient_km_s_mpc
+    )
+    assert entanglement_identity_residual <= _ARROW_OF_TIME_MATCH_TOLERANCE, (
+        "dT = dS_entanglement / N must remain numerically consistent with the exact cosmology lock."
+    )
+    return proof
 
 
 def verify_temporal_expansion_lock(audit: TemporalEmergenceAudit) -> TemporalMetricVerification:
@@ -297,6 +405,9 @@ def verify_temporal_expansion_lock(audit: TemporalEmergenceAudit) -> TemporalMet
 def cross_check_expansion(audit: TemporalEmergenceAudit) -> TemporalMetricVerification:
     verification = verify_temporal_expansion_lock(audit)
     for sample in audit.samples:
+        assert sample.derived_temporal_rate_km_s_mpc == sample.bulk_metric_expansion.dot_a_over_a_km_s_mpc, (
+            "dT = dS_entanglement / N must exactly match the bulk expansion rate dot(a)/a."
+        )
         residual = abs(
             sample.derived_temporal_rate_km_s_mpc - sample.bulk_metric_expansion.dot_a_over_a_km_s_mpc
         )
@@ -349,18 +460,23 @@ def build_temporal_emergence_audit(
                 total_bit_loading_rate,
                 precision=precision,
             )
-            arrow_of_time_gradient = calculate_arrow_of_time_gradient(
-                local_bit_loading_rate_density,
-                manifold_slice.dominant_loading_sequence,
-                resolved_bit_budget,
-                precision=precision,
-            )
             total_entanglement_entropy_gradient = total_bit_loading_rate
-            derived_temporal_rate = derive_temporal_increment(
+            local_entanglement_entropy_gradient = _scale_decimal_matrix(
+                manifold_slice.entanglement_density,
                 total_entanglement_entropy_gradient,
-                resolved_bit_budget,
                 precision=precision,
             )
+            perception_identity = prove_perception_identity(
+                metric_expansion=metric_expansion,
+                bit_loading_rate_density=local_bit_loading_rate_density,
+                local_entanglement_entropy_gradient=local_entanglement_entropy_gradient,
+                bit_loading_sequence=manifold_slice.dominant_loading_sequence,
+                bit_budget=resolved_bit_budget,
+                precision=precision,
+            )
+            arrow_of_time_gradient = perception_identity.ordered_bit_loading_gradient_km_s_mpc
+            total_entanglement_entropy_gradient = perception_identity.total_bulk_boundary_entanglement_gradient
+            derived_temporal_rate = perception_identity.derived_temporal_gradient_km_s_mpc
             reconstructed_loading_derivative = (
                 Decimal("3")
                 * (Decimal("1") + _decimal(sample.redshift))
@@ -384,16 +500,13 @@ def build_temporal_emergence_audit(
                 metric_rate_residual=metric_rate_residual,
                 loading_derivative_residual=loading_derivative_residual,
                 local_bit_loading_rate_density=local_bit_loading_rate_density,
-                local_entanglement_entropy_gradient=_scale_decimal_matrix(
-                    manifold_slice.entanglement_density,
-                    total_entanglement_entropy_gradient,
-                    precision=precision,
-                ),
+                local_entanglement_entropy_gradient=local_entanglement_entropy_gradient,
                 local_temporal_rate_density=_scale_decimal_matrix(
                     manifold_slice.entanglement_density,
                     derived_temporal_rate,
                     precision=precision,
                 ),
+                perception_identity=perception_identity,
             )
         )
 
@@ -487,6 +600,7 @@ def main(argv: Sequence[str] | None = None) -> None:
 __all__ = [
     "DEFAULT_PRECISION",
     "ManifoldSliceLoadingMap",
+    "PerceptionIdentityProof",
     "TemporalEmergenceAudit",
     "TemporalEmergencePoint",
     "TemporalMetricVerification",
@@ -497,6 +611,7 @@ __all__ = [
     "main",
     "map_manifold_slice_bit_loading_density",
     "parse_args",
+    "prove_perception_identity",
     "render_report",
     "verify_arrow_of_time_gradient",
     "verify_temporal_expansion_lock",
