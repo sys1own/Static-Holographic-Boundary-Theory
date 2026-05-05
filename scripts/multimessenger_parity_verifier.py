@@ -17,11 +17,12 @@ if __package__ in (None, ""):
 
 from shbt.core.topology import calculate_dark_debt
 from shbt.main import DarkSectorGWBAudit, TopologicalVacuum
-from shbt.paths import resolve_resource_path
+from shbt.paths import ProjectPaths, resolve_resource_path
 
 
 DEFAULT_PRECISION = 50
 DEFAULT_CMB_BENCHMARK_PATH = resolve_resource_path("data", "cmb_power_spectrum_benchmarks.json")
+DEFAULT_MULTIMESSENGER_AUDIT_PATH = ProjectPaths.RESULTS / "multimessenger_audit.json"
 _GUARD_DIGITS = 12
 _FLOAT_MATCH_TOLERANCE = Decimal("1e-12")
 _DEFAULT_BAO_ACOUSTIC_SCALE_MULTIPOLE = Decimal("301")
@@ -149,6 +150,28 @@ class BAOPeakAudit:
 
 
 @dataclass(frozen=True)
+class ChiSquaredObservableAudit:
+    label: str
+    predicted_value: Decimal
+    observed_value: Decimal
+    sigma: Decimal
+    residual: Decimal
+    normalized_residual: Decimal
+    chi_squared_contribution: Decimal
+
+
+@dataclass(frozen=True)
+class ChiSquaredFitAudit:
+    label: str
+    observable_count: int
+    degrees_of_freedom: int
+    chi_squared: Decimal
+    reduced_chi_squared: Decimal
+    rms_pull: Decimal
+    components: tuple["ChiSquaredObservableAudit", ...]
+
+
+@dataclass(frozen=True)
 class ScalarTiltAudit:
     predicted_scalar_tilt: Decimal
     observed_scalar_tilt: Decimal
@@ -177,6 +200,7 @@ class MultimessengerParityAudit:
     cmb_anchor: DatasetAnchor
     dark_debt: DarkDebtAudit
     bao_mapping: BAOMappingAudit
+    chi_squared_fit: ChiSquaredFitAudit
     scalar_tilt: ScalarTiltAudit
     gravitational_wave: GravitationalWaveAudit
     executable_proof_pass: bool
@@ -258,6 +282,76 @@ def _predict_peak_multipole(
     with localcontext() as context:
         context.prec = DEFAULT_PRECISION + _GUARD_DIGITS
         return acoustic_scale_multipole * (Decimal(harmonic_index) - loading_coefficient * baryon_fraction)
+
+
+def _build_chi_squared_observable(
+    *,
+    label: str,
+    predicted_value: Decimal,
+    observed_value: Decimal,
+    sigma: Decimal,
+) -> ChiSquaredObservableAudit:
+    resolved_sigma = _decimal(sigma)
+    if resolved_sigma <= 0:
+        raise ValueError("sigma must be positive for a chi-squared contribution.")
+    with localcontext() as context:
+        context.prec = DEFAULT_PRECISION + _GUARD_DIGITS
+        residual = predicted_value - observed_value
+        normalized_residual = residual / resolved_sigma
+        chi_squared_contribution = normalized_residual * normalized_residual
+    return ChiSquaredObservableAudit(
+        label=label,
+        predicted_value=predicted_value,
+        observed_value=observed_value,
+        sigma=resolved_sigma,
+        residual=residual,
+        normalized_residual=normalized_residual,
+        chi_squared_contribution=chi_squared_contribution,
+    )
+
+
+def build_structural_residue_chi_squared_fit(
+    *,
+    bao_mapping: BAOMappingAudit,
+    bao_ratio_tolerance: Decimal,
+    bao_peak_position_tolerance: Decimal,
+    precision: int = DEFAULT_PRECISION,
+) -> ChiSquaredFitAudit:
+    components = [
+        _build_chi_squared_observable(
+            label="BAO dark-to-baryon ratio",
+            predicted_value=bao_mapping.predicted_dark_to_baryon_ratio,
+            observed_value=bao_mapping.observed_dark_to_baryon_ratio,
+            sigma=bao_ratio_tolerance,
+        )
+    ]
+    components.extend(
+        _build_chi_squared_observable(
+            label=f"{peak_audit.label} multipole",
+            predicted_value=peak_audit.predicted_multipole,
+            observed_value=peak_audit.observed_multipole,
+            sigma=bao_peak_position_tolerance,
+        )
+        for peak_audit in bao_mapping.peak_audits
+    )
+    resolved_components = tuple(components)
+    with localcontext() as context:
+        context.prec = max(int(precision), DEFAULT_PRECISION) + _GUARD_DIGITS
+        observable_count = len(resolved_components)
+        degrees_of_freedom = observable_count
+        chi_squared = sum((component.chi_squared_contribution for component in resolved_components), Decimal("0"))
+        reduced_chi_squared = (
+            chi_squared / Decimal(degrees_of_freedom) if degrees_of_freedom > 0 else Decimal("0")
+        )
+    return ChiSquaredFitAudit(
+        label="Topological Ghost / BAO acoustic peak fit",
+        observable_count=observable_count,
+        degrees_of_freedom=degrees_of_freedom,
+        chi_squared=chi_squared,
+        reduced_chi_squared=reduced_chi_squared,
+        rms_pull=_sqrt_decimal(reduced_chi_squared, precision=precision),
+        components=resolved_components,
+    )
 
 
 def audit_topological_ghost_bao_peaks(
@@ -351,6 +445,12 @@ def build_multimessenger_parity_audit(
         topological_ghost_debt=topological_ghost_debt,
         cmb_benchmark=cmb_benchmark,
     )
+    chi_squared_fit = build_structural_residue_chi_squared_fit(
+        bao_mapping=bao_mapping,
+        bao_ratio_tolerance=cmb_benchmark.bao_ratio_tolerance,
+        bao_peak_position_tolerance=cmb_benchmark.bao_peak_position_tolerance,
+        precision=precision,
+    )
 
     predicted_scalar_tilt = _decimal(cosmology_audit.n_s_locked)
     scalar_tilt_residual_sigma = (
@@ -393,10 +493,122 @@ def build_multimessenger_parity_audit(
         cmb_anchor=cmb_anchor,
         dark_debt=dark_debt,
         bao_mapping=bao_mapping,
+        chi_squared_fit=chi_squared_fit,
         scalar_tilt=scalar_tilt,
         gravitational_wave=gravitational_wave,
         executable_proof_pass=executable_proof_pass,
     )
+
+
+def _decimal_to_json_number(value: Decimal) -> float:
+    return float(value)
+
+
+def build_multimessenger_audit_payload(audit: MultimessengerParityAudit) -> dict[str, object]:
+    return {
+        "benchmark_branch": list(audit.benchmark_branch),
+        "nufit_anchor": {
+            "label": audit.nufit_anchor.label,
+            "path": _display_path(audit.nufit_anchor.path),
+            "release": audit.nufit_anchor.release,
+        },
+        "cmb_anchor": {
+            "label": audit.cmb_anchor.label,
+            "path": _display_path(audit.cmb_anchor.path),
+            "release": audit.cmb_anchor.release,
+        },
+        "dark_debt": {
+            "topological_ghost_debt": _decimal_to_json_number(audit.dark_debt.topological_ghost_debt),
+            "live_gravity_dark_debt": _decimal_to_json_number(audit.dark_debt.live_gravity_dark_debt),
+            "modular_efficiency": _decimal_to_json_number(audit.dark_debt.modular_efficiency),
+            "debt_residual": _decimal_to_json_number(audit.dark_debt.debt_residual),
+            "benchmark_locked": audit.dark_debt.benchmark_locked,
+        },
+        "bao_mapping": {
+            "proxy_label": audit.bao_mapping.proxy_label,
+            "predicted_dark_to_baryon_ratio": _decimal_to_json_number(
+                audit.bao_mapping.predicted_dark_to_baryon_ratio
+            ),
+            "observed_dark_to_baryon_ratio": _decimal_to_json_number(
+                audit.bao_mapping.observed_dark_to_baryon_ratio
+            ),
+            "predicted_baryon_fraction": _decimal_to_json_number(audit.bao_mapping.predicted_baryon_fraction),
+            "observed_baryon_fraction": _decimal_to_json_number(audit.bao_mapping.observed_baryon_fraction),
+            "acoustic_scale_multipole": _decimal_to_json_number(audit.bao_mapping.acoustic_scale_multipole),
+            "peak_loading_model": audit.bao_mapping.peak_loading_model,
+            "peak_position_tolerance": _decimal_to_json_number(audit.bao_mapping.peak_position_tolerance),
+            "ratio_residual": _decimal_to_json_number(audit.bao_mapping.ratio_residual),
+            "baryon_fraction_residual": _decimal_to_json_number(audit.bao_mapping.baryon_fraction_residual),
+            "max_peak_position_residual": _decimal_to_json_number(audit.bao_mapping.max_peak_position_residual),
+            "peak_positions_locked": audit.bao_mapping.peak_positions_locked,
+            "within_tolerance": audit.bao_mapping.within_tolerance,
+            "peak_audits": [
+                {
+                    "label": peak_audit.label,
+                    "harmonic_index": peak_audit.harmonic_index,
+                    "predicted_multipole": _decimal_to_json_number(peak_audit.predicted_multipole),
+                    "observed_multipole": _decimal_to_json_number(peak_audit.observed_multipole),
+                    "multipole_residual": _decimal_to_json_number(peak_audit.multipole_residual),
+                    "within_tolerance": peak_audit.within_tolerance,
+                }
+                for peak_audit in audit.bao_mapping.peak_audits
+            ],
+        },
+        "chi_squared_fit": {
+            "label": audit.chi_squared_fit.label,
+            "observable_count": audit.chi_squared_fit.observable_count,
+            "degrees_of_freedom": audit.chi_squared_fit.degrees_of_freedom,
+            "chi_squared": _decimal_to_json_number(audit.chi_squared_fit.chi_squared),
+            "reduced_chi_squared": _decimal_to_json_number(audit.chi_squared_fit.reduced_chi_squared),
+            "rms_pull": _decimal_to_json_number(audit.chi_squared_fit.rms_pull),
+            "components": [
+                {
+                    "label": component.label,
+                    "predicted_value": _decimal_to_json_number(component.predicted_value),
+                    "observed_value": _decimal_to_json_number(component.observed_value),
+                    "sigma": _decimal_to_json_number(component.sigma),
+                    "residual": _decimal_to_json_number(component.residual),
+                    "normalized_residual": _decimal_to_json_number(component.normalized_residual),
+                    "chi_squared_contribution": _decimal_to_json_number(component.chi_squared_contribution),
+                }
+                for component in audit.chi_squared_fit.components
+            ],
+        },
+        "scalar_tilt": {
+            "predicted_scalar_tilt": _decimal_to_json_number(audit.scalar_tilt.predicted_scalar_tilt),
+            "observed_scalar_tilt": _decimal_to_json_number(audit.scalar_tilt.observed_scalar_tilt),
+            "observed_scalar_tilt_sigma": _decimal_to_json_number(audit.scalar_tilt.observed_scalar_tilt_sigma),
+            "residual_sigma": _decimal_to_json_number(audit.scalar_tilt.residual_sigma),
+            "within_reference_band": audit.scalar_tilt.within_reference_band,
+        },
+        "gravitational_wave": {
+            "dataset_label": audit.gravitational_wave.dataset_label,
+            "tensor_tilt": _decimal_to_json_number(audit.gravitational_wave.tensor_tilt),
+            "primordial_tensor_ratio": _decimal_to_json_number(audit.gravitational_wave.primordial_tensor_ratio),
+            "observable_tensor_ratio": _decimal_to_json_number(audit.gravitational_wave.observable_tensor_ratio),
+            "normalized_strain_floor": _decimal_to_json_number(audit.gravitational_wave.normalized_strain_floor),
+            "normalized_current_ceiling": _decimal_to_json_number(audit.gravitational_wave.normalized_current_ceiling),
+            "normalized_design_floor": _decimal_to_json_number(audit.gravitational_wave.normalized_design_floor),
+            "below_current_ceiling": audit.gravitational_wave.below_current_ceiling,
+            "above_design_floor": audit.gravitational_wave.above_design_floor,
+        },
+        "automated_physical_audit_passed": audit.automated_physical_audit_passed,
+        "executable_proof_pass": audit.executable_proof_pass,
+    }
+
+
+def write_multimessenger_audit_artifact(
+    audit: MultimessengerParityAudit,
+    *,
+    output_path: Path | None = None,
+) -> Path:
+    ProjectPaths.ensure_dirs()
+    resolved_output_path = DEFAULT_MULTIMESSENGER_AUDIT_PATH if output_path is None else Path(output_path)
+    resolved_output_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = build_multimessenger_audit_payload(audit)
+    payload["artifact_path"] = _display_path(resolved_output_path)
+    resolved_output_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return resolved_output_path
 
 
 def render_multimessenger_report(audit: MultimessengerParityAudit) -> str:
@@ -443,6 +655,14 @@ def render_multimessenger_report(audit: MultimessengerParityAudit) -> str:
     )
     lines.extend(
         [
+            "",
+            "Chi-Squared Fit",
+            f"- label = {audit.chi_squared_fit.label}",
+            f"- observables = {audit.chi_squared_fit.observable_count}",
+            f"- degrees of freedom = {audit.chi_squared_fit.degrees_of_freedom}",
+            f"- Chi-Squared = {_format_decimal(audit.chi_squared_fit.chi_squared, places=12)}",
+            f"- reduced Chi-Squared = {_format_decimal(audit.chi_squared_fit.reduced_chi_squared, places=12)}",
+            f"- RMS pull = {_format_decimal(audit.chi_squared_fit.rms_pull, places=12)}",
             "",
             "CMB Power Spectrum Lock",
             f"- predicted n_s = {_format_decimal(audit.scalar_tilt.predicted_scalar_tilt, places=12)}",
@@ -509,13 +729,16 @@ def build_multimessenger_report(
 def run_automated_physical_audit(
     *,
     cmb_benchmark_path: Path | None = None,
+    output_path: Path | None = None,
     precision: int = DEFAULT_PRECISION,
 ) -> int:
     audit = build_multimessenger_parity_audit(
         cmb_benchmark_path=cmb_benchmark_path,
         precision=precision,
     )
+    artifact_path = write_multimessenger_audit_artifact(audit, output_path=output_path)
     print(render_multimessenger_report(audit))
+    print(f"\nJSON artifact                    : {_display_path(artifact_path)}")
     return 0 if audit.automated_physical_audit_passed else 1
 
 
@@ -534,14 +757,21 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default=DEFAULT_PRECISION,
         help="Decimal precision used for the normalized strain-floor proxy.",
     )
+    parser.add_argument(
+        "--output-path",
+        default=None,
+        help="Optional explicit path for the exported multimessenger audit JSON artifact.",
+    )
     return parser.parse_args(tuple(argv) if argv is not None else None)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     resolved_path = None if args.cmb_benchmark_path in (None, "") else Path(str(args.cmb_benchmark_path))
+    resolved_output_path = None if args.output_path in (None, "") else Path(str(args.output_path))
     return run_automated_physical_audit(
         cmb_benchmark_path=resolved_path,
+        output_path=resolved_output_path,
         precision=max(int(args.precision), 32),
     )
 
@@ -551,21 +781,27 @@ __all__ = [
     "BAOPeakBenchmark",
     "BAOMappingAudit",
     "CMBBenchmark",
+    "ChiSquaredFitAudit",
+    "ChiSquaredObservableAudit",
     "DarkDebtAudit",
     "DatasetAnchor",
     "DEFAULT_CMB_BENCHMARK_PATH",
+    "DEFAULT_MULTIMESSENGER_AUDIT_PATH",
     "GravitationalWaveAudit",
     "MultimessengerParityAudit",
     "ScalarTiltAudit",
     "audit_topological_ghost_bao_peaks",
+    "build_multimessenger_audit_payload",
     "build_multimessenger_parity_audit",
     "build_multimessenger_report",
+    "build_structural_residue_chi_squared_fit",
     "load_cmb_benchmark",
     "load_nufit_anchor",
     "main",
     "parse_args",
     "render_multimessenger_report",
     "run_automated_physical_audit",
+    "write_multimessenger_audit_artifact",
 ]
 
 
