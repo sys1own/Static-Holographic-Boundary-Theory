@@ -12,12 +12,15 @@ from typing import Sequence
 if __package__ in (None, ""):
     import sys
 
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    from pub import algebra
-    from pub.constants import ATMOSPHERIC_MASS_SPLITTING_NO_EV2, LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL, SOLAR_MASS_SPLITTING_EV2
-else:
-    from . import algebra
-    from .constants import ATMOSPHERIC_MASS_SPLITTING_NO_EV2, LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL, SOLAR_MASS_SPLITTING_EV2
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent if parent.name == "src" else parent / "src"
+        if (candidate / "shbt").is_dir():
+            sys.path.insert(0, str(candidate))
+            break
+
+from shbt.constants import ATMOSPHERIC_MASS_SPLITTING_NO_EV2, LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL, SOLAR_MASS_SPLITTING_EV2
+from shbt.core import algebra
+from shbt.resource_paths import resolve_resource_path
 
 
 EXPECTED_BRANCH = (26, 8, 312)
@@ -101,7 +104,7 @@ class FlavorIdentityAudit:
 
 
 def _load_beta_anchor() -> float:
-    tex_path = Path(__file__).with_name("physics_constants.tex")
+    tex_path = resolve_resource_path("physics_constants.tex")
     try:
         match = re.search(
             r"\\newcommand\{\\inflationGenusBeta\}\{([^}]+)\}",
