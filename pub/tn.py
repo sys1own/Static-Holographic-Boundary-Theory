@@ -8712,7 +8712,7 @@ class GaugeRenormalizationAudit:
         return float(getattr(self.gauge_audit, "topological_alpha_inverse", fallback_value))
 
     def _codata_alpha_inverse(self) -> float:
-        return float(PLANCK2018_ALPHA_EM_INV_MZ)
+        return float(CODATA_FINE_STRUCTURE_ALPHA_INVERSE)
 
     def _surface_running_uv_inputs(self, alpha_surf_inv: float | None = None) -> RunningCouplings:
         resolved_alpha = self._surface_alpha_inverse() if alpha_surf_inv is None else float(alpha_surf_inv)
@@ -8903,7 +8903,7 @@ def alpha_inv_derivation_block(
             surface_tension_gauge_alpha_inverse(model=resolved_model),
         )
     )
-    codata_alpha_inverse = float(getattr(resolved_gauge_audit, "codata_alpha_inverse", PLANCK2018_ALPHA_EM_INV_MZ))
+    codata_alpha_inverse = float(getattr(resolved_gauge_audit, "codata_alpha_inverse", CODATA_FINE_STRUCTURE_ALPHA_INVERSE))
     packing_deficiency = float(getattr(resolved_bit_balance_audit, "packing_deficiency", 1.0 - resolved_model.kappa_geometric))
     return (
         rf"$\alpha_{{\rm surf}}^{{-1}}={topological_alpha_inverse:.6f}$, "
