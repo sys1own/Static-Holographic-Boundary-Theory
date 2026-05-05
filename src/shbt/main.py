@@ -68,6 +68,7 @@ from shbt.core.algebra import (
 )
 from shbt.core.topology import solve_fraction_linear_system
 from shbt.physics_engine import quark_branching_pressure as _quark_branching_pressure
+from shbt.paths import PAPERS_DIR
 from shbt.runtime_config import (
     DEFAULT_SOLVER_CONFIG,
     PerturbativeBreakdownException,
@@ -17763,7 +17764,7 @@ def _display_path(path: Path) -> str:
 
 
 def _audit_resource_dir() -> Path:
-    return Path(__file__).resolve().parent
+    return PAPERS_DIR
 
 
 def _latex_scientific_notation(value: float, *, digits: int = 5) -> str:
