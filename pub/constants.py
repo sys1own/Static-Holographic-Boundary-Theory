@@ -145,6 +145,7 @@ _RUNTIME_KNOBS_CONFIG = _require_mapping(_PHYSICS_CONFIG, "runtime_knobs")
 _RELEASES_CONFIG = _require_mapping(_EXPERIMENTAL_CONFIG, "releases")
 _NORMAL_ORDERING_MASS_SPLITTINGS_CONFIG = _require_mapping(_EXPERIMENTAL_CONFIG, "normal_ordering_mass_splittings_ev2")
 
+# Required Observational Boundary Condition (OBC); see README.md for tier hierarchy.
 PLANCK_MASS_EV = _coerce_float(_PHYSICAL_CONSTANTS_CONFIG, "planck_mass_ev")
 PLANCK_LENGTH_M = _coerce_float(_PHYSICAL_CONSTANTS_CONFIG, "planck_length_m")
 LIGHT_SPEED_M_PER_S = _coerce_float(_PHYSICAL_CONSTANTS_CONFIG, "light_speed_m_per_s")
@@ -153,6 +154,7 @@ PLANCK2018_H0_KM_S_MPC = _coerce_float(_PHYSICAL_CONSTANTS_CONFIG, "planck2018_h
 PLANCK2018_H0_SIGMA_KM_S_MPC = _coerce_float(_PHYSICAL_CONSTANTS_CONFIG, "planck2018_h0_sigma_km_s_mpc")
 PLANCK2018_OMEGA_LAMBDA = _coerce_float(_PHYSICAL_CONSTANTS_CONFIG, "planck2018_omega_lambda")
 PLANCK2018_OMEGA_LAMBDA_SIGMA = _coerce_float(_PHYSICAL_CONSTANTS_CONFIG, "planck2018_omega_lambda_sigma")
+# Required Observational Boundary Condition (OBC); see README.md for tier hierarchy.
 PLANCK2018_ALPHA_EM_INV_MZ = _coerce_float(_PHYSICAL_CONSTANTS_CONFIG, "planck2018_alpha_em_inv_mz")
 PLANCK2018_SIN2_THETA_W_MZ = _coerce_float(_PHYSICAL_CONSTANTS_CONFIG, "planck2018_sin2_theta_w_mz")
 PLANCK2018_ALPHA_S_MZ = _coerce_float(_PHYSICAL_CONSTANTS_CONFIG, "planck2018_alpha_s_mz")
