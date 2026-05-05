@@ -50,10 +50,10 @@ This repository treats that chain as a theorem to be audited, not as an ansatz t
 
 ## Conceptual Glossary
 
-- **Holographic Moat**: The statistical gap in the anomaly-filter landscape isolating the $(26, 8, 312)$ branch.
-- **Parity Sink**: The non-propagating $c_{\rm dark}$ residue required to maintain boundary neutrality.
-- **Bit Budget ($N$)**: The finite holographic capacity of the cosmological horizon ($N \approx 3.3 \times 10^{122}$).
-- **Newton Lock**: The requirement that the bulk Planck scale be derived from boundary conservation laws.
+- **Parity Sink**: The neutrality reservoir carried by the non-propagating $c_{\rm dark}$ residue required to keep the benchmark branch boundary-neutral.
+- **Holographic Moat**: The topological isolation gap in the anomaly-filter landscape that protects the anomaly-free $(26, 8, 312)$ branch from neighboring unstable cells.
+- **Bit Budget ($N$)**: The finite horizon capacity of the cosmological boundary, with $N \approx 3.3 \times 10^{122}$ on the benchmark branch.
+- **Newton Lock**: The requirement that the bulk Planck scale be derived from branch-fixed boundary conservation laws rather than inserted as a free parameter.
 
 ## Modular Proof Engines
 
@@ -140,11 +140,19 @@ Read the JSON as a branch diagnosis rather than as an error-budget knob. The pub
 
 ## Derivation Ledger
 
-| Observable | Derived From | Predicted Value | CODATA Reference |
+The benchmark branch is fixed by the Tier 1 topological coordinates $(k_{\ell}, k_q, K) = (26, 8, 312)$. The ledger below maps those integers to the disclosed branch residues reported throughout the verifier.
+
+| Observable | Derived From | Predicted Value | CODATA / anchor |
 | :--- | :--- | :--- | :--- |
 | $\alpha^{-1}$ | $15 \times 312 / 34$ | $\approx 137.647$ | $137.036$ (Two-Loop Residual) |
-| $\mu$ ($m_p/m_e$) | $c_q / c_l \times \Pi_{vac}$ | $\approx 1836.15$ | $1836.152$ (Atomic Lock) |
+| $\mu$ ($m_p/m_e$) | $(c_q/c_{\ell}) V_{\rm px}^{-1} \Pi_{\rm vac}^2 / [(1-\kappa_{D_5})\kappa_{D_5}^{1/3}]$ with $c_q = 64/11$, $c_{\ell} = 39/14$, and $V_{\rm px} = 3/13$ | $\approx 1835.25$ | $1836.152$ (Atomic Lock) |
 | $m_{\nu}$ | $\kappa_{D_5} M_P N^{-1/4}$ | $\approx 2.83$ meV | $\sim 2.9$ meV (Theory-Fixed) |
+
+### Tier Classification
+
+- **Tier 1: Topological Coordinates** — the branch-defining integers `(26, 8, 312)`, i.e. `LEPTON_LEVEL`, `QUARK_LEVEL`, and `PARENT_LEVEL`, together with `G_SM = 15`.
+- **Tier 2: OBC Anchors** — the observational boundary-condition inputs, including the CODATA electromagnetic reference and the cosmological anchor $\Lambda_{\rm obs}$ used for external comparison.
+- **Tier 3: Derived Theoretical Residues** — the branch outputs computed from Tier 1 plus Tier 2, including $\alpha^{-1}_{\rm surf}$, $\mu$, $m_{\nu}$, $\kappa_{D_5}$, $N_{\rm holo}$, and the parity-sink residue $c_{\rm dark}$.
 
 ## Reproducibility
 
