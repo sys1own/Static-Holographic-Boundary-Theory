@@ -3,9 +3,9 @@ from __future__ import annotations
 """Holographic error-stabilizer audit for the anomaly-free benchmark branch.
 
 This module treats the benchmark conservation laws as topological checksums on
-the finite-capacity boundary dictionary. Charge balance, Noether-bridged
-momentum closure, and parity/framing closure act as logical stabilizers for the
-three-dimensional bulk projection. If their syndromes remain below the
+the finite-capacity boundary dictionary. Charge balance, parity/framing
+closure, and Noether-bridged time-reversal closure act as logical stabilizers
+for the three-dimensional bulk projection. If their syndromes remain below the
 branch-fixed recovery threshold
 
     m_rec = kappa_D5 M_P N^(-1/4),
@@ -40,13 +40,14 @@ if TYPE_CHECKING:
 
 DEFAULT_PRECISION = 200
 BenchmarkBranch = tuple[int, int, int]
-ChecksumLaw = Literal["charge", "momentum", "parity"]
+ChecksumLaw = Literal["charge", "parity", "time_reversal", "momentum"]
 
 BENCHMARK_BRANCH: BenchmarkBranch = (int(LEPTON_LEVEL), int(QUARK_LEVEL), int(PARENT_LEVEL))
 FAILED_BRANCHES: dict[ChecksumLaw, BenchmarkBranch] = {
     "charge": (int(LEPTON_LEVEL), int(QUARK_LEVEL + 1), int(PARENT_LEVEL)),
-    "momentum": (int(LEPTON_LEVEL), int(QUARK_LEVEL), int(PARENT_LEVEL + 1)),
     "parity": (int(LEPTON_LEVEL + 1), int(QUARK_LEVEL), int(PARENT_LEVEL)),
+    "time_reversal": (int(LEPTON_LEVEL), int(QUARK_LEVEL), int(PARENT_LEVEL + 1)),
+    "momentum": (int(LEPTON_LEVEL), int(QUARK_LEVEL), int(PARENT_LEVEL + 1)),
 }
 
 
@@ -73,13 +74,29 @@ def _parent_order(branch: BenchmarkBranch) -> tuple[int, int, int]:
     return (int(branch[2]), int(branch[0]), int(branch[1]))
 
 
+def _normalize_checksum_law(law: str) -> ChecksumLaw:
+    if law in {"time_reversal", "time-reversal", "momentum"}:
+        return "time_reversal"
+    if law in {"charge", "parity"}:
+        return law
+    raise ValueError(f"Unknown checksum law: {law}")
+
+
+def _display_checksum_law(law: str) -> str:
+    resolved_law = _normalize_checksum_law(law)
+    if resolved_law == "time_reversal":
+        return "time-reversal"
+    return resolved_law
+
+
 def _select_checksum(audit: "HolographicErrorStabilizerAudit", law: ChecksumLaw) -> "TopologicalChecksum":
-    if law == "charge":
+    resolved_law = _normalize_checksum_law(law)
+    if resolved_law == "charge":
         return audit.charge
-    if law == "momentum":
-        return audit.momentum
-    if law == "parity":
+    if resolved_law == "parity":
         return audit.parity
+    if resolved_law == "time_reversal":
+        return audit.time_reversal
     raise ValueError(f"Unknown checksum law: {law}")
 
 
@@ -111,6 +128,18 @@ class TopologicalChecksum:
     interpretation: str
 
     @property
+    def boundary_integer(self) -> Decimal:
+        return self.expected_value
+
+    @property
+    def bulk_projection(self) -> Decimal:
+        return self.observed_value
+
+    @property
+    def residue(self) -> Decimal:
+        return self.syndrome_residual
+
+    @property
     def passed(self) -> bool:
         return self.syndrome_residual <= self.syndrome_tolerance
 
@@ -125,6 +154,39 @@ class TopologicalChecksum:
         with localcontext() as context:
             context.prec = max(abs(self.syndrome_residual.as_tuple().exponent), 50)
             return self.syndrome_residual / self.syndrome_tolerance
+
+
+@dataclass(frozen=True)
+class TopologicalChecksumCode:
+    law: ChecksumLaw
+    stabilizer_name: str
+    protected_quantity: str
+    checksum_equation: str
+    boundary_integer: Decimal
+    bulk_projection: Decimal
+    syndrome_tolerance: Decimal
+    interpretation: str
+
+    @property
+    def residue(self) -> Decimal:
+        return abs(self.boundary_integer - self.bulk_projection)
+
+    @property
+    def passed(self) -> bool:
+        return self.residue <= self.syndrome_tolerance
+
+    def verify(self) -> TopologicalChecksum:
+        return TopologicalChecksum(
+            law=_normalize_checksum_law(self.law),
+            stabilizer_name=self.stabilizer_name,
+            protected_quantity=self.protected_quantity,
+            checksum_equation=self.checksum_equation,
+            expected_value=self.boundary_integer,
+            observed_value=self.bulk_projection,
+            syndrome_residual=self.residue,
+            syndrome_tolerance=self.syndrome_tolerance,
+            interpretation=self.interpretation,
+        )
 
 
 @dataclass(frozen=True)
@@ -150,6 +212,14 @@ class ChecksumFailureSimulation:
     def equivalence_principle_destroyed(self) -> bool:
         return not self.effective_anomalous_source_si_m2.vanished
 
+    @property
+    def charge_bit_flip(self) -> bool:
+        return _normalize_checksum_law(self.law) == "charge"
+
+    @property
+    def zero_energy_boundary_required(self) -> bool:
+        return self.torsion_reintroduced and self.equivalence_principle_destroyed
+
 
 @dataclass(frozen=True)
 class BulkChecksumVerification:
@@ -162,14 +232,34 @@ class BulkChecksumVerification:
     parity_checksum_passed: bool
     simulated_boundary_decoherence: bool
     detail: str
+    checksums: tuple[TopologicalChecksum, ...] = ()
+    torsion_projection_residual: Decimal = Decimal("0")
+
+    @property
+    def time_reversal_residual(self) -> Decimal:
+        return self.momentum_residual
+
+    @property
+    def time_reversal_checksum_passed(self) -> bool:
+        return self.momentum_checksum_passed
+
+    @property
+    def zero_energy_boundary_locked(self) -> bool:
+        return bool(
+            self.charge_checksum_passed
+            and self.time_reversal_checksum_passed
+            and self.parity_checksum_passed
+        )
+
+    @property
+    def equivalence_principle_preserved(self) -> bool:
+        return self.torsion_projection_residual == 0 and not self.simulated_boundary_decoherence
 
     @property
     def passed(self) -> bool:
         return bool(
-            self.charge_checksum_passed
-            and self.momentum_checksum_passed
-            and self.parity_checksum_passed
-            and not self.simulated_boundary_decoherence
+            self.zero_energy_boundary_locked
+            and self.equivalence_principle_preserved
         )
 
 
@@ -180,40 +270,87 @@ class HolographicStabilizer:
         self.precision = max(int(precision), DEFAULT_PRECISION)
         self.simulate_boundary_decoherence = bool(simulate_boundary_decoherence)
 
-    def verify_bulk_checksum(self) -> BulkChecksumVerification:
+    def verify_bulk_integrity(self) -> BulkChecksumVerification:
         from shbt.core.engine import calculate_efe_violation_tensor
         from shbt.core import noether_bridge
 
         with localcontext() as context:
             context.prec = self.precision
             packing_deficiency = Decimal("1") - _decimal(GEOMETRIC_KAPPA)
-            parity_overhead = (Decimal(PARENT_LEVEL) * packing_deficiency) / Decimal(PARENT_LEVEL)
-            charge_residual = abs(packing_deficiency - parity_overhead)
-            momentum_residual = _decimal(
-                calculate_efe_violation_tensor(
-                    parent_level=PARENT_LEVEL,
-                    lepton_level=LEPTON_LEVEL,
-                    quark_level=QUARK_LEVEL,
-                )
-            )
+            charge_bulk_projection = (Decimal(PARENT_LEVEL) * packing_deficiency) / Decimal(PARENT_LEVEL)
+            charge = TopologicalChecksumCode(
+                law="charge",
+                stabilizer_name="Boundary Charge Stabilizer",
+                protected_quantity="Zero-balanced vacuum loading",
+                checksum_equation="|(1 - kappa_D5) - (c_dark / K)|",
+                boundary_integer=packing_deficiency,
+                bulk_projection=charge_bulk_projection,
+                syndrome_tolerance=Decimal("0"),
+                interpretation=(
+                    "Charge conservation is the primary error-correcting codeword. "
+                    "The bulk remains coherent only when the visible packing deficiency is canceled exactly by the dark completion residue."
+                ),
+            ).verify()
+            time_reversal = TopologicalChecksumCode(
+                law="time_reversal",
+                stabilizer_name="Bulk Time-Reversal Stabilizer",
+                protected_quantity="Reversible bulk projection",
+                checksum_equation="|E_mu_nu|",
+                boundary_integer=Decimal("0"),
+                bulk_projection=_decimal(
+                    calculate_efe_violation_tensor(
+                        parent_level=PARENT_LEVEL,
+                        lepton_level=LEPTON_LEVEL,
+                        quark_level=QUARK_LEVEL,
+                    )
+                ),
+                syndrome_tolerance=Decimal("0"),
+                interpretation=(
+                    "Time-reversal integrity is encoded by a vanishing bulk projection residue. "
+                    "Once the boundary bookkeeping ceases to reverse exactly, the emergent bulk ceases to be torsion-free."
+                ),
+            ).verify()
             parity_audit = noether_bridge.framing_defect(PARENT_LEVEL, LEPTON_LEVEL, QUARK_LEVEL)
-            parity_residual = Decimal(parity_audit.delta_fr.numerator) / Decimal(parity_audit.delta_fr.denominator)
+            parity = TopologicalChecksumCode(
+                law="parity",
+                stabilizer_name="Framing Parity Stabilizer",
+                protected_quantity="Anomaly-free torsion lock",
+                checksum_equation="Delta_fr",
+                boundary_integer=Decimal("0"),
+                bulk_projection=Decimal(parity_audit.delta_fr.numerator) / Decimal(parity_audit.delta_fr.denominator),
+                syndrome_tolerance=Decimal("0"),
+                interpretation=(
+                    "Parity closure is the topological framing code. "
+                    "A non-zero framing defect reopens the torsion channel in the bulk metric."
+                ),
+            ).verify()
+            charge_bit_flip_audit = noether_bridge.framing_defect(*FAILED_BRANCHES["charge"])
+            torsion_projection_residual = (
+                Decimal(charge_bit_flip_audit.delta_fr.numerator) / Decimal(charge_bit_flip_audit.delta_fr.denominator)
+                if self.simulate_boundary_decoherence
+                else Decimal("0")
+            )
 
-        charge_checksum_passed = bool(charge_residual == 0)
-        momentum_checksum_passed = bool(momentum_residual == 0)
-        parity_checksum_passed = bool(parity_residual == 0)
+        charge_residual = charge.residue
+        momentum_residual = time_reversal.residue
+        parity_residual = parity.residue
+        charge_checksum_passed = charge.passed
+        momentum_checksum_passed = time_reversal.passed
+        parity_checksum_passed = parity.passed
 
         failure_modes: list[str] = []
         if not charge_checksum_passed:
             failure_modes.append(f"charge residual={_format_decimal(charge_residual)}")
         if not momentum_checksum_passed:
-            failure_modes.append(f"momentum residual={_format_decimal(momentum_residual)}")
+            failure_modes.append(f"time-reversal residual={_format_decimal(momentum_residual)}")
         if not parity_checksum_passed:
             failure_modes.append(f"parity residual={_format_decimal(parity_residual)}")
         if self.simulate_boundary_decoherence:
             failure_modes.append("simulated boundary decoherence")
+        if torsion_projection_residual > 0:
+            failure_modes.append(f"bulk torsion amplitude={_format_decimal(torsion_projection_residual)}")
 
-        detail = "bulk checksum locked" if not failure_modes else "; ".join(failure_modes)
+        detail = "bulk integrity locked" if not failure_modes else "; ".join(failure_modes)
         return BulkChecksumVerification(
             benchmark_branch=BENCHMARK_BRANCH,
             charge_residual=charge_residual,
@@ -224,7 +361,12 @@ class HolographicStabilizer:
             parity_checksum_passed=parity_checksum_passed,
             simulated_boundary_decoherence=self.simulate_boundary_decoherence,
             detail=detail,
+            checksums=(charge, parity, time_reversal),
+            torsion_projection_residual=torsion_projection_residual,
         )
+
+    def verify_bulk_checksum(self) -> BulkChecksumVerification:
+        return self.verify_bulk_integrity()
 
 
 @dataclass(frozen=True)
@@ -232,8 +374,8 @@ class HolographicErrorStabilizerAudit:
     branch: BenchmarkBranch
     recovery: RecoveryThresholdAudit
     charge: TopologicalChecksum
-    momentum: TopologicalChecksum
     parity: TopologicalChecksum
+    time_reversal: TopologicalChecksum
     newton_lock: noether_bridge.NewtonLockAudit
     saturation: noether_bridge.SaturationAudit
     unity: noether_bridge.UnityOfScaleAudit
@@ -242,7 +384,11 @@ class HolographicErrorStabilizerAudit:
 
     @property
     def checksums(self) -> tuple[TopologicalChecksum, TopologicalChecksum, TopologicalChecksum]:
-        return (self.charge, self.momentum, self.parity)
+        return (self.charge, self.parity, self.time_reversal)
+
+    @property
+    def momentum(self) -> TopologicalChecksum:
+        return self.time_reversal
 
     @property
     def zero_energy_state_locked(self) -> bool:
@@ -297,20 +443,46 @@ def _build_charge_checksum(recovery: RecoveryThresholdAudit) -> TopologicalCheck
     from shbt.main import verify_bit_balance_identity
 
     bit_balance = verify_bit_balance_identity()
-    return TopologicalChecksum(
+    return TopologicalChecksumCode(
         law="charge",
         stabilizer_name="Boundary Charge Stabilizer",
         protected_quantity="Zero-balanced vacuum loading",
         checksum_equation="|(1 - kappa_D5) - (c_dark / K)|",
-        expected_value=_decimal(bit_balance.packing_deficiency),
-        observed_value=_decimal(bit_balance.dark_sector_complexity_overhead),
-        syndrome_residual=_decimal(bit_balance.residual),
+        boundary_integer=_decimal(bit_balance.packing_deficiency),
+        bulk_projection=_decimal(bit_balance.dark_sector_complexity_overhead),
         syndrome_tolerance=recovery.dimensionless_syndrome_threshold,
         interpretation=(
             "The charge checksum treats the visible packing deficiency as the logical payload and the c_dark parity sector "
             "as its redundancy block. A non-zero residue would mean boundary bit rot in the zero-energy state."
         ),
-    )
+    ).verify()
+
+
+def _build_time_reversal_checksum(
+    recovery: RecoveryThresholdAudit,
+    *,
+    unity: noether_bridge.UnityOfScaleAudit,
+) -> TopologicalChecksum:
+    with localcontext() as context:
+        context.prec = DEFAULT_PRECISION
+        bulk_projection = (
+            unity.lambda_lhs_ev2 / unity.lambda_rhs_noether_bridged_ev2
+            if unity.lambda_rhs_noether_bridged_ev2 != 0
+            else Decimal("Infinity")
+        )
+    return TopologicalChecksumCode(
+        law="time_reversal",
+        stabilizer_name="Noether Time-Reversal Stabilizer",
+        protected_quantity="Reversible bulk time ordering",
+        checksum_equation="|1 - Lambda_obs / Lambda_bridge|",
+        boundary_integer=Decimal("1"),
+        bulk_projection=bulk_projection,
+        syndrome_tolerance=recovery.dimensionless_syndrome_threshold,
+        interpretation=(
+            "Time-reversal conservation is encoded by the Noether-bridged unity-of-scale code. "
+            "If the bridge ceases to reverse cleanly, temporal bookkeeping leaks out of the boundary dictionary and the bulk projection loses geodesic closure."
+        ),
+    ).verify()
 
 
 def _build_momentum_checksum(
@@ -318,20 +490,7 @@ def _build_momentum_checksum(
     *,
     unity: noether_bridge.UnityOfScaleAudit,
 ) -> TopologicalChecksum:
-    return TopologicalChecksum(
-        law="momentum",
-        stabilizer_name="Noether Momentum Stabilizer",
-        protected_quantity="Translation / curvature lock",
-        checksum_equation="epsilon_lambda^(bridge) = |1 - Lambda_obs / Lambda_bridge|",
-        expected_value=unity.lambda_lhs_ev2,
-        observed_value=unity.lambda_rhs_noether_bridged_ev2,
-        syndrome_residual=unity.epsilon_lambda_noether_bridged,
-        syndrome_tolerance=recovery.dimensionless_syndrome_threshold,
-        interpretation=(
-            "Momentum conservation is encoded through the Noether-bridged unity-of-scale identity. "
-            "If that checksum fails, translational bookkeeping leaks out of the boundary code and the bulk geodesic image stops closing."
-        ),
-    )
+    return _build_time_reversal_checksum(recovery, unity=unity)
 
 
 def _build_parity_checksum(recovery: RecoveryThresholdAudit) -> TopologicalChecksum:
@@ -339,19 +498,18 @@ def _build_parity_checksum(recovery: RecoveryThresholdAudit) -> TopologicalCheck
 
     framing = noether_bridge.framing_defect(PARENT_LEVEL, LEPTON_LEVEL, QUARK_LEVEL)
     residual = Decimal(framing.delta_fr.numerator) / Decimal(framing.delta_fr.denominator)
-    return TopologicalChecksum(
+    return TopologicalChecksumCode(
         law="parity",
         stabilizer_name="Framing Parity Stabilizer",
         protected_quantity="Anomaly-free torsion lock",
         checksum_equation="Delta_fr",
-        expected_value=Decimal("0"),
-        observed_value=residual,
-        syndrome_residual=residual,
+        boundary_integer=Decimal("0"),
+        bulk_projection=residual,
         syndrome_tolerance=recovery.dimensionless_syndrome_threshold,
         interpretation=(
             "Parity conservation is the topological framing checksum. Once Delta_fr reopens, the Levi-Civita branch exits the local moat and torsion returns."
         ),
-    )
+    ).verify()
 
 
 def build_holographic_error_stabilizer_audit(*, precision: int = DEFAULT_PRECISION) -> HolographicErrorStabilizerAudit:
@@ -360,8 +518,8 @@ def build_holographic_error_stabilizer_audit(*, precision: int = DEFAULT_PRECISI
     resolved_precision = max(int(precision), DEFAULT_PRECISION)
     recovery, newton_lock, saturation, unity = _build_recovery_threshold(precision=resolved_precision)
     charge = _build_charge_checksum(recovery)
-    momentum = _build_momentum_checksum(recovery, unity=unity)
     parity = _build_parity_checksum(recovery)
+    time_reversal = _build_time_reversal_checksum(recovery, unity=unity)
     reference_failure = noether_bridge.reviewer_trap_audit(
         newton_lock_audit=newton_lock,
         saturation=saturation,
@@ -370,17 +528,17 @@ def build_holographic_error_stabilizer_audit(*, precision: int = DEFAULT_PRECISI
         precision=resolved_precision,
     )
     proof = (
-        "Charge balance, Noether-bridged momentum closure, and parity/framing closure all remain below the recovery threshold "
+        "Charge balance, parity/framing closure, and Noether-bridged time-reversal closure all remain below the recovery threshold "
         "m_rec = kappa_D5 M_P N^(-1/4), so the benchmark boundary stays in its zero-energy state with E_mu_nu = 0. "
-        "The parity-detuned reference branch simultaneously gives Delta_fr != 0, E_mu_nu != 0, and J_mu_nu^(a) != 0, "
+        "A charge-conservation bit flip or parity detuning simultaneously gives Delta_fr != 0, E_mu_nu != 0, and J_mu_nu^(a) != 0, "
         "which means the bulk exists as a torsion-free, equivalence-principle-preserving image precisely because the boundary acts as a self-correcting error-stabilizer."
     )
     return HolographicErrorStabilizerAudit(
         branch=BENCHMARK_BRANCH,
         recovery=recovery,
         charge=charge,
-        momentum=momentum,
         parity=parity,
+        time_reversal=time_reversal,
         newton_lock=newton_lock,
         saturation=saturation,
         unity=unity,
@@ -390,7 +548,7 @@ def build_holographic_error_stabilizer_audit(*, precision: int = DEFAULT_PRECISI
 
 
 def simulate_failed_checksum(
-    law: ChecksumLaw = "parity",
+    law: ChecksumLaw = "charge",
     *,
     syndrome: Decimal | float | int | str | None = None,
     precision: int = DEFAULT_PRECISION,
@@ -398,7 +556,8 @@ def simulate_failed_checksum(
     from shbt.core import noether_bridge
 
     audit = build_holographic_error_stabilizer_audit(precision=precision)
-    checksum = _select_checksum(audit, law)
+    resolved_law = _normalize_checksum_law(law)
+    checksum = _select_checksum(audit, resolved_law)
     injected_syndrome = checksum.syndrome_tolerance * Decimal("2") if syndrome is None else _decimal(syndrome)
     if injected_syndrome < 0:
         raise ValueError("syndrome must be non-negative.")
@@ -408,7 +567,7 @@ def simulate_failed_checksum(
         syndrome_energy_ev = injected_syndrome * audit.recovery.planck_mass_ev
     recoverable = bool(syndrome_energy_ev <= audit.recovery.recovery_threshold_ev)
 
-    failed_branch = FAILED_BRANCHES[law]
+    failed_branch = FAILED_BRANCHES[resolved_law]
     reviewer = noether_bridge.reviewer_trap_audit(
         newton_lock_audit=audit.newton_lock,
         saturation=audit.saturation,
@@ -427,7 +586,7 @@ def simulate_failed_checksum(
         effective_anomalous_source_ev2 = reviewer.anomalous_source_ev2
         effective_anomalous_source_si_m2 = reviewer.anomalous_source_si_m2
     return ChecksumFailureSimulation(
-        law=law,
+        law=resolved_law,
         benchmark_branch=audit.branch,
         failed_branch=failed_branch,
         injected_syndrome=injected_syndrome,
@@ -439,6 +598,18 @@ def simulate_failed_checksum(
         effective_closure_tensor=effective_closure_tensor,
         effective_anomalous_source_ev2=effective_anomalous_source_ev2,
         effective_anomalous_source_si_m2=effective_anomalous_source_si_m2,
+    )
+
+
+def simulate_charge_bit_flip(
+    *,
+    syndrome: Decimal | float | int | str | None = None,
+    precision: int = DEFAULT_PRECISION,
+) -> ChecksumFailureSimulation:
+    return simulate_failed_checksum(
+        law="charge",
+        syndrome=syndrome,
+        precision=precision,
     )
 
 
@@ -461,12 +632,15 @@ def render_report(
         "---------------------",
     ]
     for checksum in audit.checksums:
+        display_law = _display_checksum_law(checksum.law)
         lines.extend(
             (
-                f"{checksum.law:>8} stabilizer              : {checksum.stabilizer_name}",
-                f"{checksum.law:>8} residual                : {_format_decimal(checksum.syndrome_residual)}",
-                f"{checksum.law:>8} tolerance               : {_format_decimal(checksum.syndrome_tolerance)}",
-                f"{checksum.law:>8} bit-rot blocked         : {checksum.prevents_bit_rot}",
+                f"{display_law:>13} stabilizer         : {checksum.stabilizer_name}",
+                f"{display_law:>13} boundary integer   : {_format_decimal(checksum.boundary_integer)}",
+                f"{display_law:>13} bulk projection    : {_format_decimal(checksum.bulk_projection)}",
+                f"{display_law:>13} residual           : {_format_decimal(checksum.residue)}",
+                f"{display_law:>13} tolerance          : {_format_decimal(checksum.syndrome_tolerance)}",
+                f"{display_law:>13} bit-rot blocked    : {checksum.prevents_bit_rot}",
             )
         )
     lines.extend(
@@ -486,8 +660,9 @@ def render_report(
                 "",
                 "Failed Checksum Simulation",
                 "-------------------------",
-                f"Failed law                         : {simulation.law}",
+                f"Failed law                         : {_display_checksum_law(simulation.law)}",
                 f"Detuned branch                     : {_format_branch(simulation.failed_branch)}",
+                f"Charge-conservation bit flip       : {simulation.charge_bit_flip}",
                 f"Injected syndrome                  : {_format_decimal(simulation.injected_syndrome)}",
                 f"Syndrome energy [eV]              : {_format_decimal(simulation.syndrome_energy_ev)}",
                 f"Recovery budget [eV]              : {_format_decimal(simulation.recovery_budget_ev)}",
@@ -495,6 +670,7 @@ def render_report(
                 f"Bulk closure tensor vanished      : {simulation.effective_closure_tensor.vanished}",
                 f"Torsion reintroduced               : {simulation.torsion_reintroduced}",
                 f"Equivalence Principle destroyed   : {simulation.equivalence_principle_destroyed}",
+                f"Zero-energy boundary required      : {simulation.zero_energy_boundary_required}",
             )
         )
     return "\n".join(lines)
@@ -503,7 +679,7 @@ def render_report(
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--precision", type=int, default=DEFAULT_PRECISION)
-    parser.add_argument("--simulate-law", choices=("charge", "momentum", "parity"))
+    parser.add_argument("--simulate-law", choices=("charge", "parity", "time_reversal", "time-reversal", "momentum"))
     parser.add_argument("--syndrome")
     return parser.parse_args(list(argv) if argv is not None else None)
 
@@ -530,10 +706,12 @@ __all__ = [
     "HolographicStabilizer",
     "RecoveryThresholdAudit",
     "TopologicalChecksum",
+    "TopologicalChecksumCode",
     "build_holographic_error_stabilizer_audit",
     "main",
     "parse_args",
     "render_report",
+    "simulate_charge_bit_flip",
     "simulate_failed_checksum",
 ]
 
