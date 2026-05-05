@@ -21,7 +21,7 @@ if __package__ in (None, ""):
 
 from shbt.constants import PLANCK2018_LAMBDA_SI_M2
 from shbt.core.noether_bridge import load_c_dark_completion_fraction
-from shbt.resource_paths import resolve_resource_path
+from shbt.paths import resolve_resource_path
 
 
 DEFAULT_PRECISION = 50
