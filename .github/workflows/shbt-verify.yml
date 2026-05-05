@@ -49,6 +49,9 @@ jobs:
           python scripts/technological_scaling_limits.py
           python scripts/multimessenger_parity_verifier.py
 
+          - name: Technological Scaling Audit
+          run: python scripts/technological_scaling_limits.py
+  
       - name: Upload audit artifacts
         uses: actions/upload-artifact@v4
         with:
