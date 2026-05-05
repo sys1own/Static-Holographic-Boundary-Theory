@@ -3,7 +3,7 @@
 
 Static Holographic Boundary Theory (SHBT) is an executable proof architecture for a **Zero Free Parameter** boundary construction. In SHBT, Standard Model observables are treated as mandatory residues of effective 4D gravity on a finite-capacity horizon, not as outputs of a detached fit sector. The retained construction is anchored to the unique anomaly-free branch $(26, 8, 312)$, and every benchmark artifact in this repository is read as a consequence of that branch-fixed closure.
 
-The benchmark constants are tracked in `pub/constants.py` as a strict three-tier catalog.
+The benchmark constants are tracked in `src/shbt/constants.py` as a strict three-tier catalog.
 
 - `TIER_1_TOPOLOGICAL_COORDINATES` contains the branch-defining discrete coordinates: `LEPTON_LEVEL = 26`, `QUARK_LEVEL = 8`, `PARENT_LEVEL = 312`, and `G_SM = 15`.
 - `TIER_2_OBSERVATIONAL_BOUNDARY_CONDITIONS` contains the external observational anchors supplied to the verifier, including the Planck 2018 late-time cosmology inputs and the electroweak gauge data.
@@ -50,10 +50,24 @@ This repository treats that chain as a theorem to be audited, not as an ansatz t
 
 ## Conceptual Glossary
 
-- **Parity Sink**: The neutrality reservoir carried by the non-propagating $c_{\rm dark}$ residue required to keep the benchmark branch boundary-neutral.
-- **Holographic Moat**: The topological isolation gap in the anomaly-filter landscape that protects the anomaly-free $(26, 8, 312)$ branch from neighboring unstable cells.
+- **Parity Sink**: The non-propagating completion residue ($c_{\rm dark}$) that maintains boundary neutrality on the benchmark branch.
+- **Holographic Moat**: The topological gap isolating the anomaly-free $(26, 8, 312)$ branch from neighboring detuned cells.
+- **Unity of Scale**: The mathematical locking of $\Lambda$, $G_N$, and $m_{\nu}$ to the horizon bit budget.
 - **Bit Budget ($N$)**: The finite horizon capacity of the cosmological boundary, with $N \approx 3.3 \times 10^{122}$ on the benchmark branch.
 - **Newton Lock**: The requirement that the bulk Planck scale be derived from branch-fixed boundary conservation laws rather than inserted as a free parameter.
+
+## Repository Map
+
+- `src/shbt/` — installable SHBT package containing the verifier, shared constants, and reporting stack.
+- `src/shbt/main.py` — primary CLI entrypoint for full benchmark regeneration via `PYTHONPATH=src python -m shbt.main`.
+- `src/shbt/constants.py` — strict benchmark tier catalog and shared branch-fixed constants.
+- `src/shbt/core/` — gravity, flavor, topology, transport, and uniqueness proof engines.
+- `src/shbt/audit/` — publication-facing audit modules and artifact generators.
+- `scripts/` — standalone derivation and utility scripts such as `derive_universe.py`, `derive_lambda.py`, `derive_proton_ratio.py`, and `plot_local_moat.py`.
+- `papers/` — manuscript sources and TeX-side exports, including `tn.tex`, `gravity.tex`, `supplementary.tex`, and `physics_constants.tex`.
+- `tests/` — integrity checks, moat stress tests, and formal anomaly regression tests.
+- `config/` — locked benchmark YAML configuration.
+- `results/` — generated audit artifacts and benchmark diagnostics when the verifier is run.
 
 ## Modular Proof Engines
 
@@ -124,10 +138,10 @@ The repository includes a production-grade diagnostic stack to ensure the mathem
 Run the universal verifier from the repository root:
 
 ```bash
-python tn.py --output-dir results/
+PYTHONPATH=src python -m shbt.main --output-dir results/
 ```
 
-The repository-root driver forwards into `pub/tn.py` and regenerates the benchmark-facing artifacts, numerical audits, manuscript exports, and reviewer packets from the disclosed branch data. The intended use is verification of a rigid branch-fixed theorem stack, not parameter search.
+The package entrypoint in `src/shbt/main.py` regenerates the benchmark-facing artifacts, numerical audits, manuscript exports, and reviewer packets from the disclosed branch data. The intended use is verification of a rigid branch-fixed theorem stack, not parameter search.
 
 Interpret `results/residuals.json` as the benchmark's audit ledger:
 
@@ -163,11 +177,11 @@ The benchmark configuration is locked by the checked-in YAML at `config/benchmar
 - **Build backend:** `setuptools.build_meta`
 - **Python requirement:** `>=3.11`
 - **Pinned scientific stack:** `PyYAML==6.0.3`, `Jinja2==3.1.6`, `mpmath==1.3.0`, `numpy==1.26.4`, `scipy==1.12.0`, `matplotlib==3.8.3`, `sympy==1.12`
-- **Link Ledger:** `python pub/derive_universe.py` prints the branch-fixed gauge-density residue `alpha_surf^-1 = 2340/17`; together with the `Derivation Ledger` above, this makes explicit that the benchmark's physical constants are derived residues disclosed against external comparators, not fit parameters reopened by hand.
+- **Link Ledger:** `python scripts/derive_universe.py` prints the branch-fixed gauge-density residue `alpha_surf^-1 = 2340/17`; together with the `Derivation Ledger` above, this makes explicit that the benchmark's physical constants are derived residues disclosed against external comparators, not fit parameters reopened by hand.
 
 ### Constant Tiers
 
-The strict benchmark taxonomy lives in `pub/constants.py` as `STRICT_BENCHMARK_TIER_DEFINITIONS`. The complete branch-facing constant registry is:
+The strict benchmark taxonomy lives in `src/shbt/constants.py` as `STRICT_BENCHMARK_TIER_DEFINITIONS`. The complete branch-facing constant registry is:
 
 | Tier | Registry key | Constants carried in the tier | Interpretation |
 | --- | --- | --- | --- |
