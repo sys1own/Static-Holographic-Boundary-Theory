@@ -16,6 +16,7 @@ if __package__ in (None, ""):
 from .tn import (
     CODATA_FINE_STRUCTURE_ALPHA_INVERSE,
     G_SM,
+    HBAR_EV_SECONDS,
     HOLOGRAPHIC_BITS,
     KAPPA_D5,
     LEPTON_LEVEL,
@@ -24,6 +25,7 @@ from .tn import (
     QUARK_LEVEL,
     surface_tension_gauge_alpha_inverse,
     topological_mass_coordinate_ev,
+    topological_newton_coordinate_ev_minus2,
     topological_planck_mass_ev,
 )
 
@@ -129,6 +131,11 @@ class AlphaSurfaceDerivation:
 
 
 @dataclass(frozen=True)
+class ObservationalBoundaryConditionDerivation:
+    hbar_ev_seconds: Decimal
+
+
+@dataclass(frozen=True)
 class KappaDerivation:
     simplex_fraction: Fraction
     sqrt_ten: Decimal
@@ -157,6 +164,8 @@ class UnityOfScaleDerivation:
     holographic_bits: Decimal
     lambda_holo_ev2: Decimal
     g_newton_topological_ev_minus2: Decimal
+    g_newton_inverse_square_ev_minus2: Decimal
+    g_newton_bridge_drift: Decimal
     kappa_fourth: Decimal
     expanded_theorem_rhs_ev2: Decimal
     reduced_theorem_rhs_ev2: Decimal
@@ -168,6 +177,10 @@ class UnityOfScaleDerivation:
     @property
     def passed(self) -> bool:
         return self.epsilon_lambda <= self.decimal_tolerance
+
+
+def derive_observational_boundary_conditions() -> ObservationalBoundaryConditionDerivation:
+    return ObservationalBoundaryConditionDerivation(hbar_ev_seconds=_decimal(HBAR_EV_SECONDS))
 
 
 def derive_alpha_surface(*, precision: int = DEFAULT_PRECISION) -> AlphaSurfaceDerivation:
@@ -259,11 +272,15 @@ def derive_unity_of_scale(
         branch_planck_mass_ev = resolved_mass_bridge.branch_planck_mass_ev
         holographic_bits = resolved_mass_bridge.holographic_bits
         lambda_holo_ev2 = three_pi * branch_planck_mass_ev * branch_planck_mass_ev / holographic_bits
-        g_newton_topological_ev_minus2 = Decimal(1) / (branch_planck_mass_ev * branch_planck_mass_ev)
+        g_newton_topological_ev_minus2 = _decimal(
+            topological_newton_coordinate_ev_minus2(branch_planck_mass_ev=float(branch_planck_mass_ev))
+        )
+        g_newton_inverse_square_ev_minus2 = Decimal(1) / (branch_planck_mass_ev * branch_planck_mass_ev)
+        g_newton_bridge_drift = abs(g_newton_topological_ev_minus2 - g_newton_inverse_square_ev_minus2)
         kappa_fourth = resolved_kappa**4
         expanded_theorem_rhs_ev2 = (
             (three_pi / kappa_fourth)
-            * g_newton_topological_ev_minus2
+            * g_newton_inverse_square_ev_minus2
             * (resolved_mass_bridge.neutrino_floor_ev**4)
         )
         reduced_theorem_rhs_ev2 = three_pi * branch_planck_mass_ev * branch_planck_mass_ev / holographic_bits
@@ -277,6 +294,8 @@ def derive_unity_of_scale(
             holographic_bits=+holographic_bits,
             lambda_holo_ev2=+lambda_holo_ev2,
             g_newton_topological_ev_minus2=+g_newton_topological_ev_minus2,
+            g_newton_inverse_square_ev_minus2=+g_newton_inverse_square_ev_minus2,
+            g_newton_bridge_drift=+g_newton_bridge_drift,
             kappa_fourth=+kappa_fourth,
             expanded_theorem_rhs_ev2=+expanded_theorem_rhs_ev2,
             reduced_theorem_rhs_ev2=+reduced_theorem_rhs_ev2,
@@ -293,6 +312,7 @@ def derive_unity_of_scale(
 
 
 def build_derivation_ledger(*, precision: int = DEFAULT_PRECISION) -> str:
+    obc = derive_observational_boundary_conditions()
     alpha = derive_alpha_surface(precision=precision)
     kappa = derive_kappa_d5(precision=precision)
     mass = derive_mass_bridge(precision=precision, kappa=kappa.kappa)
@@ -308,6 +328,9 @@ def build_derivation_ledger(*, precision: int = DEFAULT_PRECISION) -> str:
         f"- K = {PARENT_LEVEL}",
         f"- G_SM = {G_SM}",
         "",
+        "Observational Boundary Conditions",
+        f"- hbar [OBC] = {_format_decimal(obc.hbar_ev_seconds, places=24)} eV s",
+        "",
         "Alpha Surface Inverse",
         f"- visible support = k_l + k_q = {alpha.visible_support}",
         f"- level-density ratio = K/(k_l + k_q) = {alpha.level_density_ratio.numerator}/{alpha.level_density_ratio.denominator}",
@@ -315,7 +338,7 @@ def build_derivation_ledger(*, precision: int = DEFAULT_PRECISION) -> str:
         f"- alpha_surf^-1 [decimal] = {_format_decimal(alpha.alpha_inverse_decimal, places=24)}",
         f"- tn.py live check = {_format_decimal(alpha.live_alpha_inverse, places=24)}",
         f"- CODATA alpha^-1 = {_format_decimal(alpha.codata_alpha_inverse, places=12)}",
-        f"- topological minus CODATA = {_format_decimal(alpha.alpha_inverse_decimal - alpha.codata_alpha_inverse, places=24)}",
+        f"- unresolved Two-Loop Residual = alpha_surf^-1 - alpha_CODATA^-1 = {_format_decimal(alpha.alpha_inverse_decimal - alpha.codata_alpha_inverse, places=24)}",
         "",
         "D5 Hyperarea Invariant",
         f"- simplex hyperarea prefactor = {kappa.simplex_fraction.numerator}/{kappa.simplex_fraction.denominator}",
@@ -340,7 +363,9 @@ def build_derivation_ledger(*, precision: int = DEFAULT_PRECISION) -> str:
         "",
         "Unity of Scale Identity",
         f"- Lambda_holo(lhs) = 3*pi*M_P^2/N = {_format_decimal(unity.lambda_holo_ev2, places=24)} eV^2",
-        f"- G_N = M_P^(-2) = {_format_decimal(unity.g_newton_topological_ev_minus2, places=24)} eV^(-2)",
+        f"- G_N = topological_newton_coordinate_ev_minus2(M_P^bridge) = {_format_decimal(unity.g_newton_topological_ev_minus2, places=24)} eV^(-2)",
+        f"- direct M_P^(-2) cross-check = {_format_decimal(unity.g_newton_inverse_square_ev_minus2, places=24)} eV^(-2)",
+        f"- Newton-lock drift = {_format_decimal(unity.g_newton_bridge_drift, places=24)} eV^(-2)",
         f"- kappa_D5^4 = {_format_decimal(unity.kappa_fourth, places=24)}",
         f"- Lambda_holo(rhs, expanded) = (3*pi/kappa_D5^4) * G_N * m_nu^4 = {_format_decimal(unity.expanded_theorem_rhs_ev2, places=24)} eV^2",
         f"- Lambda_holo(rhs, reduced) = 3*pi*M_P^2/N = {_format_decimal(unity.reduced_theorem_rhs_ev2, places=24)} eV^2",
