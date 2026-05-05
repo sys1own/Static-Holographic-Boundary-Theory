@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .algebra import (
+from shbt.core.algebra import (
     LOW_SU3_WEIGHTS,
     ModularKernel,
     charge_embedding,
