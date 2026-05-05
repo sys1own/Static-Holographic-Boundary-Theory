@@ -13,12 +13,15 @@ from typing import Sequence
 if __package__ in (None, ""):
     import sys
 
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    from pub.constants import PLANCK2018_LAMBDA_SI_M2
-    from pub.noether_bridge import load_c_dark_completion_fraction
-else:
-    from .constants import PLANCK2018_LAMBDA_SI_M2
-    from .noether_bridge import load_c_dark_completion_fraction
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent if parent.name == "src" else parent / "src"
+        if (candidate / "shbt").is_dir():
+            sys.path.insert(0, str(candidate))
+            break
+
+from shbt.constants import PLANCK2018_LAMBDA_SI_M2
+from shbt.core.noether_bridge import load_c_dark_completion_fraction
+from shbt.resource_paths import resolve_resource_path
 
 
 DEFAULT_PRECISION = 50
@@ -91,7 +94,7 @@ def _format_decimal_scientific(value: Decimal, digits: int = 12) -> str:
 
 
 def _load_hubble_cmb_anchor() -> Decimal:
-    tex_path = Path(__file__).with_name("physics_constants.tex")
+    tex_path = resolve_resource_path("physics_constants.tex")
     try:
         match = re.search(
             r"\\newcommand\{\\hubbleCmbAnchor\}\{([^}]+)\}",
