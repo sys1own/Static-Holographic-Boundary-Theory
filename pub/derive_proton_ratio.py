@@ -209,16 +209,15 @@ def derive_proton_ratio(
 
     with localcontext() as context:
         context.prec = precision + _GUARD_DIGITS
-        quark_central_charge = _fraction_to_decimal(geometry.quark_central_charge_fraction)
-        lepton_central_charge = _fraction_to_decimal(geometry.lepton_central_charge_fraction)
-        branch_pixel_volume = geometry.branch_pixel_simplex_volume_decimal
-        structural_prefactor = _fraction_to_decimal(BRANCH_STRUCTURAL_PREFRACTOR_FRACTION)
+        central_charge_ratio = geometry.central_charge_ratio_decimal
+        inverse_pixel_volume = geometry.inverse_pixel_volume_decimal
+        structural_prefactor = central_charge_ratio * inverse_pixel_volume
         kappa_d5 = derive_decimal_kappa_d5(precision=context.prec).kappa
         kappa_d5_cuberoot = decimal_cuberoot(kappa_d5, precision=context.prec)
         geometric_friction_factor = (Decimal(1) - kappa_d5) * kappa_d5_cuberoot
         pressure_loading = (vacuum_pressure.vacuum_pressure * vacuum_pressure.vacuum_pressure) / geometric_friction_factor
-        su3_branching_pressure_scale = pressure_loading / branch_pixel_volume
-        mu_audit = (quark_central_charge / lepton_central_charge) * su3_branching_pressure_scale
+        su3_branching_pressure_scale = inverse_pixel_volume * pressure_loading
+        mu_audit = structural_prefactor * pressure_loading
         absolute_delta = abs(mu_audit - codata_audit.mass_ratio)
         relative_error = absolute_delta / codata_audit.mass_ratio
         context.prec = precision
@@ -274,6 +273,7 @@ def build_proton_ratio_ledger(*, precision: int = DEFAULT_PRECISION) -> str:
         "SU(3)_8 Branching Pressure",
         f"- |S_00^(low)| = {_format_decimal(pressure.visible_reference_entry_magnitude, places=24)}",
         f"- Pi_vac = -(Delta r/8) * log|S_00^(low)| = {_format_decimal(pressure.vacuum_pressure, places=24)}",
+        "- numerology guard = exact central-charge and pixel-volume fractions only; no inserted benchmark mass-ratio literal",
         f"- (c_q/c_l) * V_px^(-1) = {_format_decimal(derivation.structural_prefactor, places=24)}",
         f"- kappa_D5 = {_format_decimal(derivation.kappa_d5, places=24)}",
         f"- kappa_D5^(1/3) = {_format_decimal(derivation.kappa_d5_cuberoot, places=24)}",
