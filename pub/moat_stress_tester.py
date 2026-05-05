@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-"""Numerically enforce the reviewer trap on the published ±1 moat.
+"""Numerically enforce the reviewer trap on the focused 3 x 3 visible moat.
 
 Each branch is seeded with ``tn.calculate_efe_violation_tensor()`` and then
 lifted to the full visible bulk-closure tensor by enforcing the shared visible
 framing audit on both ``K/(2k_ell)`` and ``K/(3k_q)``. The trap passes only if
-the resulting ``E_mu_nu`` vanishes uniquely at ``(26, 8, 312)``.
+the resulting ``E_mu_nu`` vanishes uniquely at ``(26, 8, 312)`` across the
+benchmark-centered 3 x 3 visible-coordinate window with fixed parent level.
 """
 
 import argparse
@@ -47,6 +48,9 @@ else:
 
 EXPECTED_BENCHMARK = (26, 8, 312)
 ZERO_TOLERANCE = 1.0e-15
+VISIBLE_MOAT_HALF_WINDOW = 1
+VISIBLE_MOAT_DIMENSION = 2 * VISIBLE_MOAT_HALF_WINDOW + 1
+VISIBLE_MOAT_CELL_COUNT = VISIBLE_MOAT_DIMENSION * VISIBLE_MOAT_DIMENSION
 
 
 @dataclass(frozen=True)
@@ -99,15 +103,19 @@ def _benchmark_branch() -> tuple[int, int, int]:
 
 def _stress_branches(benchmark_branch: tuple[int, int, int]) -> tuple[tuple[int, int, int], ...]:
     lepton_level, quark_level, parent_level = benchmark_branch
-    return (
-        benchmark_branch,
-        (lepton_level - 1, quark_level, parent_level),
-        (lepton_level + 1, quark_level, parent_level),
-        (lepton_level, quark_level - 1, parent_level),
-        (lepton_level, quark_level + 1, parent_level),
-        (lepton_level, quark_level, parent_level - 1),
-        (lepton_level, quark_level, parent_level + 1),
+    branches = tuple(
+        (resolved_lepton_level, resolved_quark_level, parent_level)
+        for resolved_lepton_level in range(
+            lepton_level - VISIBLE_MOAT_HALF_WINDOW,
+            lepton_level + VISIBLE_MOAT_HALF_WINDOW + 1,
+        )
+        for resolved_quark_level in range(
+            quark_level - VISIBLE_MOAT_HALF_WINDOW,
+            quark_level + VISIBLE_MOAT_HALF_WINDOW + 1,
+        )
     )
+    assert len(branches) == VISIBLE_MOAT_CELL_COUNT
+    return branches
 
 
 def _fraction_to_decimal(value: Fraction) -> Decimal:
@@ -206,7 +214,9 @@ def build_moat_stress_audit(*, precision: int = DEFAULT_PRECISION) -> MoatStress
 
 
 def enforce_reviewer_trap(audit: MoatStressAudit) -> MoatStressAudit:
-    assert len(audit.witnesses) == 7, f"Expected benchmark plus six unit detunings, received {len(audit.witnesses)} cells."
+    assert len(audit.witnesses) == VISIBLE_MOAT_CELL_COUNT, (
+        f"Expected a {VISIBLE_MOAT_DIMENSION} x {VISIBLE_MOAT_DIMENSION} visible moat, received {len(audit.witnesses)} cells."
+    )
     assert audit.zero_tensor_cells == (audit.benchmark_branch,), (
         "Bulk Closure Tensor must vanish exactly at the benchmark cell. "
         f"Received zero-tensor cells {audit.zero_tensor_cells}."
@@ -237,7 +247,7 @@ def render_report(audit: MoatStressAudit) -> str:
         "Reviewer Trap Stress Test",
         "==========================",
         f"Benchmark branch                  : {_format_branch(audit.benchmark_branch)}",
-        "Differential violation            : perturb k_l, k_q, and K by ±1 one coordinate at a time",
+        f"Differential violation            : scan the {VISIBLE_MOAT_DIMENSION} x {VISIBLE_MOAT_DIMENSION} visible moat with fixed K={audit.benchmark_branch[2]}",
         "Lepton EFE seed                   : calculate_efe_violation_tensor()",
         "Bulk closure tensor               : E_mu_nu = Q_iso * Delta_fr * g_mu_nu",
         f"Q_iso [eV^4]                      : {_format_decimal_scientific(audit.q_iso_ev4, digits=12)}",
@@ -267,7 +277,7 @@ def render_report(audit: MoatStressAudit) -> str:
             f"Unique zero-tensor cell          : {zero_tensor_cell}",
             f"Strictly nonzero detunings       : {sum(int(not witness.closure_tensor.vanished) for witness in audit.detuned_witnesses)}/{len(audit.detuned_witnesses)}",
             "Detuning verdict                 : physically void",
-            "Proof                            : every ±1 detuning reintroduces Delta_fr != 0, so the framing anomaly is non-vanishing and E_mu_nu immediately reopens.",
+            f"Proof                            : every off-shell cell in the {VISIBLE_MOAT_DIMENSION} x {VISIBLE_MOAT_DIMENSION} visible moat reintroduces Delta_fr != 0, so the framing anomaly is non-vanishing and E_mu_nu immediately reopens.",
             "Reviewer trap nuance             : k_q detunings keep the lepton EFE seed at zero but still fail because the visible quark framing gap makes Delta_fr > 0.",
         )
     )
