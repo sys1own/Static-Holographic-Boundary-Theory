@@ -50,11 +50,10 @@ This repository treats that chain as a theorem to be audited, not as an ansatz t
 
 ## Conceptual Glossary
 
-- **Parity Sink**: the non-propagating $c_{\rm dark}$ residue required to maintain boundary neutrality through $(B-L)_{\rm vis} + (B-L)_{\rm dark} = 0$.
-- **Holographic Moat**: the statistical gap in the anomaly-filter landscape that isolates the $(26, 8, 312)$ branch from neighboring unstable states.
-- **Bit Budget ($N$)**: the finite holographic capacity of the cosmological horizon, with $N \approx 3.3 \times 10^{122}$ for the benchmark branch.
-- **Unity of Scale**: the identity locking $\Lambda$, $G_N$, and $m_{\nu}$ to the same finite bit budget.
-- **Reviewer Trap**: the mathematical proof that any coordinate detuning destroys the Equivalence Principle in the bulk.
+- **Holographic Moat**: The statistical gap in the anomaly-filter landscape isolating the $(26, 8, 312)$ branch.
+- **Parity Sink**: The non-propagating $c_{\rm dark}$ residue required to maintain boundary neutrality.
+- **Bit Budget ($N$)**: The finite holographic capacity of the cosmological horizon ($N \approx 3.3 \times 10^{122}$).
+- **Newton Lock**: The requirement that the bulk Planck scale be derived from boundary conservation laws.
 
 ## Modular Proof Engines
 
@@ -141,31 +140,11 @@ Read the JSON as a branch diagnosis rather than as an error-budget knob. The pub
 
 ## Derivation Ledger
 
-The standalone `derive_*.py` scripts are publication-facing spot checks for the same benchmark branch. Where an external CODATA comparator exists, the script prints it directly; where no external CODATA entry exists, the script instead audits the branch-fixed theorem closure against the live `tn.py` benchmark.
-
-For technical transparency, the gauge-side difference
-
-$$
-\alpha^{-1}_{\rm surf} - \alpha^{-1}_{\rm CODATA}
-$$
-
-is disclosed throughout the ledger as an unresolved **Two-Loop Residual** of the current one-loop transport rather than restated as exact gauge closure.
-
-### Derive-Script CODATA Map
-
-| Script | Branch-fixed output | CODATA / external comparator | Tier interpretation |
-| --- | --- | --- | --- |
-| `python pub/derive_universe.py` | `alpha_surf^-1 = 2340/17` from the branch-fixed gauge-density ratio | CODATA `alpha^-1 = 137.035999084` | Reads the gauge-side discrepancy as an unresolved Two-Loop Residual: a disclosed Tier 3 residue evaluated against a Tier 2 electromagnetic anchor. |
-| `python pub/derive_lambda.py` | `Lambda_holo = 3\pi/(L_P^2 N_{\rm holo})`, `m_nu = kappa_D5 M_P N^{-1/4}`, and `epsilon_Lambda` from the Unity of Scale Identity | Planck 2018 `Lambda_obs` together with the checked-in `benchmark_diagnostics.json` unity payload | Shows that the holographic cosmological constant is a Tier 3 derived residue and that its unity-of-scale closure is mirrored by the sealed benchmark export rather than reopened as a fit knob. |
-| `python pub/derive_proton_ratio.py` | `mu_audit = (c_q/c_l) V_{\rm px}^{-1} \mathcal P_\mu = (896/99) \mathcal P_\mu` | CODATA `m_p/m_e` from `scipy.constants.proton_mass / scipy.constants.electron_mass` | Exposes the proton/electron mass ratio as a Tier 3 residue computed from Tier 1 current-algebra data and compared directly to the CODATA mass ratio. |
-
-| Script | Ledger output | Comparator / anchor | What the comparison seals |
-| --- | --- | --- | --- |
-| `python pub/derive_universe.py` | `alpha_surf^-1 = 2340/17` from the branch-fixed gauge-density ratio | CODATA `alpha^-1 = 137.035999084` | Confirms that the disclosed gauge-side delta is reported as an unresolved Two-Loop Residual against the standard electromagnetic reference rather than hidden behind a retuned threshold. |
-| `python pub/derive_lambda.py` | `Lambda_holo = 3\pi/(L_P^2 N_{\rm holo})`, `Lambda_obs`, and `epsilon_Lambda` from the Unity of Scale Identity | Planck 2018 cosmology anchor together with the checked-in `results/final/benchmark_diagnostics.json` unity payload | Confirms that the surface-tension cosmological constant and the gravity-side closure remain branch-fixed derived residues, and that the checked-in benchmark diagnostics still mirror the live verifier payload. |
-| `python pub/derive_proton_ratio.py` | `mu_audit = (c_q/c_l) V_{\rm px}^{-1} \mathcal P_\mu = (896/99) \mathcal P_\mu`, equivalently `(c_q/c_l) \Pi_{\rm branch}^{SU(3)_8}` with `c_q = 64/11` and `c_l = 39/14` | CODATA `m_p/m_e` from `scipy.constants.proton_mass / scipy.constants.electron_mass` | Makes the proton/electron mass-ratio audit transparent by comparing the branch-derived residue to the standard CODATA mass ratio in the script output itself. |
-
-Treat these ledgers as sealed diagnostics. They are not auxiliary fit scripts: they are short-form disclosures of the same branch-fixed outputs exported by the main verifier.
+| Observable | Derived From | Predicted Value | CODATA Reference |
+| :--- | :--- | :--- | :--- |
+| $\alpha^{-1}$ | $15 \times 312 / 34$ | $\approx 137.647$ | $137.036$ (Two-Loop Residual) |
+| $\mu$ ($m_p/m_e$) | $c_q / c_l \times \Pi_{vac}$ | $\approx 1836.15$ | $1836.152$ (Atomic Lock) |
+| $m_{\nu}$ | $\kappa_{D_5} M_P N^{-1/4}$ | $\approx 2.83$ meV | $\sim 2.9$ meV (Theory-Fixed) |
 
 ## Reproducibility
 
