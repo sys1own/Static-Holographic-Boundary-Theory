@@ -20,7 +20,7 @@ if __package__ in (None, ""):
 
 from shbt.constants import ATMOSPHERIC_MASS_SPLITTING_NO_EV2, LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL, SOLAR_MASS_SPLITTING_EV2
 from shbt.core import algebra
-from shbt.resource_paths import resolve_resource_path
+from shbt.paths import resolve_resource_path
 
 
 EXPECTED_BRANCH = (26, 8, 312)
