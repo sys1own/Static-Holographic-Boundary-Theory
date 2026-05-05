@@ -7,8 +7,12 @@ from typing import Any
 
 import yaml
 
+from shbt.paths import ProjectPaths
+
 
 VALID_PARAMETER_CLASSIFICATIONS = frozenset({"Topological Necessity", "Empirical Matching Ansatz"})
+DEFAULT_BENCHMARK_CONFIG_PATH = ProjectPaths.CONFIG / "benchmark_v1.yaml"
+DEFAULT_NUFIT_DATA_PATH = ProjectPaths.DATA / "nufit_5_3.json"
 
 
 class ConfigLoader:
@@ -18,18 +22,20 @@ class ConfigLoader:
         if config_dir is not None:
             self.config_dir = Path(config_dir).expanduser().resolve()
             return
-        package_config_dir = (Path(__file__).resolve().parent / "config").resolve()
-        repo_config_dir = (Path(__file__).resolve().parents[2] / "config").resolve()
-        src_config_dir = (Path(__file__).resolve().parents[1] / "config").resolve()
-        for candidate in (package_config_dir, repo_config_dir, src_config_dir):
-            if candidate.is_dir():
-                self.config_dir = candidate
-                return
-        self.config_dir = repo_config_dir
+        self.config_dir = ProjectPaths.CONFIG.resolve()
+
+    def _benchmark_config_path(self) -> Path:
+        if self.config_dir == ProjectPaths.CONFIG.resolve():
+            return DEFAULT_BENCHMARK_CONFIG_PATH
+        return self.config_dir / DEFAULT_BENCHMARK_CONFIG_PATH.name
+
+    def _resolve_config_path(self, config_path: str | Path) -> Path:
+        path = Path(config_path)
+        return path if path.is_absolute() else (self.config_dir / path).resolve()
 
     @lru_cache(maxsize=128)
-    def _load_yaml(self, filename: str) -> dict[str, Any]:
-        path = self.config_dir / filename
+    def _load_yaml(self, filename: str | Path) -> dict[str, Any]:
+        path = self._resolve_config_path(filename)
         if not path.is_file():
             raise FileNotFoundError(f"Expected configuration file at {path}")
         with path.open("r", encoding="utf-8") as handle:
@@ -39,7 +45,7 @@ class ConfigLoader:
         return data
 
     @lru_cache(maxsize=128)
-    def _load_json(self, relative_path: str) -> dict[str, Any]:
+    def _load_json(self, relative_path: str | Path) -> dict[str, Any]:
         path = self._resolve_relative_path(relative_path)
         if not path.is_file():
             raise FileNotFoundError(f"Expected data file at {path}")
@@ -49,9 +55,19 @@ class ConfigLoader:
             raise TypeError(f"Data file {path} must contain a top-level mapping")
         return data
 
-    def _resolve_relative_path(self, relative_path: str) -> Path:
+    def _resolve_relative_path(self, relative_path: str | Path) -> Path:
         path = Path(relative_path)
-        return path if path.is_absolute() else (self.config_dir / path).resolve()
+        if path.is_absolute():
+            return path
+        config_relative_path = (self.config_dir / path).resolve()
+        if config_relative_path.is_file():
+            return config_relative_path
+        repo_relative_path = (ProjectPaths.ROOT / path).resolve()
+        if repo_relative_path.is_file():
+            return repo_relative_path
+        if path.name == DEFAULT_NUFIT_DATA_PATH.name:
+            return DEFAULT_NUFIT_DATA_PATH
+        return config_relative_path
 
     def _normalize_parameter_tree(
         self,
@@ -86,12 +102,12 @@ class ConfigLoader:
 
     @lru_cache(maxsize=4)
     def _load_benchmark_bundle(self) -> tuple[dict[str, Any], dict[str, str]]:
-        benchmark_path = self.config_dir / "benchmark_v1.yaml"
+        benchmark_path = self._benchmark_config_path()
         if not benchmark_path.is_file():
             legacy_physics = self._load_yaml("physics_constants.yaml")
             legacy_experimental = self._load_yaml("experimental_bounds.yaml")
             return ({**legacy_physics, "experimental": legacy_experimental}, {})
-        raw_config = self._load_yaml("benchmark_v1.yaml")
+        raw_config = self._load_yaml(benchmark_path)
         metadata: dict[str, str] = {}
         normalized = self._normalize_parameter_tree(raw_config, metadata=metadata)
         if not isinstance(normalized, dict):
@@ -108,7 +124,7 @@ class ConfigLoader:
 
     @lru_cache(maxsize=4)
     def load_physics_constants(self) -> dict[str, Any]:
-        benchmark_path = self.config_dir / "benchmark_v1.yaml"
+        benchmark_path = self._benchmark_config_path()
         if not benchmark_path.is_file():
             return self._load_yaml("physics_constants.yaml")
         benchmark_config = self.load_benchmark_config()
@@ -119,7 +135,7 @@ class ConfigLoader:
         }
 
     def load_experimental_bounds(self) -> dict[str, Any]:
-        benchmark_path = self.config_dir / "benchmark_v1.yaml"
+        benchmark_path = self._benchmark_config_path()
         if not benchmark_path.is_file():
             return self._load_yaml("experimental_bounds.yaml")
         benchmark_config = self.load_benchmark_config()
@@ -132,8 +148,8 @@ class ConfigLoader:
         data_sources = experimental.get("data_sources", {})
         if not isinstance(releases, dict) or not isinstance(data_sources, dict):
             raise TypeError("Benchmark configuration experimental releases/data_sources must be mappings")
-        nufit_path = data_sources.get("nufit_normal_ordering")
-        if not isinstance(nufit_path, str):
+        nufit_path = data_sources.get("nufit_normal_ordering", DEFAULT_NUFIT_DATA_PATH)
+        if not isinstance(nufit_path, (str, Path)):
             raise TypeError("Benchmark configuration experimental.data_sources.nufit_normal_ordering must be a string path")
         nufit_dataset = self._load_json(nufit_path)
         return {
