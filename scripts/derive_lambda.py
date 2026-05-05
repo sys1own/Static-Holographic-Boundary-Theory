@@ -22,19 +22,22 @@ from derive_universe import (
     derive_mass_bridge,
     derive_unity_of_scale,
 )
-from shbt.main import (
+from shbt.constants import (
     BENCHMARK_DIAGNOSTICS_FILENAME,
     HOLOGRAPHIC_BITS,
     LEPTON_LEVEL,
     PARENT_LEVEL,
     PLANCK_LENGTH_M,
     QUARK_LEVEL,
+)
+from shbt.main import (
     derive_cosmology_anchor,
     holographic_lambda_scaling_identity_si_m2,
     holographic_surface_tension_lambda_si_m2,
     lambda_si_m2_to_ev2,
     verify_unity_of_scale,
 )
+from shbt.paths import ProjectPaths
 
 _GUARD_DIGITS = 12
 LIVE_BENCHMARK_AUDIT_SKIPPED_MESSAGE = "Benchmark artifacts not found; skipping live comparison audit"
@@ -148,25 +151,39 @@ def derive_lambda_surface(*, precision: int = DEFAULT_PRECISION) -> LambdaSurfac
 
 
 def _checked_in_diagnostics_paths() -> tuple[Path, ...]:
-    repo_root = Path(__file__).resolve().parent.parent
-    return (
-        repo_root / "results" / "final" / BENCHMARK_DIAGNOSTICS_FILENAME,
-        repo_root / "results" / BENCHMARK_DIAGNOSTICS_FILENAME,
+    results_dir = ProjectPaths.RESULTS
+    if not results_dir.is_dir():
+        return ()
+    preferred_paths = (
+        results_dir / "final" / BENCHMARK_DIAGNOSTICS_FILENAME,
+        results_dir / BENCHMARK_DIAGNOSTICS_FILENAME,
     )
+    existing_preferred_paths = tuple(path for path in preferred_paths if path.is_file())
+    if existing_preferred_paths:
+        return existing_preferred_paths
+    for candidate in sorted(results_dir.rglob(BENCHMARK_DIAGNOSTICS_FILENAME)):
+        if candidate.is_file():
+            return (candidate,)
+    return ()
+
+
+def _display_diagnostics_path(diagnostics_path: Path) -> str:
+    try:
+        return str(diagnostics_path.relative_to(ProjectPaths.ROOT))
+    except ValueError:
+        return str(diagnostics_path)
 
 
 def load_checked_in_unity_payloads() -> list[CheckedInUnityPayload]:
     payloads: list[CheckedInUnityPayload] = []
     diagnostics_paths = _checked_in_diagnostics_paths()
 
-    for index, diagnostics_path in enumerate(diagnostics_paths):
-        try:
-            diagnostics = json.loads(diagnostics_path.read_text(encoding="utf-8"), parse_float=Decimal)
-        except FileNotFoundError:
-            if index == 0:
-                print(LIVE_BENCHMARK_AUDIT_SKIPPED_MESSAGE)
-                return []
-            continue
+    if not diagnostics_paths:
+        print(LIVE_BENCHMARK_AUDIT_SKIPPED_MESSAGE)
+        return []
+
+    for diagnostics_path in diagnostics_paths:
+        diagnostics = json.loads(diagnostics_path.read_text(encoding="utf-8"), parse_float=Decimal)
 
         unity_payload = diagnostics.get("unity_of_scale_identity")
         if not isinstance(unity_payload, dict):
@@ -176,7 +193,7 @@ def load_checked_in_unity_payloads() -> list[CheckedInUnityPayload]:
 
         payloads.append(
             CheckedInUnityPayload(
-                source_path=str(diagnostics_path.relative_to(Path(__file__).resolve().parent.parent)),
+                source_path=_display_diagnostics_path(diagnostics_path),
                 epsilon_lambda=_decimal(unity_payload["epsilon_lambda"]),
                 exact_epsilon_lambda=_decimal(unity_payload["exact_epsilon_lambda"]),
                 numerical_residual=_decimal(unity_payload["numerical_residual"]),
@@ -185,6 +202,10 @@ def load_checked_in_unity_payloads() -> list[CheckedInUnityPayload]:
                 passed=bool(unity_payload["passed"]),
             )
         )
+
+    if not payloads:
+        print(LIVE_BENCHMARK_AUDIT_SKIPPED_MESSAGE)
+        return []
 
     reference_payload = payloads[0]
     for payload in payloads[1:]:
