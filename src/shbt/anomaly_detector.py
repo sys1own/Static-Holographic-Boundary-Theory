@@ -12,30 +12,23 @@ from typing import Sequence
 if __package__ in (None, ""):
     import sys
 
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    from pub.constants import LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
-    from pub.noether_bridge import (
-        DEFAULT_PRECISION,
-        FramingDefectAudit,
-        ReviewerTrapAudit,
-        TensorSnapshot,
-        load_c_dark_completion_fraction,
-        newton_constant_lock,
-        reviewer_trap_audit,
-        saturation_audit,
-    )
-else:
-    from .constants import LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
-    from .noether_bridge import (
-        DEFAULT_PRECISION,
-        FramingDefectAudit,
-        ReviewerTrapAudit,
-        TensorSnapshot,
-        load_c_dark_completion_fraction,
-        newton_constant_lock,
-        reviewer_trap_audit,
-        saturation_audit,
-    )
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent if parent.name == "src" else parent / "src"
+        if (candidate / "shbt").is_dir():
+            sys.path.insert(0, str(candidate))
+            break
+
+from shbt.constants import LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
+from shbt.core.noether_bridge import (
+    DEFAULT_PRECISION,
+    FramingDefectAudit,
+    ReviewerTrapAudit,
+    TensorSnapshot,
+    load_c_dark_completion_fraction,
+    newton_constant_lock,
+    reviewer_trap_audit,
+    saturation_audit,
+)
 
 
 BENCHMARK_BRANCH = (int(LEPTON_LEVEL), int(QUARK_LEVEL), int(PARENT_LEVEL))
