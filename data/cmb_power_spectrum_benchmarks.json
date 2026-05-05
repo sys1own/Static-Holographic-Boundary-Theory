@@ -1,0 +1,15 @@
+{
+  "release": "Planck 2018 CMB acoustic-loading proxy with BK18+WMAP+Planck tensor ceiling and archived CMB-S4 design floor",
+  "cmb_power_spectrum": {
+    "scalar_tilt_central": 0.9649,
+    "scalar_tilt_sigma": 0.0042,
+    "bao_dark_to_baryon_ratio": 5.36,
+    "bao_ratio_tolerance": 0.5,
+    "bao_proxy_label": "CMB acoustic peak baryon-loading proxy"
+  },
+  "gravitational_wave": {
+    "tensor_ratio_upper_bound_95cl": 0.036,
+    "tensor_ratio_design_floor": 0.001,
+    "dataset_label": "BK18+WMAP+Planck public tensor ceiling with archived CMB-S4 design sensitivity"
+  }
+}
