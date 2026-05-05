@@ -6,7 +6,7 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
-from .config_loader import DEFAULT_CONFIG_LOADER
+from shbt.config_loader import DEFAULT_CONFIG_LOADER
 
 
 @dataclass(frozen=True)
@@ -615,8 +615,8 @@ MIXING_SECTOR_RIGIDITY_MESSAGE = (
     r"Sector from the Rigid Mixing Sector."
 )
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_MANUSCRIPT_DIR = REPO_ROOT / "pub"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_MANUSCRIPT_DIR = REPO_ROOT / "papers"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "output"
 
 GLOBAL_FLAVOR_FIT_TABLE_FILENAME = "global_flavor_fit_table.tex"
