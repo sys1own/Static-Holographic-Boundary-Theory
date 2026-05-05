@@ -6,10 +6,10 @@ from pathlib import Path
 
 import numpy as np
 
-from .constants import SUPPLEMENTARY_IH_SUPPORT_MAP_FILENAME, SUPPLEMENTARY_TOLERANCE_TABLE_FILENAME
-from .plotting_runtime import managed_figure
-from .runtime_config import DEFAULT_SOLVER_CONFIG, SolverConfig
-from .template_utils import render_latex_table
+from shbt.constants import SUPPLEMENTARY_IH_SUPPORT_MAP_FILENAME, SUPPLEMENTARY_TOLERANCE_TABLE_FILENAME
+from shbt.plotting_runtime import managed_figure
+from shbt.runtime_config import DEFAULT_SOLVER_CONFIG, SolverConfig
+from shbt.template_utils import render_latex_table
 
 
 def _coerce_solver_config(config: SolverConfig | tuple[float, float]) -> tuple[SolverConfig, tuple[float, float]]:
