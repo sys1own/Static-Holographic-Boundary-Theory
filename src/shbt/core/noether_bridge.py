@@ -22,7 +22,7 @@ if __package__ in (None, ""):
 
 from shbt.constants import HOLOGRAPHIC_BITS, LEPTON_LEVEL, LIGHT_SPEED_M_PER_S, PARENT_LEVEL, PLANCK2018_LAMBDA_SI_M2, PLANCK_LENGTH_M, QUARK_LEVEL
 from shbt.core import algebra
-from shbt.core.holographic_error_stabilizer import HolographicStabilizer
+from shbt.core.holographic_error_stabilizer import BENCHMARK_BRANCH, HolographicStabilizer
 from shbt.paths import resolve_resource_path
 
 PI = Decimal("3.14159265358979323846264338327950288419716939937510")
@@ -212,8 +212,12 @@ def _meter_to_ev_inverse() -> Decimal:
 def _require_bulk_checksum(
     *,
     precision: int = DEFAULT_PRECISION,
+    lepton_level: int = LEPTON_LEVEL,
+    quark_level: int = QUARK_LEVEL,
+    parent_level: int = PARENT_LEVEL,
     simulate_boundary_decoherence: bool = False,
 ) -> None:
+    resolved_branch = (int(lepton_level), int(quark_level), int(parent_level))
     verification = HolographicStabilizer(
         precision=max(int(precision), DEFAULT_PRECISION),
         simulate_boundary_decoherence=simulate_boundary_decoherence,
@@ -223,19 +227,28 @@ def _require_bulk_checksum(
             "Holographic stabilizer bulk checksum failed: "
             f"{verification.detail}."
         )
+    if resolved_branch != BENCHMARK_BRANCH:
+        branch_framing = framing_defect(resolved_branch[2], resolved_branch[0], resolved_branch[1])
+        raise DecoherenceError(
+            "Holographic stabilizer rejected off-shell branch coordinates: "
+            f"{resolved_branch} with Delta_fr={_format_fraction(branch_framing.delta_fr)}."
+        )
 
 
-def branch_planck_mass_ev(*, simulate_boundary_decoherence: bool = False) -> Decimal:
-    stabilizer = HolographicStabilizer(
+def branch_planck_mass_ev(
+    *,
+    lepton_level: int = LEPTON_LEVEL,
+    quark_level: int = QUARK_LEVEL,
+    parent_level: int = PARENT_LEVEL,
+    simulate_boundary_decoherence: bool = False,
+) -> Decimal:
+    _require_bulk_checksum(
         precision=DEFAULT_PRECISION,
+        lepton_level=lepton_level,
+        quark_level=quark_level,
+        parent_level=parent_level,
         simulate_boundary_decoherence=simulate_boundary_decoherence,
     )
-    verification = stabilizer.verify_bulk_checksum()
-    if not verification.passed:
-        raise DecoherenceError(
-            "Holographic stabilizer bulk checksum failed: "
-            f"{verification.detail}."
-        )
     with mpmath.workdps(DEFAULT_MPMATH_DPS):
         value = (_mp(HBAR_EV_SECONDS) * _mp(LIGHT_SPEED_M_PER_S)) / _mp(PLANCK_LENGTH_M)
     return _mp_to_decimal(value)
@@ -267,8 +280,18 @@ def _high_precision_newton_lock_values(
     *,
     c_dark_fraction: Fraction | None = None,
     mpmath_dps: int = DEFAULT_MPMATH_DPS,
+    lepton_level: int = LEPTON_LEVEL,
+    quark_level: int = QUARK_LEVEL,
+    parent_level: int = PARENT_LEVEL,
+    simulate_boundary_decoherence: bool = False,
 ) -> dict[str, mpmath.mpf]:
-    _require_bulk_checksum(precision=_resolved_mpmath_dps(mpmath_dps))
+    _require_bulk_checksum(
+        precision=_resolved_mpmath_dps(mpmath_dps),
+        lepton_level=lepton_level,
+        quark_level=quark_level,
+        parent_level=parent_level,
+        simulate_boundary_decoherence=simulate_boundary_decoherence,
+    )
     resolved_fraction = FALLBACK_C_DARK_COMPLETION if c_dark_fraction is None else c_dark_fraction
     with mpmath.workdps(_resolved_mpmath_dps(mpmath_dps)):
         c_dark = _mp(resolved_fraction)
@@ -391,11 +414,23 @@ def framing_defect(parent_level: int, lepton_level: int, quark_level: int) -> Fr
     )
 
 
-def newton_constant_lock(*, c_dark_fraction: Fraction | None = None, precision: int = DEFAULT_PRECISION) -> NewtonLockAudit:
+def newton_constant_lock(
+    *,
+    c_dark_fraction: Fraction | None = None,
+    precision: int = DEFAULT_PRECISION,
+    lepton_level: int = LEPTON_LEVEL,
+    quark_level: int = QUARK_LEVEL,
+    parent_level: int = PARENT_LEVEL,
+    simulate_boundary_decoherence: bool = False,
+) -> NewtonLockAudit:
     resolved_fraction = FALLBACK_C_DARK_COMPLETION if c_dark_fraction is None else c_dark_fraction
     gravity_lock = _high_precision_newton_lock_values(
         c_dark_fraction=resolved_fraction,
         mpmath_dps=_resolved_mpmath_dps(precision),
+        lepton_level=lepton_level,
+        quark_level=quark_level,
+        parent_level=parent_level,
+        simulate_boundary_decoherence=simulate_boundary_decoherence,
     )
     return NewtonLockAudit(
         c_dark_fraction=resolved_fraction,
