@@ -159,8 +159,14 @@ The benchmark branch is fixed by the Tier 1 topological coordinates $(k_{\ell}, 
 | Observable | Derived From | Predicted Value | CODATA / anchor |
 | :--- | :--- | :--- | :--- |
 | $\alpha^{-1}$ | $15 \times 312 / 34$ | $\approx 137.647$ | $137.036$ (Two-Loop Residual) |
-| $\mu$ ($m_p/m_e$) | $(c_q/c_{\ell}) V_{\rm px}^{-1} \Pi_{\rm vac}^2 / [(1-\kappa_{D_5})\kappa_{D_5}^{1/3}]$ with $c_q = 64/11$, $c_{\ell} = 39/14$, and $V_{\rm px} = 3/13$ | $\approx 1835.25$ | $1836.152$ (Atomic Lock) |
+| $\mu$ ($m_p/m_e$) | $(c_q/c_{\ell}) V_{\rm px}^{-1} \Pi_{\rm vac}^2 / [(1-\kappa_{D_5})\kappa_{D_5}^{1/3}]$ <br> ($c_q=64/11, c_{\ell}=39/14, V_{\rm px}=3/13$) | $\approx 1835.25$ | $1836.152$ (Atomic Lock) |
 | $m_{\nu}$ | $\kappa_{D_5} M_P N^{-1/4}$ | $\approx 2.83$ meV | $\sim 2.9$ meV (Theory-Fixed) |
+
+## Tier Classification
+
+*   **Tier 1: Topological Coordinates** — the branch-defining integers $(26, 8, 312)$, i.e. `LEPTON_LEVEL`, `QUARK_LEVEL`, and `PARENT_LEVEL`, together with $G_{\rm SM} = 15$.
+*   **Tier 2: OBC Anchors** — the observational boundary-condition inputs including the CODATA electromagnetic scale $\alpha^{-1}$, the observed vacuum energy $\Lambda_{\rm obs}$, and the Planck mass $M_P$.
+*   **Tier 3: Derived Theoretical Residues** — physical constants derived as mandatory geometric residues of the Tier 1 coordinates, including the neutrino floor $m_{\nu}$ and the coupling constant $\kappa_{D_5}$.
 
 ### Tier Classification
 
