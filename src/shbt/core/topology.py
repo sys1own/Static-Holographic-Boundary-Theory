@@ -13,6 +13,8 @@ except ImportError:
         # Fallback: catch the generic exception that SymPy raises
         NonInvertibleMatrixError = ValueError
 
+from shbt.constants import LEPTON_LEVEL
+
 def add_fraction_vectors(left: tuple[Fraction, ...], right: tuple[Fraction, ...]) -> tuple[Fraction, ...]:
     """Add two exact rational vectors componentwise."""
 
@@ -73,8 +75,25 @@ def solve_fraction_linear_system(
     return tuple(_sympy_to_fraction(value) for value in solution)
 
 
+def calculate_dark_debt(lepton_level: int = LEPTON_LEVEL) -> float:
+    """Return the benchmark dark-sector debt carried by the visible SU(2) support.
+
+    The repository's gravity audit exports the dark-matter-equivalent parity debt
+    as the frustrated-genus relic proxy ``Omega_F / Omega_vis``. On the selected
+    branch this is fixed by the square root of the total SU(2) quantum dimension.
+    """
+
+    from shbt.core.algebra import su2_total_quantum_dimension
+
+    resolved_lepton_level = int(lepton_level)
+    if resolved_lepton_level <= 0:
+        raise ValueError("lepton_level must be positive.")
+    return float(math.sqrt(su2_total_quantum_dimension(resolved_lepton_level)))
+
+
 __all__ = [
     "add_fraction_vectors",
+    "calculate_dark_debt",
     "fraction_dot",
     "lcm_int",
     "scale_fraction_vector",
