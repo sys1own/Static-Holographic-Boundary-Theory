@@ -10,7 +10,7 @@ import numpy as np
 import numpy.typing as npt
 from scipy.integrate import solve_ivp
 
-from .runtime_config import DEFAULT_SOLVER_CONFIG, SolverConfig, SolverException
+from shbt.runtime_config import DEFAULT_SOLVER_CONFIG, SolverConfig, SolverException
 
 ONE_LOOP_FACTOR = 16.0 * math.pi * math.pi
 SAFE_LOG_MAGNITUDE_FLOOR = 1.0e-30
