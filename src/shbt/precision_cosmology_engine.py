@@ -32,10 +32,29 @@ BENCHMARK_LOCAL_REFERENCE_KM_S_MPC = Decimal("72.2")
 
 
 @dataclass(frozen=True)
+class MetricExpansion:
+    redshift: Decimal
+    scale_factor: Decimal
+    dot_a_over_a_km_s_mpc: Decimal
+
+    @property
+    def hubble_km_s_mpc(self) -> Decimal:
+        return self.dot_a_over_a_km_s_mpc
+
+
+@dataclass(frozen=True)
 class RedshiftExpansionPoint:
     redshift: Decimal
     loading_term_km_s_mpc: Decimal
     hubble_km_s_mpc: Decimal
+
+    @property
+    def metric_expansion(self) -> MetricExpansion:
+        return MetricExpansion(
+            redshift=self.redshift,
+            scale_factor=Decimal("1") / (Decimal("1") + self.redshift),
+            dot_a_over_a_km_s_mpc=self.hubble_km_s_mpc,
+        )
 
 
 @dataclass(frozen=True)
