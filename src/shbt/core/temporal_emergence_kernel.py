@@ -40,6 +40,7 @@ from shbt.precision_cosmology_engine import (
     MetricExpansion,
     PrecisionCosmologyAudit,
     build_precision_cosmology_audit,
+    compute_metric_expansion,
 )
 
 
@@ -293,8 +294,20 @@ def verify_temporal_expansion_lock(audit: TemporalEmergenceAudit) -> TemporalMet
     )
 
 
-def verify_arrow_of_time_gradient(audit: TemporalEmergenceAudit) -> TemporalMetricVerification:
+def cross_check_expansion(audit: TemporalEmergenceAudit) -> TemporalMetricVerification:
     verification = verify_temporal_expansion_lock(audit)
+    for sample in audit.samples:
+        residual = abs(
+            sample.derived_temporal_rate_km_s_mpc - sample.bulk_metric_expansion.dot_a_over_a_km_s_mpc
+        )
+        assert residual <= _ARROW_OF_TIME_MATCH_TOLERANCE, (
+            "dT = dS_entanglement / N must match the bulk expansion rate dot(a)/a within 1e-15."
+        )
+    return verification
+
+
+def verify_arrow_of_time_gradient(audit: TemporalEmergenceAudit) -> TemporalMetricVerification:
+    verification = cross_check_expansion(audit)
     assert verification.arrow_of_time_gradient_verified, (
         "Arrow of Time gradient must match the bulk expansion rate dot(a)/a within 1e-15."
     )
@@ -328,7 +341,7 @@ def build_temporal_emergence_audit(
     for sample in cosmology_audit.samples:
         with localcontext() as context:
             context.prec = max(int(precision), DEFAULT_PRECISION) + _GUARD_DIGITS
-            metric_expansion = sample.metric_expansion
+            metric_expansion = compute_metric_expansion(sample.redshift, sample.hubble_km_s_mpc)
             metric_rate = _decimal(metric_expansion.dot_a_over_a_km_s_mpc)
             total_bit_loading_rate = resolved_bit_budget * metric_rate
             local_bit_loading_rate_density = _scale_decimal_matrix(
@@ -400,7 +413,7 @@ def build_temporal_emergence_audit(
             ubi_confirmed=False,
         ),
     )
-    verification = verify_arrow_of_time_gradient(preliminary_audit)
+    verification = cross_check_expansion(preliminary_audit)
     return TemporalEmergenceAudit(
         bit_budget=resolved_bit_budget,
         manifold_slice=manifold_slice,
@@ -479,6 +492,7 @@ __all__ = [
     "TemporalMetricVerification",
     "build_temporal_emergence_audit",
     "calculate_arrow_of_time_gradient",
+    "cross_check_expansion",
     "derive_temporal_increment",
     "main",
     "map_manifold_slice_bit_loading_density",
