@@ -20,30 +20,23 @@ from typing import Sequence
 if __package__ in (None, ""):
     import sys
 
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    import pub.tn as tn
-    from pub.constants import LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
-    from pub.noether_bridge import (
-        DEFAULT_PRECISION,
-        TensorSnapshot,
-        bulk_closure_tensor,
-        framing_defect,
-        load_c_dark_completion_fraction,
-        newton_constant_lock,
-        saturation_audit,
-    )
-else:
-    from . import tn
-    from .constants import LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
-    from .noether_bridge import (
-        DEFAULT_PRECISION,
-        TensorSnapshot,
-        bulk_closure_tensor,
-        framing_defect,
-        load_c_dark_completion_fraction,
-        newton_constant_lock,
-        saturation_audit,
-    )
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent if parent.name == "src" else parent / "src"
+        if (candidate / "shbt").is_dir():
+            sys.path.insert(0, str(candidate))
+            break
+
+import shbt.main as tn
+from shbt.constants import LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
+from shbt.core.noether_bridge import (
+    DEFAULT_PRECISION,
+    TensorSnapshot,
+    bulk_closure_tensor,
+    framing_defect,
+    load_c_dark_completion_fraction,
+    newton_constant_lock,
+    saturation_audit,
+)
 
 
 EXPECTED_BENCHMARK = (26, 8, 312)
