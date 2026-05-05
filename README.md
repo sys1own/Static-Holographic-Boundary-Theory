@@ -26,7 +26,13 @@ $$
 \Delta_{\rm fr} = 0,
 $$
 
-so the closure tensor vanishes on-shell and the anomalous bulk source remains absent. Detune any coordinate and the framing defect reopens, the closure tensor becomes non-zero, an anomalous source $J_{\mu\nu}^{(a)}$ is induced, and the Equivalence Principle in the bulk is destroyed. In SHBT, attempted coordinate detuning is therefore a proof of failure, not a path to a better fit. The sealing clause is explicit: if a coordinate detuning drives any Tier 3 Derived Residue beyond the quantified two-loop limits disclosed in `results/residuals.json`, then the detuned proposal is treated as falsified rather than as a nearby admissible variant of the benchmark branch.
+so the Bulk Closure Tensor vanishes on-shell,
+
+$$
+\mathcal E_{\mu\nu} = 0,
+$$
+
+and the anomalous bulk source remains absent. Detune any coordinate and the framing defect reopens, the closure tensor becomes non-zero, an anomalous source $J_{\mu\nu}^{(a)}$ is induced, and the Equivalence Principle in the bulk is destroyed. The current CI/CD hardening makes that statement operational by restricting the disclosed local moat audit to the benchmark-centered $10 \times 10$ visible-pair scan over `[21, 31)` and `[3, 13)`: the published branch is the only scanned cell required to retain $\mathcal E_{\mu\nu}=0$, while the neighboring moat points are audited precisely as off-shell failures. In SHBT, attempted coordinate detuning is therefore a proof of failure, not a path to a better fit. The sealing clause is explicit: if a coordinate detuning drives any Tier 3 Derived Residue beyond the quantified two-loop limits disclosed in `results/residuals.json`, then the detuned proposal is treated as falsified rather than as a nearby admissible variant of the benchmark branch.
 
 ## Unity of Scale
 
@@ -129,17 +135,25 @@ Read the JSON as a branch diagnosis rather than as an error-budget knob. The pub
 
 The standalone `derive_*.py` scripts are publication-facing spot checks for the same benchmark branch. Where an external CODATA comparator exists, the script prints it directly; where no external CODATA entry exists, the script instead audits the branch-fixed theorem closure against the live `tn.py` benchmark.
 
+For technical transparency, the gauge-side difference
+
+$$
+\alpha^{-1}_{\rm surf} - \alpha^{-1}_{\rm CODATA}
+$$
+
+is disclosed throughout the ledger as an unresolved **Two-Loop Residual** of the current one-loop transport rather than restated as exact gauge closure.
+
 ### Derive-Script CODATA Map
 
 | Script | Branch-fixed output | CODATA / external comparator | Tier interpretation |
 | --- | --- | --- | --- |
-| `python pub/derive_universe.py` | `alpha_surf^-1 = 2340/17` from the branch-fixed gauge-density ratio | CODATA `alpha^-1 = 137.035999084` | Reads the gauge-side discrepancy as a disclosed Tier 3 residual evaluated against a Tier 2 electromagnetic anchor. |
+| `python pub/derive_universe.py` | `alpha_surf^-1 = 2340/17` from the branch-fixed gauge-density ratio | CODATA `alpha^-1 = 137.035999084` | Reads the gauge-side discrepancy as an unresolved Two-Loop Residual: a disclosed Tier 3 residue evaluated against a Tier 2 electromagnetic anchor. |
 | `python pub/derive_universe.py` | `kappa_D5`, `m_nu = kappa_D5 M_P N^{-1/4}`, and `epsilon_Lambda` from the Unity of Scale Identity | No standalone CODATA constant; audited against theorem closure and the live `tn.py` benchmark | Shows that these are Tier 3 derived residues fixed once the Tier 1 branch and Tier 2 cosmology inputs are supplied. |
 | `python pub/derive_proton_ratio.py` | `mu_audit = (c_q/c_l) V_{\rm px}^{-1} \mathcal P_\mu = (896/99) \mathcal P_\mu` | CODATA `m_p/m_e` from `scipy.constants.proton_mass / scipy.constants.electron_mass` | Exposes the proton/electron mass ratio as a Tier 3 residue computed from Tier 1 current-algebra data and compared directly to the CODATA mass ratio. |
 
 | Script | Ledger output | Comparator / anchor | What the comparison seals |
 | --- | --- | --- | --- |
-| `python pub/derive_universe.py` | `alpha_surf^-1 = 2340/17` from the branch-fixed gauge-density ratio | CODATA `alpha^-1 = 137.035999084` | Confirms that the disclosed gauge-side residue is reported against the standard electromagnetic reference rather than hidden behind a retuned threshold. |
+| `python pub/derive_universe.py` | `alpha_surf^-1 = 2340/17` from the branch-fixed gauge-density ratio | CODATA `alpha^-1 = 137.035999084` | Confirms that the disclosed gauge-side delta is reported as an unresolved Two-Loop Residual against the standard electromagnetic reference rather than hidden behind a retuned threshold. |
 | `python pub/derive_universe.py` | `kappa_D5`, `m_nu = kappa_D5 M_P N^{-1/4}`, and `epsilon_Lambda` from the Unity of Scale Identity | No standalone CODATA constant; audited against the theorem closure and the live `tn.py` benchmark export | Confirms that the D5 hyperarea residue, finite-capacity mass bridge, and gravity-side closure remain branch-fixed derived residues rather than floating normalizations. |
 | `python pub/derive_proton_ratio.py` | `mu_audit = (c_q/c_l) V_{\rm px}^{-1} \mathcal P_\mu = (896/99) \mathcal P_\mu`, equivalently `(c_q/c_l) \Pi_{\rm branch}^{SU(3)_8}` with `c_q = 64/11` and `c_l = 39/14` | CODATA `m_p/m_e` from `scipy.constants.proton_mass / scipy.constants.electron_mass` | Makes the proton/electron mass-ratio audit transparent by comparing the branch-derived residue to the standard CODATA mass ratio in the script output itself. |
 
