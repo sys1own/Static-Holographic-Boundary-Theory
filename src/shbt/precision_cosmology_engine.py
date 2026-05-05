@@ -50,11 +50,7 @@ class RedshiftExpansionPoint:
 
     @property
     def metric_expansion(self) -> MetricExpansion:
-        return MetricExpansion(
-            redshift=self.redshift,
-            scale_factor=Decimal("1") / (Decimal("1") + self.redshift),
-            dot_a_over_a_km_s_mpc=self.hubble_km_s_mpc,
-        )
+        return compute_metric_expansion(self.redshift, self.hubble_km_s_mpc)
 
 
 @dataclass(frozen=True)
@@ -100,6 +96,18 @@ def _decimal(value: Decimal | Fraction | float | int | str) -> Decimal:
     if isinstance(value, Fraction):
         return Decimal(value.numerator) / Decimal(value.denominator)
     return Decimal(str(value))
+
+
+def compute_metric_expansion(
+    redshift: Decimal | Fraction | float | int | str,
+    hubble_km_s_mpc: Decimal | Fraction | float | int | str,
+) -> MetricExpansion:
+    resolved_redshift = _decimal(redshift)
+    return MetricExpansion(
+        redshift=resolved_redshift,
+        scale_factor=Decimal("1") / (Decimal("1") + resolved_redshift),
+        dot_a_over_a_km_s_mpc=_decimal(hubble_km_s_mpc),
+    )
 
 
 def _format_fraction(value: Fraction) -> str:
