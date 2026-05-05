@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fractions import Fraction
+import math
 
 import numpy as np
 
@@ -104,11 +105,36 @@ def quark_branching_index(parent_level: int = PARENT_LEVEL, quark_level: int = Q
     return int(int(parent_level) // denominator)
 
 
+def _mod_one_residual(value: float) -> float:
+    return float(math.fmod(math.fmod(float(value), 1.0) + 1.0, 1.0))
+
+
+def _distance_to_integer(value: float) -> float:
+    residual = _mod_one_residual(value)
+    return float(min(residual, 1.0 - residual))
+
+
+def calculate_efe_violation_tensor(
+    parent_level: int = PARENT_LEVEL,
+    lepton_level: int = LEPTON_LEVEL,
+    quark_level: int = QUARK_LEVEL,
+) -> float:
+    del quark_level
+    resolved_parent_level = float(parent_level)
+    resolved_lepton_level = float(lepton_level)
+    denominator = 2.0 * resolved_lepton_level
+    if denominator <= 0.0:
+        raise ValueError("Lepton level must be positive.")
+    raw_gap = _distance_to_integer(resolved_parent_level / denominator)
+    return 0.0 if solver_isclose(raw_gap, 0.0) else abs(raw_gap)
+
+
 __all__ = [
     "DEFAULT_SOLVER_CONFIG",
     "PhysicsDomainWarning",
     "SolverConfig",
     "apply_quark_threshold_matching",
+    "calculate_efe_violation_tensor",
     "charged_lepton_yukawa_diagonal",
     "integrate_pmns_majorana_rge_numerically",
     "jarlskog_invariant",
