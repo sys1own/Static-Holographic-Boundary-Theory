@@ -14,12 +14,15 @@ import mpmath
 if __package__ in (None, ""):
     import sys
 
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    from pub import algebra
-    from pub.constants import HOLOGRAPHIC_BITS, LEPTON_LEVEL, LIGHT_SPEED_M_PER_S, PARENT_LEVEL, PLANCK2018_LAMBDA_SI_M2, PLANCK_LENGTH_M, QUARK_LEVEL
-else:
-    from . import algebra
-    from .constants import HOLOGRAPHIC_BITS, LEPTON_LEVEL, LIGHT_SPEED_M_PER_S, PARENT_LEVEL, PLANCK2018_LAMBDA_SI_M2, PLANCK_LENGTH_M, QUARK_LEVEL
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent if parent.name == "src" else parent / "src"
+        if (candidate / "shbt").is_dir():
+            sys.path.insert(0, str(candidate))
+            break
+
+from shbt.constants import HOLOGRAPHIC_BITS, LEPTON_LEVEL, LIGHT_SPEED_M_PER_S, PARENT_LEVEL, PLANCK2018_LAMBDA_SI_M2, PLANCK_LENGTH_M, QUARK_LEVEL
+from shbt.core import algebra
+from shbt.resource_paths import resolve_resource_path
 
 PI = Decimal("3.14159265358979323846264338327950288419716939937510")
 HBAR_EV_SECONDS = Decimal("6.582119569e-16")
@@ -216,7 +219,7 @@ def ev2_to_lambda_si_m2(lambda_ev2: Decimal) -> Decimal:
 
 
 def load_c_dark_completion_fraction() -> Fraction:
-    tex_path = Path(__file__).with_name("physics_constants.tex")
+    tex_path = resolve_resource_path("physics_constants.tex")
     try:
         match = re.search(
             r"\\newcommand\{\\cDarkCompletionExact\}\{\\frac\{(\d+)\}\{(\d+)\}\}",
