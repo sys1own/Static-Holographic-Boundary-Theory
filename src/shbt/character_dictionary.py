@@ -13,12 +13,14 @@ import numpy as np
 if __package__ in (None, ""):
     import sys
 
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    from pub.algebra import su2_total_quantum_dimension
-    from pub.constants import LEPTON_LEVEL
-else:
-    from .algebra import su2_total_quantum_dimension
-    from .constants import LEPTON_LEVEL
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent if parent.name == "src" else parent / "src"
+        if (candidate / "shbt").is_dir():
+            sys.path.insert(0, str(candidate))
+            break
+
+from shbt.constants import LEPTON_LEVEL
+from shbt.core.algebra import su2_total_quantum_dimension
 
 
 BOUNDARY_CHARACTERS = (0, 1, 2)
