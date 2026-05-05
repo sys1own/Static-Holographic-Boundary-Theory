@@ -11,9 +11,9 @@ from dataclasses import replace
 
 import pytest
 
-import pub.noether_bridge as noether_bridge
-import pub.tn as tn
-from pub.runtime_config import DEFAULT_SOLVER_CONFIG, SolverException
+import shbt.main as tn
+import shbt.core.noether_bridge as noether_bridge
+from shbt.runtime_config import DEFAULT_SOLVER_CONFIG, SolverException
 
 
 PrecisionUnderflowError = SolverException
