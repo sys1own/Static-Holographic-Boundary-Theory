@@ -21,7 +21,7 @@ import argparse
 from dataclasses import dataclass
 from decimal import Decimal, localcontext
 from pathlib import Path
-from typing import Literal, Sequence
+from typing import TYPE_CHECKING, Literal, Sequence
 
 if __package__ in (None, ""):
     import sys
@@ -33,10 +33,12 @@ if __package__ in (None, ""):
             break
 
 from shbt.constants import GEOMETRIC_KAPPA, LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
-from shbt.core import noether_bridge
+
+if TYPE_CHECKING:
+    from shbt.core import noether_bridge
 
 
-DEFAULT_PRECISION = noether_bridge.DEFAULT_PRECISION
+DEFAULT_PRECISION = 200
 BenchmarkBranch = tuple[int, int, int]
 ChecksumLaw = Literal["charge", "momentum", "parity"]
 
@@ -180,6 +182,7 @@ class HolographicStabilizer:
 
     def verify_bulk_checksum(self) -> BulkChecksumVerification:
         from shbt.core.engine import calculate_efe_violation_tensor
+        from shbt.core import noether_bridge
 
         with localcontext() as context:
             context.prec = self.precision
@@ -263,6 +266,8 @@ def _build_recovery_threshold(
     *,
     precision: int,
 ) -> tuple[RecoveryThresholdAudit, noether_bridge.NewtonLockAudit, noether_bridge.SaturationAudit, noether_bridge.UnityOfScaleAudit]:
+    from shbt.core import noether_bridge
+
     c_dark_fraction = noether_bridge.load_c_dark_completion_fraction()
     newton_lock = noether_bridge.newton_constant_lock(c_dark_fraction=c_dark_fraction, precision=precision)
     saturation = noether_bridge.saturation_audit(precision=precision)
@@ -330,6 +335,8 @@ def _build_momentum_checksum(
 
 
 def _build_parity_checksum(recovery: RecoveryThresholdAudit) -> TopologicalChecksum:
+    from shbt.core import noether_bridge
+
     framing = noether_bridge.framing_defect(PARENT_LEVEL, LEPTON_LEVEL, QUARK_LEVEL)
     residual = Decimal(framing.delta_fr.numerator) / Decimal(framing.delta_fr.denominator)
     return TopologicalChecksum(
@@ -348,6 +355,8 @@ def _build_parity_checksum(recovery: RecoveryThresholdAudit) -> TopologicalCheck
 
 
 def build_holographic_error_stabilizer_audit(*, precision: int = DEFAULT_PRECISION) -> HolographicErrorStabilizerAudit:
+    from shbt.core import noether_bridge
+
     resolved_precision = max(int(precision), DEFAULT_PRECISION)
     recovery, newton_lock, saturation, unity = _build_recovery_threshold(precision=resolved_precision)
     charge = _build_charge_checksum(recovery)
@@ -386,6 +395,8 @@ def simulate_failed_checksum(
     syndrome: Decimal | float | int | str | None = None,
     precision: int = DEFAULT_PRECISION,
 ) -> ChecksumFailureSimulation:
+    from shbt.core import noether_bridge
+
     audit = build_holographic_error_stabilizer_audit(precision=precision)
     checksum = _select_checksum(audit, law)
     injected_syndrome = checksum.syndrome_tolerance * Decimal("2") if syndrome is None else _decimal(syndrome)
