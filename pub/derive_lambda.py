@@ -6,7 +6,7 @@ import sys
 from dataclasses import dataclass
 from decimal import Decimal, localcontext
 from pathlib import Path
-from typing import Callable, Sequence
+from typing import Sequence
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -34,7 +34,7 @@ from .tn import (
 )
 
 _GUARD_DIGITS = 12
-BENCHMARK_COMPARISON_SKIPPED_MESSAGE = "Benchmark comparison skipped: artifacts not yet generated"
+LIVE_BENCHMARK_AUDIT_SKIPPED_MESSAGE = "Live Benchmark Audit: [SKIPPED] - Results artifacts not found."
 
 
 def _decimal(value: Decimal | float | int | str) -> Decimal:
@@ -152,39 +152,37 @@ def _checked_in_diagnostics_paths() -> tuple[Path, ...]:
     )
 
 
-def load_checked_in_unity_payloads(
-    *,
-    on_missing: Callable[[str], object] | None = print,
-) -> tuple[CheckedInUnityPayload, ...]:
+def load_checked_in_unity_payloads() -> list[CheckedInUnityPayload]:
     payloads: list[CheckedInUnityPayload] = []
 
-    for diagnostics_path in _checked_in_diagnostics_paths():
-        if not diagnostics_path.is_file():
-            continue
+    try:
+        for diagnostics_path in _checked_in_diagnostics_paths():
+            if not diagnostics_path.is_file():
+                continue
 
-        diagnostics = json.loads(diagnostics_path.read_text(encoding="utf-8"), parse_float=Decimal)
-        unity_payload = diagnostics.get("unity_of_scale_identity")
-        if not isinstance(unity_payload, dict):
-            raise KeyError(
-                f"Checked-in benchmark diagnostics at {diagnostics_path} do not expose a unity_of_scale_identity payload."
+            diagnostics = json.loads(diagnostics_path.read_text(encoding="utf-8"), parse_float=Decimal)
+            unity_payload = diagnostics.get("unity_of_scale_identity")
+            if not isinstance(unity_payload, dict):
+                raise KeyError(
+                    f"Checked-in benchmark diagnostics at {diagnostics_path} do not expose a unity_of_scale_identity payload."
+                )
+
+            payloads.append(
+                CheckedInUnityPayload(
+                    source_path=str(diagnostics_path.relative_to(Path(__file__).resolve().parent.parent)),
+                    epsilon_lambda=_decimal(unity_payload["epsilon_lambda"]),
+                    exact_epsilon_lambda=_decimal(unity_payload["exact_epsilon_lambda"]),
+                    numerical_residual=_decimal(unity_payload["numerical_residual"]),
+                    register_noise_floor=_decimal(unity_payload["register_noise_floor"]),
+                    exact_register_noise_floor=_decimal(unity_payload["exact_register_noise_floor"]),
+                    passed=bool(unity_payload["passed"]),
+                )
             )
 
-        payloads.append(
-            CheckedInUnityPayload(
-                source_path=str(diagnostics_path.relative_to(Path(__file__).resolve().parent.parent)),
-                epsilon_lambda=_decimal(unity_payload["epsilon_lambda"]),
-                exact_epsilon_lambda=_decimal(unity_payload["exact_epsilon_lambda"]),
-                numerical_residual=_decimal(unity_payload["numerical_residual"]),
-                register_noise_floor=_decimal(unity_payload["register_noise_floor"]),
-                exact_register_noise_floor=_decimal(unity_payload["exact_register_noise_floor"]),
-                passed=bool(unity_payload["passed"]),
-            )
-        )
-
-    if not payloads:
-        if on_missing is not None:
-            on_missing(BENCHMARK_COMPARISON_SKIPPED_MESSAGE)
-        return ()
+        if not payloads:
+            raise FileNotFoundError("Results artifacts not found.")
+    except FileNotFoundError:
+        return []
 
     reference_payload = payloads[0]
     for payload in payloads[1:]:
@@ -193,7 +191,7 @@ def load_checked_in_unity_payloads(
             f"{reference_payload.source_path} != {payload.source_path}."
         )
 
-    return tuple(payloads)
+    return payloads
 
 
 def build_lambda_ledger(*, precision: int = DEFAULT_PRECISION) -> str:
@@ -202,7 +200,7 @@ def build_lambda_ledger(*, precision: int = DEFAULT_PRECISION) -> str:
     mass = derive_mass_bridge(precision=precision, kappa=kappa.kappa)
     decimal_unity = derive_unity_of_scale(precision=precision, kappa=kappa.kappa, mass_bridge=mass)
     live_unity = verify_unity_of_scale()
-    checked_in_payloads = load_checked_in_unity_payloads(on_missing=None)
+    checked_in_payloads = load_checked_in_unity_payloads()
 
     live_epsilon_lambda = _decimal(live_unity["epsilon_lambda"])
     live_exact_epsilon_lambda = _decimal(live_unity["exact_epsilon_lambda"])
@@ -306,7 +304,7 @@ def build_lambda_ledger(*, precision: int = DEFAULT_PRECISION) -> str:
             ]
         )
     else:
-        lines.append(f"- {BENCHMARK_COMPARISON_SKIPPED_MESSAGE}")
+        lines.append(f"- {LIVE_BENCHMARK_AUDIT_SKIPPED_MESSAGE}")
 
     return "\n".join(lines)
 
