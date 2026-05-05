@@ -32,6 +32,7 @@ jobs:
       - name: Universal Derivation Audit
         run: |
           python pub/derive_universe.py
+          python pub/derive_lambda.py
           python pub/derive_proton_ratio.py
           python pub/verify_parity_sink.py
           python pub/moat_stress_tester.py
