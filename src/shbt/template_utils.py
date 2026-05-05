@@ -6,7 +6,7 @@ from typing import Sequence
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
-from .constants import LATEX_TABLE_STYLE
+from shbt.constants import LATEX_TABLE_STYLE
 
 
 TEMPLATE_DIR = Path(__file__).resolve().parent / "templates"
