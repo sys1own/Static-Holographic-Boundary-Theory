@@ -37,6 +37,7 @@ from shbt.core.topological_kernel import LOW_SU3_WEIGHTS, ModularKernel, charge_
 from shbt.precision_cosmology_engine import (
     DEFAULT_PRECISION as COSMOLOGY_DEFAULT_PRECISION,
     DEFAULT_REDSHIFTS,
+    MetricExpansion,
     PrecisionCosmologyAudit,
     build_precision_cosmology_audit,
 )
@@ -44,6 +45,7 @@ from shbt.precision_cosmology_engine import (
 
 DEFAULT_PRECISION = max(int(COSMOLOGY_DEFAULT_PRECISION), 64)
 _GUARD_DIGITS = 16
+_ARROW_OF_TIME_MATCH_TOLERANCE = Decimal("1e-15")
 _LOADING_LAW_RESIDUAL_TOLERANCE = Decimal("1e-50")
 
 DecimalMatrix = tuple[tuple[Decimal, ...], ...]
@@ -71,11 +73,14 @@ class ManifoldSliceLoadingMap:
 @dataclass(frozen=True)
 class TemporalEmergencePoint:
     redshift: Decimal
+    bulk_metric_expansion: MetricExpansion
     metric_expansion_rate_km_s_mpc: Decimal
+    arrow_of_time_gradient_km_s_mpc: Decimal
     total_bit_loading_rate: Decimal
     total_entanglement_entropy_gradient: Decimal
     derived_temporal_rate_km_s_mpc: Decimal
     reconstructed_loading_derivative_km_s_mpc: Decimal
+    arrow_of_time_gradient_residual: Decimal
     metric_rate_residual: Decimal
     loading_derivative_residual: Decimal
     local_bit_loading_rate_density: DecimalMatrix
@@ -87,6 +92,10 @@ class TemporalEmergencePoint:
         return self.metric_rate_residual == 0
 
     @property
+    def arrow_of_time_gradient_verified(self) -> bool:
+        return abs(self.arrow_of_time_gradient_residual) <= _ARROW_OF_TIME_MATCH_TOLERANCE
+
+    @property
     def loading_law_consistent(self) -> bool:
         return abs(self.loading_derivative_residual) <= _LOADING_LAW_RESIDUAL_TOLERANCE
 
@@ -94,8 +103,10 @@ class TemporalEmergencePoint:
 @dataclass(frozen=True)
 class TemporalMetricVerification:
     sample_count: int
+    max_arrow_of_time_gradient_residual: Decimal
     max_metric_rate_residual: Decimal
     max_loading_derivative_residual: Decimal
+    arrow_of_time_gradient_verified: bool
     exact_metric_lock: bool
     loading_law_consistent: bool
     ubi_confirmed: bool
@@ -228,39 +239,70 @@ def derive_temporal_increment(
         return _decimal(entanglement_entropy_gradient) / resolved_bit_budget
 
 
+def calculate_arrow_of_time_gradient(
+    bit_loading_rate_density: DecimalMatrix,
+    dominant_loading_sequence: Sequence[tuple[int, int]],
+    bit_budget: Decimal | Fraction | float | int | str = HOLOGRAPHIC_BITS,
+    *,
+    precision: int = DEFAULT_PRECISION,
+) -> Decimal:
+    with localcontext() as context:
+        context.prec = max(int(precision), DEFAULT_PRECISION) + _GUARD_DIGITS
+        ordered_bit_loading = sum(
+            (bit_loading_rate_density[row_index][column_index] for row_index, column_index in dominant_loading_sequence),
+            Decimal("0"),
+        )
+    return derive_temporal_increment(ordered_bit_loading, bit_budget, precision=precision)
+
+
 def verify_temporal_expansion_lock(audit: TemporalEmergenceAudit) -> TemporalMetricVerification:
     if not audit.samples:
         return TemporalMetricVerification(
             sample_count=0,
+            max_arrow_of_time_gradient_residual=Decimal("0"),
             max_metric_rate_residual=Decimal("0"),
             max_loading_derivative_residual=Decimal("0"),
+            arrow_of_time_gradient_verified=True,
             exact_metric_lock=True,
             loading_law_consistent=True,
             ubi_confirmed=False,
         )
 
+    max_arrow_of_time_residual = max(abs(sample.arrow_of_time_gradient_residual) for sample in audit.samples)
     max_metric_residual = max(abs(sample.metric_rate_residual) for sample in audit.samples)
     max_loading_residual = max(abs(sample.loading_derivative_residual) for sample in audit.samples)
+    arrow_of_time_gradient_verified = all(sample.arrow_of_time_gradient_verified for sample in audit.samples)
     exact_metric_lock = all(sample.exact_metric_lock for sample in audit.samples)
     loading_law_consistent = all(sample.loading_law_consistent for sample in audit.samples)
     ubi_confirmed = bool(
-        exact_metric_lock
+        arrow_of_time_gradient_verified
+        and exact_metric_lock
         and loading_law_consistent
         and audit.manifold_slice.loading_density_sum == Decimal("1")
         and audit.manifold_slice.entanglement_density_sum == Decimal("1")
     )
     return TemporalMetricVerification(
         sample_count=len(audit.samples),
+        max_arrow_of_time_gradient_residual=max_arrow_of_time_residual,
         max_metric_rate_residual=max_metric_residual,
         max_loading_derivative_residual=max_loading_residual,
+        arrow_of_time_gradient_verified=arrow_of_time_gradient_verified,
         exact_metric_lock=exact_metric_lock,
         loading_law_consistent=loading_law_consistent,
         ubi_confirmed=ubi_confirmed,
     )
 
 
+def verify_arrow_of_time_gradient(audit: TemporalEmergenceAudit) -> TemporalMetricVerification:
+    verification = verify_temporal_expansion_lock(audit)
+    assert verification.arrow_of_time_gradient_verified, (
+        "Arrow of Time gradient must match the bulk expansion rate dot(a)/a within 1e-15."
+    )
+    return verification
+
+
 def verify_unitary_block_interpretation(audit: TemporalEmergenceAudit) -> TemporalMetricVerification:
-    return verify_temporal_expansion_lock(audit)
+    return verify_arrow_of_time_gradient(audit)
 
 
 def build_temporal_emergence_audit(
@@ -286,8 +328,20 @@ def build_temporal_emergence_audit(
     for sample in cosmology_audit.samples:
         with localcontext() as context:
             context.prec = max(int(precision), DEFAULT_PRECISION) + _GUARD_DIGITS
-            metric_rate = _decimal(sample.hubble_km_s_mpc)
+            metric_expansion = sample.metric_expansion
+            metric_rate = _decimal(metric_expansion.dot_a_over_a_km_s_mpc)
             total_bit_loading_rate = resolved_bit_budget * metric_rate
+            local_bit_loading_rate_density = _scale_decimal_matrix(
+                manifold_slice.loading_density,
+                total_bit_loading_rate,
+                precision=precision,
+            )
+            arrow_of_time_gradient = calculate_arrow_of_time_gradient(
+                local_bit_loading_rate_density,
+                manifold_slice.dominant_loading_sequence,
+                resolved_bit_budget,
+                precision=precision,
+            )
             total_entanglement_entropy_gradient = total_bit_loading_rate
             derived_temporal_rate = derive_temporal_increment(
                 total_entanglement_entropy_gradient,
@@ -299,24 +353,24 @@ def build_temporal_emergence_audit(
                 * (Decimal("1") + _decimal(sample.redshift))
                 * (derived_temporal_rate - _decimal(cosmology_audit.h_lambda_operational_km_s_mpc))
             )
+            arrow_of_time_gradient_residual = arrow_of_time_gradient - metric_rate
             metric_rate_residual = derived_temporal_rate - metric_rate
             loading_derivative_residual = reconstructed_loading_derivative - _decimal(cosmology_audit.loading_derivative_km_s_mpc)
 
         samples.append(
             TemporalEmergencePoint(
                 redshift=_decimal(sample.redshift),
+                bulk_metric_expansion=metric_expansion,
                 metric_expansion_rate_km_s_mpc=metric_rate,
+                arrow_of_time_gradient_km_s_mpc=arrow_of_time_gradient,
                 total_bit_loading_rate=total_bit_loading_rate,
                 total_entanglement_entropy_gradient=total_entanglement_entropy_gradient,
                 derived_temporal_rate_km_s_mpc=derived_temporal_rate,
                 reconstructed_loading_derivative_km_s_mpc=reconstructed_loading_derivative,
+                arrow_of_time_gradient_residual=arrow_of_time_gradient_residual,
                 metric_rate_residual=metric_rate_residual,
                 loading_derivative_residual=loading_derivative_residual,
-                local_bit_loading_rate_density=_scale_decimal_matrix(
-                    manifold_slice.loading_density,
-                    total_bit_loading_rate,
-                    precision=precision,
-                ),
+                local_bit_loading_rate_density=local_bit_loading_rate_density,
                 local_entanglement_entropy_gradient=_scale_decimal_matrix(
                     manifold_slice.entanglement_density,
                     total_entanglement_entropy_gradient,
@@ -337,14 +391,16 @@ def build_temporal_emergence_audit(
         samples=tuple(samples),
         verification=TemporalMetricVerification(
             sample_count=0,
+            max_arrow_of_time_gradient_residual=Decimal("0"),
             max_metric_rate_residual=Decimal("0"),
             max_loading_derivative_residual=Decimal("0"),
+            arrow_of_time_gradient_verified=False,
             exact_metric_lock=False,
             loading_law_consistent=False,
             ubi_confirmed=False,
         ),
     )
-    verification = verify_temporal_expansion_lock(preliminary_audit)
+    verification = verify_arrow_of_time_gradient(preliminary_audit)
     return TemporalEmergenceAudit(
         bit_budget=resolved_bit_budget,
         manifold_slice=manifold_slice,
@@ -376,6 +432,7 @@ def render_report(audit: TemporalEmergenceAudit) -> str:
         "Metric lock verification",
         "------------------------",
         f"samples                              : {audit.verification.sample_count}",
+        f"max Arrow-of-Time residual           : {_format_decimal(audit.verification.max_arrow_of_time_gradient_residual)}",
         f"max temporal-rate residual           : {_format_decimal(audit.verification.max_metric_rate_residual)}",
         f"max loading-law residual             : {_format_decimal(audit.verification.max_loading_derivative_residual)}",
         f"UBI verification                     : {verification_status}",
@@ -421,11 +478,13 @@ __all__ = [
     "TemporalEmergencePoint",
     "TemporalMetricVerification",
     "build_temporal_emergence_audit",
+    "calculate_arrow_of_time_gradient",
     "derive_temporal_increment",
     "main",
     "map_manifold_slice_bit_loading_density",
     "parse_args",
     "render_report",
+    "verify_arrow_of_time_gradient",
     "verify_temporal_expansion_lock",
     "verify_unitary_block_interpretation",
 ]
