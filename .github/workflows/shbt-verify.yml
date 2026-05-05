@@ -29,6 +29,11 @@ jobs:
           matplotlib==3.8.3
           sympy==1.12
 
+      - name: Execute Sector Proof
+        run: |
+          mkdir -p results
+          python pub/tn.py --sector ${{ matrix.sector }} --output-dir results/
+
       - name: Universal Derivation Audit
         run: |
           python pub/derive_universe.py
@@ -36,11 +41,6 @@ jobs:
           python pub/derive_proton_ratio.py
           python pub/verify_parity_sink.py
           python pub/moat_stress_tester.py
-
-      - name: Execute Sector Proof
-        run: |
-          mkdir -p results
-          python pub/tn.py --sector ${{ matrix.sector }} --output-dir results/
 
       - name: Upload audit artifacts
         uses: actions/upload-artifact@v4
