@@ -63,7 +63,7 @@ This repository treats that chain as a theorem to be audited, not as an ansatz t
 - `src/shbt/constants.py` — strict benchmark tier catalog and shared branch-fixed constants.
 - `src/shbt/core/` — gravity, flavor, topology, transport, and uniqueness proof engines.
 - `src/shbt/audit/` — publication-facing audit modules and artifact generators.
-- `scripts/` — standalone derivation and utility scripts such as `derive_universe.py`, `derive_lambda.py`, `derive_proton_ratio.py`, and `plot_local_moat.py`.
+- `scripts/` — standalone derivation and utility scripts such as `derive_universe.py`, `derive_lambda.py`, `derive_proton_ratio.py`, `plot_local_moat.py`, and `sync_system.py` for syncing `README.md` and `papers/physics_constants.tex` from `results/residuals.json`.
 - `papers/` — manuscript sources and TeX-side exports, including `tn.tex`, `gravity.tex`, `supplementary.tex`, and `physics_constants.tex`.
 - `tests/` — integrity checks, moat stress tests, and formal anomaly regression tests.
 - `config/` — locked benchmark YAML configuration.
@@ -162,7 +162,6 @@ The benchmark branch is fixed by the Tier 1 topological coordinates $(k_{\ell}, 
 | $\mu$ ($m_p/m_e$) | $(c_q/c_{\ell}) V_{\rm px}^{-1} \Pi_{\rm vac}^2 / [(1-\kappa_{D_5})\kappa_{D_5}^{1/3}]$ <br> ($c_q=64/11, c_{\ell}=39/14, V_{\rm px}=3/13$) | $\approx 1835.25$ | $1836.152$ (Atomic Lock) |
 | $m_{\nu}$ | $\kappa_{D_5} M_P N^{-1/4}$ | $\approx 2.83$ meV | $\sim 2.9$ meV (Theory-Fixed) |
 
-
 ### Tier Classification
 
 - **Tier 1: Topological Coordinates** — the branch-defining integers `(26, 8, 312)`, i.e. `LEPTON_LEVEL`, `QUARK_LEVEL`, and `PARENT_LEVEL`, together with `G_SM = 15`.
@@ -179,6 +178,7 @@ The benchmark configuration is locked by the checked-in YAML at `config/benchmar
 - **Python requirement:** `>=3.11`
 - **Pinned scientific stack:** `PyYAML==6.0.3`, `Jinja2==3.1.6`, `mpmath==1.3.0`, `numpy==1.26.4`, `scipy==1.12.0`, `matplotlib==3.8.3`, `sympy==1.12`
 - **Link Ledger:** `python scripts/derive_universe.py` prints the branch-fixed gauge-density residue `alpha_surf^-1 = 2340/17`; together with the `Derivation Ledger` above, this makes explicit that the benchmark's physical constants are derived residues disclosed against external comparators, not fit parameters reopened by hand.
+- **Paper Sync:** `PYTHONPATH=src python scripts/sync_system.py` refreshes the machine-managed residual ledger in `README.md` and the synchronized audit macros in `papers/physics_constants.tex` from `results/residuals.json`.
 
 ### Constant Tiers
 
