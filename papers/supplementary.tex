@@ -10,14 +10,39 @@
 \usepackage[table]{xcolor}
 \usepackage{colortbl}
 
-\graphicspath{{results/final/}{../results/final/}{results/}{../results/}{./}{pub/}}
+\graphicspath{{results/final/}{../results/final/}{results/}{../results/}{./}{papers/}{../papers/}{pub/}}
+
+\newif\ifsupplementaryfiguresavailable
+\supplementaryfiguresavailablefalse
+\IfFileExists{framing_gap_moat_heatmap.png}{\supplementaryfiguresavailabletrue}{%
+  \IfFileExists{results/final/framing_gap_moat_heatmap.png}{\supplementaryfiguresavailabletrue}{%
+    \IfFileExists{../results/final/framing_gap_moat_heatmap.png}{\supplementaryfiguresavailabletrue}{%
+      \IfFileExists{results/framing_gap_moat_heatmap.png}{\supplementaryfiguresavailabletrue}{%
+        \IfFileExists{../results/framing_gap_moat_heatmap.png}{\supplementaryfiguresavailabletrue}{%
+          \IfFileExists{papers/framing_gap_moat_heatmap.png}{\supplementaryfiguresavailabletrue}{}%
+        }%
+      }%
+    }%
+  }%
+}
+\ifsupplementaryfiguresavailable\else
+  \setkeys{Gin}{draft}
+\fi
 
 \newcommand{\pubinput}[1]{%
   \IfFileExists{results/final/#1}{\input{results/final/#1}}{%
     \IfFileExists{../results/final/#1}{\input{../results/final/#1}}{%
       \IfFileExists{results/#1}{\input{results/#1}}{%
         \IfFileExists{../results/#1}{\input{../results/#1}}{%
-          \IfFileExists{#1}{\input{#1}}{\input{pub/#1}}%
+          \IfFileExists{#1}{\input{#1}}{%
+            \IfFileExists{papers/#1}{\input{papers/#1}}{%
+              \IfFileExists{../papers/#1}{\input{../papers/#1}}{%
+                \IfFileExists{pub/#1}{\input{pub/#1}}{%
+                  \PackageWarning{supplementary}{Input file `#1' not found; continuing without it}%
+                }%
+              }%
+            }%
+          }%
         }%
       }%
     }%
@@ -30,7 +55,11 @@
       \IfFileExists{results/#1}{#2}{%
         \IfFileExists{../results/#1}{#2}{%
           \IfFileExists{#1}{#2}{%
-            \IfFileExists{pub/#1}{#2}{#3}%
+            \IfFileExists{papers/#1}{#2}{%
+              \IfFileExists{../papers/#1}{#2}{%
+                \IfFileExists{pub/#1}{#2}{#3}%
+              }%
+            }%
           }%
         }%
       }%
