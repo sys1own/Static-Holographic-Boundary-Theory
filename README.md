@@ -63,7 +63,7 @@ This repository treats that chain as a theorem to be audited, not as an ansatz t
 - `src/shbt/constants.py` — strict benchmark tier catalog and shared branch-fixed constants.
 - `src/shbt/core/` — gravity, flavor, topology, transport, and uniqueness proof engines.
 - `src/shbt/audit/` — publication-facing audit modules and artifact generators.
-- `scripts/` — standalone derivation and utility scripts such as `derive_universe.py`, `derive_lambda.py`, `derive_proton_ratio.py`, `plot_local_moat.py`, and `sync_system.py` for syncing `README.md` and `papers/physics_constants.tex` from `results/residuals.json`.
+- `scripts/` — standalone derivation and utility scripts such as `derive_universe.py`, `derive_lambda.py`, `derive_proton_ratio.py`, `plot_local_moat.py`, `sync_system.py`, and `build_manuscript.py` for one-command proof execution plus manuscript PDF compilation.
 - `papers/` — manuscript sources and TeX-side exports, including `tn.tex`, `gravity.tex`, `supplementary.tex`, and `physics_constants.tex`.
 - `tests/` — integrity checks, moat stress tests, and formal anomaly regression tests.
 - `config/` — locked benchmark YAML configuration.
@@ -140,6 +140,14 @@ Run the universal verifier from the repository root:
 ```bash
 PYTHONPATH=src python -m shbt.main --output-dir results/
 ```
+
+To go from the branch-fixed integer inputs to the compiled manuscript PDFs in one command, run:
+
+```bash
+python scripts/build_manuscript.py
+```
+
+This orchestrator checks for a local `latexmk` or `pdflatex` installation, runs all four Sector Proofs, executes the full Universal Audit, refreshes the manuscript-facing macro export, and compiles the standalone sources in `papers/`, with `papers/tn.pdf` as the journal PDF.
 
 The package entrypoint in `src/shbt/main.py` regenerates the benchmark-facing artifacts, numerical audits, manuscript exports, and reviewer packets from the disclosed branch data. The intended use is verification of a rigid branch-fixed theorem stack, not parameter search.
 
