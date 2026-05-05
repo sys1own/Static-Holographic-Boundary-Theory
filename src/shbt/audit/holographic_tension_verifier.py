@@ -39,7 +39,7 @@ from shbt.core.noether_bridge import (
     saturation_audit,
     unity_of_scale_audit,
 )
-from shbt.resource_paths import resolve_resource_path
+from shbt.paths import resolve_resource_path
 
 
 EXPECTED_BRANCH = (26, 8, 312)
