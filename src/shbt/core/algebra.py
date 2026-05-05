@@ -8,8 +8,8 @@ from functools import lru_cache
 import numpy as np
 import numpy.typing as npt
 
-from .runtime_config import DEFAULT_SOLVER_CONFIG, Sector, SolverConfig
-from .topology import add_fraction_vectors, fraction_dot, lcm_int, scale_fraction_vector, solve_fraction_linear_system
+from shbt.core.topology import add_fraction_vectors, fraction_dot, lcm_int, scale_fraction_vector, solve_fraction_linear_system
+from shbt.runtime_config import DEFAULT_SOLVER_CONFIG, Sector, SolverConfig
 
 LOW_SU3_WEIGHTS = ((0, 0), (1, 0), (0, 1))
 
