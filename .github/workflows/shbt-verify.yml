@@ -46,6 +46,8 @@ jobs:
           python scripts/derive_proton_ratio.py
           python tests/verify_parity_sink.py
           python tests/moat_stress_tester.py
+          python scripts/technological_scaling_limits.py
+          python scripts/multimessenger_parity_verifier.py
 
       - name: Upload audit artifacts
         uses: actions/upload-artifact@v4
