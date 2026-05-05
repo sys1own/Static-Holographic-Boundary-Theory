@@ -9,10 +9,13 @@ from pathlib import Path
 from typing import Sequence
 
 if __package__ in (None, ""):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    __package__ = "pub"
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent if parent.name == "src" else parent / "src"
+        if (candidate / "shbt").is_dir():
+            sys.path.insert(0, str(candidate))
+            break
 
-from .tn import (
+from shbt.main import (
     HBAR_EV_SECONDS,
     HOLOGRAPHIC_BITS,
     LIGHT_SPEED_M_PER_S,
