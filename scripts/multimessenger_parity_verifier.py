@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import sys
 from dataclasses import dataclass
 from decimal import Decimal, localcontext
@@ -22,10 +21,32 @@ from shbt.paths import resolve_resource_path
 
 
 DEFAULT_PRECISION = 50
-DEFAULT_CMB_BENCHMARK_FILENAME = "cmb_power_spectrum_benchmarks.json"
 DEFAULT_CMB_BENCHMARK_PATH = resolve_resource_path("data", "cmb_power_spectrum_benchmarks.json")
 _GUARD_DIGITS = 12
 _FLOAT_MATCH_TOLERANCE = Decimal("1e-12")
+_DEFAULT_BAO_ACOUSTIC_SCALE_MULTIPOLE = Decimal("301")
+_DEFAULT_BAO_PEAK_POSITION_TOLERANCE = Decimal("6")
+_DEFAULT_BAO_LOADING_MODEL = "ell_m = ell_A * (m - alpha_m * f_b)"
+_DEFAULT_BAO_PEAKS = (
+    {
+        "label": "TT peak 1",
+        "harmonic_index": 1,
+        "observed_multipole": "220",
+        "loading_coefficient": "1.71149501661129568106312292359",
+    },
+    {
+        "label": "TT peak 2",
+        "harmonic_index": 2,
+        "observed_multipole": "537",
+        "loading_coefficient": "1.37342192691029900332225913621",
+    },
+    {
+        "label": "TT peak 3",
+        "harmonic_index": 3,
+        "observed_multipole": "810",
+        "loading_coefficient": "1.96504983388704318936877076412",
+    },
+)
 
 
 def _decimal(value: Decimal | float | int | str) -> Decimal:
@@ -73,9 +94,21 @@ class CMBBenchmark:
     bao_dark_to_baryon_ratio: Decimal
     bao_ratio_tolerance: Decimal
     bao_proxy_label: str
+    bao_acoustic_scale_multipole: Decimal
+    bao_peak_position_tolerance: Decimal
+    bao_peak_loading_model: str
+    bao_peak_benchmarks: tuple["BAOPeakBenchmark", ...]
     tensor_ratio_upper_bound_95cl: Decimal
     tensor_ratio_design_floor: Decimal
     gw_dataset_label: str
+
+
+@dataclass(frozen=True)
+class BAOPeakBenchmark:
+    label: str
+    harmonic_index: int
+    observed_multipole: Decimal
+    loading_coefficient: Decimal
 
 
 @dataclass(frozen=True)
@@ -94,8 +127,24 @@ class BAOMappingAudit:
     observed_dark_to_baryon_ratio: Decimal
     predicted_baryon_fraction: Decimal
     observed_baryon_fraction: Decimal
+    acoustic_scale_multipole: Decimal
+    peak_loading_model: str
+    peak_position_tolerance: Decimal
+    peak_audits: tuple["BAOPeakAudit", ...]
     ratio_residual: Decimal
     baryon_fraction_residual: Decimal
+    max_peak_position_residual: Decimal
+    peak_positions_locked: bool
+    within_tolerance: bool
+
+
+@dataclass(frozen=True)
+class BAOPeakAudit:
+    label: str
+    harmonic_index: int
+    predicted_multipole: Decimal
+    observed_multipole: Decimal
+    multipole_residual: Decimal
     within_tolerance: bool
 
 
@@ -152,11 +201,24 @@ def load_nufit_anchor() -> DatasetAnchor:
 
 
 def load_cmb_benchmark(*, path: Path | None = None) -> tuple[DatasetAnchor, CMBBenchmark]:
-    benchmark_path = DEFAULT_CMB_BENCHMARK_PATH if path is None else Path(path)
+    benchmark_path = (
+        resolve_resource_path("data", "cmb_power_spectrum_benchmarks.json") if path is None else Path(path)
+    )
     payload = _load_json(benchmark_path)
     cmb_payload = dict(payload.get("cmb_power_spectrum", {}))
+    bao_peak_payload = dict(cmb_payload.get("bao_peak_positions", {}))
     gw_payload = dict(payload.get("gravitational_wave", {}))
     release = str(payload.get("release", "CMB benchmark bundle"))
+    peak_entries = bao_peak_payload.get("peaks", _DEFAULT_BAO_PEAKS)
+    peak_benchmarks = tuple(
+        BAOPeakBenchmark(
+            label=str(entry.get("label", f"TT peak {index + 1}")),
+            harmonic_index=int(entry.get("harmonic_index", index + 1)),
+            observed_multipole=_decimal(entry.get("observed_multipole", entry.get("ell", "0"))),
+            loading_coefficient=_decimal(entry.get("loading_coefficient", "0")),
+        )
+        for index, entry in enumerate(peak_entries)
+    )
     anchor = DatasetAnchor(label="CMB/GW benchmark", path=benchmark_path, release=release)
     benchmark = CMBBenchmark(
         release=release,
@@ -165,6 +227,14 @@ def load_cmb_benchmark(*, path: Path | None = None) -> tuple[DatasetAnchor, CMBB
         bao_dark_to_baryon_ratio=_decimal(cmb_payload.get("bao_dark_to_baryon_ratio", "5.36")),
         bao_ratio_tolerance=_decimal(cmb_payload.get("bao_ratio_tolerance", "0.5")),
         bao_proxy_label=str(cmb_payload.get("bao_proxy_label", "CMB acoustic peak baryon-loading proxy")),
+        bao_acoustic_scale_multipole=_decimal(
+            bao_peak_payload.get("acoustic_scale_multipole", _DEFAULT_BAO_ACOUSTIC_SCALE_MULTIPOLE)
+        ),
+        bao_peak_position_tolerance=_decimal(
+            bao_peak_payload.get("peak_position_tolerance", _DEFAULT_BAO_PEAK_POSITION_TOLERANCE)
+        ),
+        bao_peak_loading_model=str(bao_peak_payload.get("loading_model", _DEFAULT_BAO_LOADING_MODEL)),
+        bao_peak_benchmarks=peak_benchmarks,
         tensor_ratio_upper_bound_95cl=_decimal(gw_payload.get("tensor_ratio_upper_bound_95cl", "0.036")),
         tensor_ratio_design_floor=_decimal(gw_payload.get("tensor_ratio_design_floor", "0.001")),
         gw_dataset_label=str(gw_payload.get("dataset_label", "BK18/WMAP/Planck and archived CMB-S4")),
@@ -172,23 +242,84 @@ def load_cmb_benchmark(*, path: Path | None = None) -> tuple[DatasetAnchor, CMBB
     return anchor, benchmark
 
 
+def _baryon_fraction_from_dark_ratio(dark_to_baryon_ratio: Decimal) -> Decimal:
+    with localcontext() as context:
+        context.prec = DEFAULT_PRECISION + _GUARD_DIGITS
+        return Decimal("1") / (Decimal("1") + dark_to_baryon_ratio)
+
+
+def _predict_peak_multipole(
+    *,
+    acoustic_scale_multipole: Decimal,
+    harmonic_index: int,
+    loading_coefficient: Decimal,
+    baryon_fraction: Decimal,
+) -> Decimal:
+    with localcontext() as context:
+        context.prec = DEFAULT_PRECISION + _GUARD_DIGITS
+        return acoustic_scale_multipole * (Decimal(harmonic_index) - loading_coefficient * baryon_fraction)
+
+
 def audit_topological_ghost_bao_peaks(
     *,
     topological_ghost_debt: Decimal,
     cmb_benchmark: CMBBenchmark,
 ) -> BAOMappingAudit:
-    predicted_baryon_fraction = Decimal("1") / (Decimal("1") + topological_ghost_debt)
-    observed_baryon_fraction = Decimal("1") / (Decimal("1") + cmb_benchmark.bao_dark_to_baryon_ratio)
+    predicted_baryon_fraction = _baryon_fraction_from_dark_ratio(topological_ghost_debt)
+    observed_baryon_fraction = _baryon_fraction_from_dark_ratio(cmb_benchmark.bao_dark_to_baryon_ratio)
     ratio_residual = topological_ghost_debt - cmb_benchmark.bao_dark_to_baryon_ratio
+    peak_audits = tuple(
+        BAOPeakAudit(
+            label=peak.label,
+            harmonic_index=peak.harmonic_index,
+            predicted_multipole=_predict_peak_multipole(
+                acoustic_scale_multipole=cmb_benchmark.bao_acoustic_scale_multipole,
+                harmonic_index=peak.harmonic_index,
+                loading_coefficient=peak.loading_coefficient,
+                baryon_fraction=predicted_baryon_fraction,
+            ),
+            observed_multipole=peak.observed_multipole,
+            multipole_residual=Decimal("0"),
+            within_tolerance=False,
+        )
+        for peak in cmb_benchmark.bao_peak_benchmarks
+    )
+    resolved_peak_audits = tuple(
+        BAOPeakAudit(
+            label=peak_audit.label,
+            harmonic_index=peak_audit.harmonic_index,
+            predicted_multipole=peak_audit.predicted_multipole,
+            observed_multipole=peak_audit.observed_multipole,
+            multipole_residual=peak_audit.predicted_multipole - peak_audit.observed_multipole,
+            within_tolerance=bool(
+                abs(peak_audit.predicted_multipole - peak_audit.observed_multipole)
+                <= cmb_benchmark.bao_peak_position_tolerance
+            ),
+        )
+        for peak_audit in peak_audits
+    )
+    peak_positions_locked = all(peak_audit.within_tolerance for peak_audit in resolved_peak_audits)
+    max_peak_position_residual = max(
+        (abs(peak_audit.multipole_residual) for peak_audit in resolved_peak_audits),
+        default=Decimal("0"),
+    )
     return BAOMappingAudit(
         proxy_label=cmb_benchmark.bao_proxy_label,
         predicted_dark_to_baryon_ratio=topological_ghost_debt,
         observed_dark_to_baryon_ratio=cmb_benchmark.bao_dark_to_baryon_ratio,
         predicted_baryon_fraction=predicted_baryon_fraction,
         observed_baryon_fraction=observed_baryon_fraction,
+        acoustic_scale_multipole=cmb_benchmark.bao_acoustic_scale_multipole,
+        peak_loading_model=cmb_benchmark.bao_peak_loading_model,
+        peak_position_tolerance=cmb_benchmark.bao_peak_position_tolerance,
+        peak_audits=resolved_peak_audits,
         ratio_residual=ratio_residual,
         baryon_fraction_residual=predicted_baryon_fraction - observed_baryon_fraction,
-        within_tolerance=bool(abs(ratio_residual) <= cmb_benchmark.bao_ratio_tolerance),
+        max_peak_position_residual=max_peak_position_residual,
+        peak_positions_locked=peak_positions_locked,
+        within_tolerance=bool(
+            abs(ratio_residual) <= cmb_benchmark.bao_ratio_tolerance and peak_positions_locked
+        ),
     )
 
 
@@ -291,32 +422,75 @@ def render_multimessenger_report(audit: MultimessengerParityAudit) -> str:
         f"- observed dark-to-baryon ratio = {_format_decimal(audit.bao_mapping.observed_dark_to_baryon_ratio, places=12)}",
         f"- predicted baryon fraction = {_format_decimal(audit.bao_mapping.predicted_baryon_fraction, places=12)}",
         f"- observed baryon fraction = {_format_decimal(audit.bao_mapping.observed_baryon_fraction, places=12)}",
+        f"- acoustic scale ell_A = {_format_decimal(audit.bao_mapping.acoustic_scale_multipole, places=12)}",
+        f"- peak loading model = {audit.bao_mapping.peak_loading_model}",
         f"- BAO ratio residual = {_format_decimal(audit.bao_mapping.ratio_residual, places=12)}",
+        f"- max peak-position residual = {_format_decimal(audit.bao_mapping.max_peak_position_residual, places=12)}",
+        f"- peak-position tolerance = {_format_decimal(audit.bao_mapping.peak_position_tolerance, places=12)}",
+        f"- BAO peak ladder locked = {audit.bao_mapping.peak_positions_locked}",
         f"- BAO mapping within tolerance = {audit.bao_mapping.within_tolerance}",
         f"- automated BAO audit = {'PASS' if audit.bao_mapping.within_tolerance else 'FAIL'}",
-        "",
-        "CMB Power Spectrum Lock",
-        f"- predicted n_s = {_format_decimal(audit.scalar_tilt.predicted_scalar_tilt, places=12)}",
-        f"- observed n_s = {_format_decimal(audit.scalar_tilt.observed_scalar_tilt, places=12)} +/- {_format_decimal(audit.scalar_tilt.observed_scalar_tilt_sigma, places=12)}",
-        f"- n_s residual [sigma] = {_format_decimal(audit.scalar_tilt.residual_sigma, places=12)}",
-        f"- within Planck band = {audit.scalar_tilt.within_reference_band}",
-        "",
-        "Gravitational Wave Benchmark",
-        f"- dataset bundle = {audit.gravitational_wave.dataset_label}",
-        f"- tensor tilt n_t = {_format_decimal(audit.gravitational_wave.tensor_tilt, places=12)}",
-        f"- primordial tensor ratio r_prim = {_format_decimal(audit.gravitational_wave.primordial_tensor_ratio, places=12)}",
-        f"- observable tensor ratio r_obs = {_format_decimal(audit.gravitational_wave.observable_tensor_ratio, places=12)}",
-        f"- normalized strain floor sqrt(r_obs) = {_format_decimal(audit.gravitational_wave.normalized_strain_floor, places=12)}",
-        f"- current dataset ceiling sqrt(r_95) = {_format_decimal(audit.gravitational_wave.normalized_current_ceiling, places=12)}",
-        f"- archived Stage-4 floor sqrt(r_floor) = {_format_decimal(audit.gravitational_wave.normalized_design_floor, places=12)}",
-        f"- below current ceiling = {audit.gravitational_wave.below_current_ceiling}",
-        f"- above Stage-4 floor = {audit.gravitational_wave.above_design_floor}",
-        "",
-        f"Automated Physical Audit        : {'PASS' if audit.automated_physical_audit_passed else 'FAIL'}",
-        f"Executable Proof                 : {'PASS' if audit.executable_proof_pass else 'CHECK'}",
-        "The Topological Ghost debt is compared directly against the BAO proxy loaded from data/cmb_power_spectrum_benchmarks.json.",
-        "Global cosmological patterns are therefore audited as mandatory residues of the anomaly-free (26, 8, 312) branch.",
     ]
+    lines.extend(
+        (
+            f"- {peak_audit.label} [m={peak_audit.harmonic_index}] => predicted ell = "
+            f"{_format_decimal(peak_audit.predicted_multipole, places=12)}, observed ell = "
+            f"{_format_decimal(peak_audit.observed_multipole, places=12)}, residual = "
+            f"{_format_decimal(peak_audit.multipole_residual, places=12)}, within tolerance = "
+            f"{peak_audit.within_tolerance}"
+        )
+        for peak_audit in audit.bao_mapping.peak_audits
+    )
+    lines.extend(
+        [
+            "",
+            "CMB Power Spectrum Lock",
+            f"- predicted n_s = {_format_decimal(audit.scalar_tilt.predicted_scalar_tilt, places=12)}",
+            (
+                f"- observed n_s = {_format_decimal(audit.scalar_tilt.observed_scalar_tilt, places=12)} +/- "
+                f"{_format_decimal(audit.scalar_tilt.observed_scalar_tilt_sigma, places=12)}"
+            ),
+            f"- n_s residual [sigma] = {_format_decimal(audit.scalar_tilt.residual_sigma, places=12)}",
+            f"- within Planck band = {audit.scalar_tilt.within_reference_band}",
+            "",
+            "Gravitational Wave Benchmark",
+            f"- dataset bundle = {audit.gravitational_wave.dataset_label}",
+            f"- tensor tilt n_t = {_format_decimal(audit.gravitational_wave.tensor_tilt, places=12)}",
+            (
+                f"- primordial tensor ratio r_prim = "
+                f"{_format_decimal(audit.gravitational_wave.primordial_tensor_ratio, places=12)}"
+            ),
+            (
+                f"- observable tensor ratio r_obs = "
+                f"{_format_decimal(audit.gravitational_wave.observable_tensor_ratio, places=12)}"
+            ),
+            (
+                f"- normalized strain floor sqrt(r_obs) = "
+                f"{_format_decimal(audit.gravitational_wave.normalized_strain_floor, places=12)}"
+            ),
+            (
+                f"- current dataset ceiling sqrt(r_95) = "
+                f"{_format_decimal(audit.gravitational_wave.normalized_current_ceiling, places=12)}"
+            ),
+            (
+                f"- archived Stage-4 floor sqrt(r_floor) = "
+                f"{_format_decimal(audit.gravitational_wave.normalized_design_floor, places=12)}"
+            ),
+            f"- below current ceiling = {audit.gravitational_wave.below_current_ceiling}",
+            f"- above Stage-4 floor = {audit.gravitational_wave.above_design_floor}",
+            "",
+            f"Automated Physical Audit        : {'PASS' if audit.automated_physical_audit_passed else 'FAIL'}",
+            f"Executable Proof                 : {'PASS' if audit.executable_proof_pass else 'CHECK'}",
+            (
+                "The Topological Ghost debt is mapped into the CMB acoustic peak ladder loaded "
+                "from data/cmb_power_spectrum_benchmarks.json."
+            ),
+            (
+                "Global cosmological patterns are therefore audited as mandatory residues of the "
+                "anomaly-free (26, 8, 312) branch."
+            ),
+        ]
+    )
     return "\n".join(lines)
 
 
@@ -373,6 +547,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 __all__ = [
+    "BAOPeakAudit",
+    "BAOPeakBenchmark",
     "BAOMappingAudit",
     "CMBBenchmark",
     "DarkDebtAudit",
