@@ -1,34 +1,15 @@
 from __future__ import annotations
 
-from contextlib import contextmanager
-import os
 import sys
+from pathlib import Path
 
-import matplotlib
+if __package__ in (None, ""):
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent if parent.name == "src" else parent / "src"
+        if (candidate / "shbt").is_dir():
+            sys.path.insert(0, str(candidate))
+            break
 
-
-def _configure_backend() -> None:
-    if os.environ.get("MPLBACKEND"):
-        return
-    if not sys.platform.startswith("linux"):
-        return
-    if os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"):
-        return
-    matplotlib.use("Agg")
-
-
-_configure_backend()
-
-import matplotlib.pyplot as plt
-
-
-@contextmanager
-def managed_figure(*subplots_args, **subplots_kwargs):
-    fig, axes = plt.subplots(*subplots_args, **subplots_kwargs)
-    try:
-        yield fig, axes
-    finally:
-        plt.close(fig)
-
+from shbt.plotting_runtime import managed_figure, plt
 
 __all__ = ["managed_figure", "plt"]
