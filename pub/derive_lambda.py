@@ -34,7 +34,7 @@ from .tn import (
 )
 
 _GUARD_DIGITS = 12
-LIVE_BENCHMARK_AUDIT_SKIPPED_MESSAGE = "Live Benchmark Audit: [SKIPPED] - Results artifacts not found."
+LIVE_BENCHMARK_AUDIT_SKIPPED_MESSAGE = "Benchmark artifacts not found; skipping live comparison audit"
 
 
 def _decimal(value: Decimal | float | int | str) -> Decimal:
@@ -154,41 +154,34 @@ def _checked_in_diagnostics_paths() -> tuple[Path, ...]:
 
 def load_checked_in_unity_payloads() -> list[CheckedInUnityPayload]:
     payloads: list[CheckedInUnityPayload] = []
+    diagnostics_paths = _checked_in_diagnostics_paths()
 
-    try:
-        diagnostics_paths = _checked_in_diagnostics_paths()
-        canonical_diagnostics_path = diagnostics_paths[0]
-        if not canonical_diagnostics_path.is_file():
-            raise FileNotFoundError(str(canonical_diagnostics_path))
-
-        for diagnostics_path in diagnostics_paths:
-            if not diagnostics_path.is_file():
-                continue
-
+    for index, diagnostics_path in enumerate(diagnostics_paths):
+        try:
             diagnostics = json.loads(diagnostics_path.read_text(encoding="utf-8"), parse_float=Decimal)
-            unity_payload = diagnostics.get("unity_of_scale_identity")
-            if not isinstance(unity_payload, dict):
-                raise KeyError(
-                    f"Checked-in benchmark diagnostics at {diagnostics_path} do not expose a unity_of_scale_identity payload."
-                )
+        except FileNotFoundError:
+            if index == 0:
+                print(LIVE_BENCHMARK_AUDIT_SKIPPED_MESSAGE)
+                return []
+            continue
 
-            payloads.append(
-                CheckedInUnityPayload(
-                    source_path=str(diagnostics_path.relative_to(Path(__file__).resolve().parent.parent)),
-                    epsilon_lambda=_decimal(unity_payload["epsilon_lambda"]),
-                    exact_epsilon_lambda=_decimal(unity_payload["exact_epsilon_lambda"]),
-                    numerical_residual=_decimal(unity_payload["numerical_residual"]),
-                    register_noise_floor=_decimal(unity_payload["register_noise_floor"]),
-                    exact_register_noise_floor=_decimal(unity_payload["exact_register_noise_floor"]),
-                    passed=bool(unity_payload["passed"]),
-                )
+        unity_payload = diagnostics.get("unity_of_scale_identity")
+        if not isinstance(unity_payload, dict):
+            raise KeyError(
+                f"Checked-in benchmark diagnostics at {diagnostics_path} do not expose a unity_of_scale_identity payload."
             )
 
-        if not payloads:
-            raise FileNotFoundError(str(canonical_diagnostics_path))
-    except FileNotFoundError:
-        print(LIVE_BENCHMARK_AUDIT_SKIPPED_MESSAGE)
-        return []
+        payloads.append(
+            CheckedInUnityPayload(
+                source_path=str(diagnostics_path.relative_to(Path(__file__).resolve().parent.parent)),
+                epsilon_lambda=_decimal(unity_payload["epsilon_lambda"]),
+                exact_epsilon_lambda=_decimal(unity_payload["exact_epsilon_lambda"]),
+                numerical_residual=_decimal(unity_payload["numerical_residual"]),
+                register_noise_floor=_decimal(unity_payload["register_noise_floor"]),
+                exact_register_noise_floor=_decimal(unity_payload["exact_register_noise_floor"]),
+                passed=bool(unity_payload["passed"]),
+            )
+        )
 
     reference_payload = payloads[0]
     for payload in payloads[1:]:
