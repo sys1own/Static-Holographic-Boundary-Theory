@@ -11,28 +11,22 @@ from typing import Sequence
 if __package__ in (None, ""):
     import sys
 
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    from pub import algebra
-    from pub.constants import (
-        GEOMETRIC_KAPPA,
-        GUT_SCALE_GEV,
-        LEPTON_LEVEL,
-        PARENT_LEVEL,
-        PLANCK_MASS_GEV,
-        QUARK_LEVEL,
-        SU2_DUAL_COXETER,
-    )
-else:
-    from . import algebra
-    from .constants import (
-        GEOMETRIC_KAPPA,
-        GUT_SCALE_GEV,
-        LEPTON_LEVEL,
-        PARENT_LEVEL,
-        PLANCK_MASS_GEV,
-        QUARK_LEVEL,
-        SU2_DUAL_COXETER,
-    )
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent if parent.name == "src" else parent / "src"
+        if (candidate / "shbt").is_dir():
+            sys.path.insert(0, str(candidate))
+            break
+
+from shbt.constants import (
+    GEOMETRIC_KAPPA,
+    GUT_SCALE_GEV,
+    LEPTON_LEVEL,
+    PARENT_LEVEL,
+    PLANCK_MASS_GEV,
+    QUARK_LEVEL,
+    SU2_DUAL_COXETER,
+)
+from shbt.core import algebra
 
 PI = Decimal("3.14159265358979323846264338327950288419716939937510")
 DEFAULT_PRECISION = 120
