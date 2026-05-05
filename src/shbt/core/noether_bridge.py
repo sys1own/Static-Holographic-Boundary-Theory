@@ -154,6 +154,10 @@ class HighPrecisionUnitySnapshot:
     register_noise_floor: Any
 
 
+class DecoherenceError(RuntimeError):
+    """Raised when the holographic stabilizer rejects unphysical bulk outputs."""
+
+
 def _decimal(value: Decimal | Fraction | float | int | str) -> Decimal:
     if isinstance(value, Decimal):
         return value
@@ -204,7 +208,29 @@ def _meter_to_ev_inverse() -> Decimal:
     return Decimal("1") / (HBAR_EV_SECONDS * _decimal(LIGHT_SPEED_M_PER_S))
 
 
-def branch_planck_mass_ev() -> Decimal:
+def _require_bulk_checksum(
+    *,
+    precision: int = DEFAULT_PRECISION,
+    simulate_boundary_decoherence: bool = False,
+) -> None:
+    from shbt.core.holographic_error_stabilizer import HolographicStabilizer
+
+    verification = HolographicStabilizer(
+        precision=max(int(precision), DEFAULT_PRECISION),
+        simulate_boundary_decoherence=simulate_boundary_decoherence,
+    ).verify_bulk_checksum()
+    if not verification.passed:
+        raise DecoherenceError(
+            "Holographic stabilizer bulk checksum failed: "
+            f"{verification.detail}."
+        )
+
+
+def branch_planck_mass_ev(*, simulate_boundary_decoherence: bool = False) -> Decimal:
+    _require_bulk_checksum(
+        precision=DEFAULT_PRECISION,
+        simulate_boundary_decoherence=simulate_boundary_decoherence,
+    )
     with mpmath.workdps(DEFAULT_MPMATH_DPS):
         value = (_mp(HBAR_EV_SECONDS) * _mp(LIGHT_SPEED_M_PER_S)) / _mp(PLANCK_LENGTH_M)
     return _mp_to_decimal(value)
@@ -237,6 +263,7 @@ def _high_precision_newton_lock_values(
     c_dark_fraction: Fraction | None = None,
     mpmath_dps: int = DEFAULT_MPMATH_DPS,
 ) -> dict[str, mpmath.mpf]:
+    _require_bulk_checksum(precision=_resolved_mpmath_dps(mpmath_dps))
     resolved_fraction = FALLBACK_C_DARK_COMPLETION if c_dark_fraction is None else c_dark_fraction
     with mpmath.workdps(_resolved_mpmath_dps(mpmath_dps)):
         c_dark = _mp(resolved_fraction)
