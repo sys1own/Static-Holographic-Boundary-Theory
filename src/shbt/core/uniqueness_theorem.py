@@ -13,12 +13,15 @@ from typing import Sequence
 if __package__ in (None, ""):
     import sys
 
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    from pub.constants import LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
-    from pub.tn import LOCAL_LEPTON_LEVEL_WINDOW, verify_gko_orthogonality
-else:
-    from .constants import LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
-    from .tn import LOCAL_LEPTON_LEVEL_WINDOW, verify_gko_orthogonality
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent if parent.name == "src" else parent / "src"
+        if (candidate / "shbt").is_dir():
+            sys.path.insert(0, str(candidate))
+            break
+
+from shbt.constants import LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
+from shbt.main import LOCAL_LEPTON_LEVEL_WINDOW, verify_gko_orthogonality
+from shbt.resource_paths import resolve_resource_path
 
 
 EXPECTED_BENCHMARK = (26, 8, 312)
@@ -126,7 +129,7 @@ def _parse_status(cell: str) -> str:
 
 @lru_cache(maxsize=1)
 def _published_moat_rows() -> tuple[PublishedMoatRow, ...]:
-    table_path = Path(__file__).with_name("uniqueness_scan_table.tex")
+    table_path = resolve_resource_path("uniqueness_scan_table.tex")
     table_text = table_path.read_text(encoding="utf-8")
     rows: list[PublishedMoatRow] = []
     for raw_line in table_text.splitlines():
