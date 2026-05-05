@@ -14,7 +14,15 @@
 \raggedbottom
 
 \newcommand{\pubinput}[1]{%
-  \IfFileExists{#1}{\input{#1}}{\input{pub/#1}}%
+  \IfFileExists{#1}{\input{#1}}{%
+    \IfFileExists{papers/#1}{\input{papers/#1}}{%
+      \IfFileExists{../papers/#1}{\input{../papers/#1}}{%
+        \IfFileExists{pub/#1}{\input{pub/#1}}{%
+          \PackageWarning{gravity}{Input file `#1' not found; continuing without it}%
+        }%
+      }%
+    }%
+  }%
 }
 
 \pubinput{physics_constants.tex}
@@ -22,7 +30,11 @@
 \IfFileExists{tn.aux}{%
   \usepackage{xr}\externaldocument[tn-]{tn}%
 }{%
-  \IfFileExists{pub/tn.aux}{\usepackage{xr}\externaldocument[tn-]{pub/tn}}{}%
+  \IfFileExists{papers/tn.aux}{\usepackage{xr}\externaldocument[tn-]{papers/tn}}{%
+    \IfFileExists{../papers/tn.aux}{\usepackage{xr}\externaldocument[tn-]{../papers/tn}}{%
+      \IfFileExists{pub/tn.aux}{\usepackage{xr}\externaldocument[tn-]{pub/tn}}{}%
+    }%
+  }%
 }
 
 \title{Geometric Emergence and the Topological EFE.}
