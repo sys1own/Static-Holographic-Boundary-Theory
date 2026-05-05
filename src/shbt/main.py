@@ -26,8 +26,11 @@ from types import SimpleNamespace
 from typing import Any, ClassVar, Sequence
 
 if __package__ in (None, ""):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    __package__ = "pub"
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent if parent.name == "src" else parent / "src"
+        if (candidate / "shbt").is_dir():
+            sys.path.insert(0, str(candidate))
+            break
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -35,24 +38,24 @@ from jinja2 import TemplateNotFound
 from scipy.integrate import IntegrationWarning, quad, solve_ivp
 from scipy.stats import chi2 as _chi2_distribution
 
-from . import algebra
-from . import audit_generator as _audit_generator
-from . import constants as _constants
-from . import engine as publication_engine
-from . import export as _export_mod
-from . import noether_bridge as _noether_bridge
-from . import physics_engine
-from . import reporting as presentation_reporting
-from . import reporting_engine
-from . import template_utils
-from . import topological_kernel
-from . import transport as _transport
-from .numerics import (
+from shbt import constants as _constants
+from shbt import export as _export_mod
+from shbt import physics_engine
+from shbt import reporting as presentation_reporting
+from shbt import reporting_engine
+from shbt import template_utils
+from shbt import topological_kernel
+from shbt.audit import audit_generator as _audit_generator
+from shbt.core import algebra
+from shbt.core import engine as publication_engine
+from shbt.core import noether_bridge as _noether_bridge
+from shbt.core import transport as _transport
+from shbt.core.numerics import (
     freeze_numpy_arrays as _freeze_nested_numpy_arrays,
     require_real_array,
     require_real_scalar,
 )
-from .algebra import (
+from shbt.core.algebra import (
     ModularKernel,
     jarlskog_invariant,
     pdg_parameters,
@@ -63,8 +66,9 @@ from .algebra import (
     so10_rep_dimension,
     su3_low_weight_block,
 )
-from .physics_engine import quark_branching_pressure as _quark_branching_pressure
-from .runtime_config import (
+from shbt.core.topology import solve_fraction_linear_system
+from shbt.physics_engine import quark_branching_pressure as _quark_branching_pressure
+from shbt.runtime_config import (
     DEFAULT_SOLVER_CONFIG,
     PerturbativeBreakdownException,
     PhysicalSingularityException,
@@ -73,7 +77,6 @@ from .runtime_config import (
     SolverConfig,
     solver_isclose,
 )
-from .topology import solve_fraction_linear_system
 
 Interval = _constants.Interval
 ExperimentalContext = _constants.ExperimentalContext
@@ -95,21 +98,21 @@ SHBT_UNIVERSAL_AUDIT_BANNER = "Static Holographic Boundary Theory: Universal Sou
 TARGET_AUDIT_SECTORS: tuple[str, ...] = ("gravity", "cosmology", "flavor", "rigidity")
 SECTOR_AUDIT_MODULES: dict[str, tuple[str, ...]] = {
     "gravity": (
-        "pub.noether_bridge",
-        "pub.holographic_tension_verifier",
+        "shbt.core.noether_bridge",
+        "shbt.audit.holographic_tension_verifier",
     ),
     "cosmology": (
-        "pub.baryon_asymmetry",
-        "pub.precision_cosmology_engine",
+        "shbt.audit.baryon_asymmetry",
+        "shbt.precision_cosmology_engine",
     ),
     "flavor": (
-        "pub.flavor_identity_resolver",
-        "pub.eigenvector_rigidity",
-        "pub.stiff_transport_audit",
+        "shbt.core.flavor_identity_resolver",
+        "shbt.core.eigenvector_rigidity",
+        "shbt.audit.stiff_transport_audit",
     ),
     "rigidity": (
-        "pub.uniqueness_theorem",
-        "pub.minimality_proof",
+        "shbt.core.uniqueness_theorem",
+        "shbt.core.minimality_proof",
     ),
 }
 
@@ -242,7 +245,7 @@ EFE_VIOLATION_TENSOR_ABS_TOL = 1.0e-12
 LEPTON = "lepton"
 QUARK = "quark"
 
-LOGGER = logging.getLogger("pub.tn")
+LOGGER = logging.getLogger("shbt.main")
 chi2_distribution = _chi2_distribution
 BENCHMARK_LIGHTEST_MASS_EV = 2.65582e-3
 BENCHMARK_LOW_SCALE_LIGHTEST_MASS_EV = 2.92e-3
@@ -335,7 +338,7 @@ def configure_reporting(*, quiet: bool = False, log_file: Path | None = None) ->
             file_handler.setFormatter(formatter)
             logger.addHandler(file_handler)
 
-    _configure_logger(logging.getLogger("pub"))
+    _configure_logger(logging.getLogger("shbt"))
     _configure_logger(LOGGER)
 
 REQUIRED_OUTPUT_ARTIFACTS = (
@@ -3951,10 +3954,10 @@ def verify_runtime_algebraic_isolation(
         int(resolved_model.quark_level),
         int(resolved_model.parent_level),
     )
-    package_name = __package__ or "pub"
+    package_name = __package__ or "shbt"
     try:
-        uniqueness_module = importlib.import_module(f"{package_name}.uniqueness_theorem")
-        minimality_module = importlib.import_module(f"{package_name}.minimality_proof")
+        uniqueness_module = importlib.import_module(f"{package_name}.core.uniqueness_theorem")
+        minimality_module = importlib.import_module(f"{package_name}.core.minimality_proof")
     except ImportError as exc:
         _raise_runtime_proof_engine_failure(
             "Runtime algebraic isolation failed: unable to import the formal uniqueness/minimality proof engines",
@@ -17835,8 +17838,9 @@ def _emit_shbt_branding(*, sector: str | None) -> None:
     print("")
 
 
-def _invoked_via_pub_tn_script() -> bool:
-    return Path(sys.argv[0]).as_posix().endswith("pub/tn.py")
+def _invoked_via_package_script() -> bool:
+    script_path = Path(sys.argv[0]).as_posix()
+    return script_path.endswith("pub/tn.py") or script_path.endswith("src/shbt/main.py")
 
 
 def _capture_sector_module_report(module_name: str, *, output_dir: Path, sector: str) -> Path:
@@ -17895,7 +17899,7 @@ def main(argv: list[str] | None = None) -> None:
         run_targeted_sector_audits(sector=args.sector, output_dir=output_dir)
         return
 
-    if argv is None and _invoked_via_pub_tn_script():
+    if argv is None and _invoked_via_package_script():
         LOGGER.info("[SECTOR AUDIT]: No sector override supplied; running all SHBT sectors sequentially.")
         run_targeted_sector_audits(sector=None, output_dir=output_dir)
         return
