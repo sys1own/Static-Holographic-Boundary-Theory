@@ -11,14 +11,15 @@ from typing import Sequence
 if __package__ in (None, ""):
     import sys
 
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    from pub.constants import LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL, SO10_HIGGS_126_DYNKIN_LABELS, SO10_RANK
-    from pub.noether_bridge import load_c_dark_completion_fraction
-    from pub.tn import derive_so10_representation_data, verify_gko_orthogonality
-else:
-    from .constants import LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL, SO10_HIGGS_126_DYNKIN_LABELS, SO10_RANK
-    from .noether_bridge import load_c_dark_completion_fraction
-    from .tn import derive_so10_representation_data, verify_gko_orthogonality
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent if parent.name == "src" else parent / "src"
+        if (candidate / "shbt").is_dir():
+            sys.path.insert(0, str(candidate))
+            break
+
+from shbt.constants import LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL, SO10_HIGGS_126_DYNKIN_LABELS, SO10_RANK
+from shbt.core.noether_bridge import load_c_dark_completion_fraction
+from shbt.main import derive_so10_representation_data, verify_gko_orthogonality
 
 
 ALTERNATIVE_PARENT_GROUPS: dict[str, dict[str, object]] = {
