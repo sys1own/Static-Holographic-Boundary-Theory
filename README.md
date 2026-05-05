@@ -51,8 +51,8 @@ This repository treats that chain as a theorem to be audited, not as an ansatz t
 ## Conceptual Glossary
 
 - **Parity Sink**: the non-propagating $c_{\rm dark}$ residue required to maintain boundary neutrality through $(B-L)_{\rm vis} + (B-L)_{\rm dark} = 0$.
-- **Holographic Moat**: the benchmark-centered exclusion region in visible-coordinate space where neighboring detuned cells fail anomaly closure, framing neutrality, or bulk consistency before they can be promoted to physical branches.
-- **Bit Budget**: the finite holographic register size $N_{\rm holo}$ that fixes the branch's information capacity and therefore locks the neutrino floor, cosmological surface tension, and related gravity-side residues.
+- **Holographic Moat**: the statistical gap in the anomaly-filter landscape that isolates the $(26, 8, 312)$ branch from neighboring unstable states.
+- **Bit Budget ($N$)**: the finite holographic capacity of the cosmological horizon, with $N \approx 3.3 \times 10^{122}$ for the benchmark branch.
 - **Unity of Scale**: the identity locking $\Lambda$, $G_N$, and $m_{\nu}$ to the same finite bit budget.
 - **Reviewer Trap**: the mathematical proof that any coordinate detuning destroys the Equivalence Principle in the bulk.
 
@@ -176,6 +176,7 @@ The benchmark configuration is locked by the checked-in YAML at `config/benchmar
 - **Build backend:** `setuptools.build_meta`
 - **Python requirement:** `>=3.11`
 - **Pinned scientific stack:** `PyYAML==6.0.3`, `Jinja2==3.1.6`, `mpmath==1.3.0`, `numpy==1.26.4`, `scipy==1.12.0`, `matplotlib==3.8.3`, `sympy==1.12`
+- **Link Ledger:** `python pub/derive_universe.py` prints the branch-fixed gauge-density residue `alpha_surf^-1 = 2340/17`; together with the `Derivation Ledger` above, this makes explicit that the benchmark's physical constants are derived residues disclosed against external comparators, not fit parameters reopened by hand.
 
 ### Constant Tiers
 
