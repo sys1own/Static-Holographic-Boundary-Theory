@@ -16,7 +16,7 @@ if __package__ in (None, ""):
             sys.path.insert(0, str(candidate))
             break
 
-from shbt.main import (
+from shbt.constants import (
     CODATA_FINE_STRUCTURE_ALPHA_INVERSE,
     G_SM,
     HBAR_EV_SECONDS,
@@ -26,6 +26,8 @@ from shbt.main import (
     PLANCK_MASS_EV,
     PARENT_LEVEL,
     QUARK_LEVEL,
+)
+from shbt.core.engine import (
     surface_tension_gauge_alpha_inverse,
     topological_mass_coordinate_ev,
     topological_newton_coordinate_ev_minus2,
