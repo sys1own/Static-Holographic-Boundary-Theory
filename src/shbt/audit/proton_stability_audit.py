@@ -22,7 +22,7 @@ if __package__ in (None, ""):
 
 from shbt.constants import LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
 from shbt.core.noether_bridge import framing_defect
-from shbt.resource_paths import resolve_resource_path
+from shbt.paths import resolve_resource_path
 
 
 EXPECTED_BRANCH = (26, 8, 312)
