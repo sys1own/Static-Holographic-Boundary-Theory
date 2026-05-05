@@ -156,7 +156,12 @@ def load_checked_in_unity_payloads() -> list[CheckedInUnityPayload]:
     payloads: list[CheckedInUnityPayload] = []
 
     try:
-        for diagnostics_path in _checked_in_diagnostics_paths():
+        diagnostics_paths = _checked_in_diagnostics_paths()
+        canonical_diagnostics_path = diagnostics_paths[0]
+        if not canonical_diagnostics_path.is_file():
+            raise FileNotFoundError(str(canonical_diagnostics_path))
+
+        for diagnostics_path in diagnostics_paths:
             if not diagnostics_path.is_file():
                 continue
 
@@ -180,8 +185,9 @@ def load_checked_in_unity_payloads() -> list[CheckedInUnityPayload]:
             )
 
         if not payloads:
-            raise FileNotFoundError("Results artifacts not found.")
+            raise FileNotFoundError(str(canonical_diagnostics_path))
     except FileNotFoundError:
+        print(LIVE_BENCHMARK_AUDIT_SKIPPED_MESSAGE)
         return []
 
     reference_payload = payloads[0]
@@ -304,7 +310,7 @@ def build_lambda_ledger(*, precision: int = DEFAULT_PRECISION) -> str:
             ]
         )
     else:
-        lines.append(f"- {LIVE_BENCHMARK_AUDIT_SKIPPED_MESSAGE}")
+        lines.append("- mirrored checked-in payloads = 0")
 
     return "\n".join(lines)
 
