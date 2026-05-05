@@ -63,7 +63,7 @@ This repository treats that chain as a theorem to be audited, not as an ansatz t
 - `src/shbt/constants.py` — strict benchmark tier catalog and shared branch-fixed constants.
 - `src/shbt/core/` — gravity, flavor, topology, transport, and uniqueness proof engines.
 - `src/shbt/audit/` — publication-facing audit modules and artifact generators.
-- `scripts/` — standalone derivation and utility scripts such as `derive_universe.py`, `derive_lambda.py`, `derive_proton_ratio.py`, `plot_local_moat.py`, `sync_system.py`, and `build_manuscript.py` for one-command proof execution plus manuscript PDF compilation.
+- `scripts/` — standalone derivation and utility scripts such as `derive_universe.py`, `derive_lambda.py`, `derive_proton_ratio.py`, `plot_local_moat.py`, `map_rigidity_landscape.py`, `sync_system.py`, and `build_manuscript.py` for one-command proof execution, rigidity visualization, and manuscript PDF compilation.
 - `papers/` — manuscript sources and TeX-side exports, including `tn.tex`, `gravity.tex`, `supplementary.tex`, and `physics_constants.tex`.
 - `tests/` — integrity checks, moat stress tests, and formal anomaly regression tests.
 - `config/` — locked benchmark YAML configuration.
@@ -128,6 +128,8 @@ The repository includes a production-grade diagnostic stack to ensure the mathem
 ### Topological Visualization (`plot_local_moat.py`)
 
 `plot_local_moat.py` generates a high-precision map of the Local Moat surrounding the anomaly-free island and writes `results/local_moat_topology.png`. The figure makes the moat visually explicit by showing the steep rise of the framing anomaly $\Delta_{\rm fr}$ under any off-shell coordinate shift away from $(26, 8, 312)$.
+
+`map_rigidity_landscape.py` extends that visualization into the full benchmark-centered $(k_{\ell}, k_q, K)$ neighborhood and writes `results/rigidity_landscape.png` plus `results/rigidity_landscape.json`. The resulting Rigidity Plot colors the scanned 3D lattice by a composite anomaly-residue norm, exposing the $(26, 8, 312)$ branch as a sharply isolated stability valley rather than a tunable fit basin.
 
 ### Formal Exception Testing (`test_anomaly_logic.py`)
 
