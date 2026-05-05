@@ -48,6 +48,12 @@ $$
 
 This repository treats that chain as a theorem to be audited, not as an ansatz to be curve-fit. The gravity proof engines close the Unity of Scale Identity to better than $O(10^{-124})$ precision and, in the current checked-in audit, export $\epsilon_{\Lambda} = 1.0 \times 10^{-199}$ against the one-register floor $1/N \sim 3.0 \times 10^{-123}$. The same audit enforces the Newton Constant Lock that ties the emergent gravitational coupling to the positive $c_{\rm dark}$ completion residue required by boundary neutrality.
 
+## Glossary
+
+- **Parity Sink**: the non-propagating $c_{\rm dark}$ residue required to maintain boundary neutrality through $(B-L)_{\rm vis} + (B-L)_{\rm dark} = 0$.
+- **Unity of Scale**: the identity locking $\Lambda$, $G_N$, and $m_{\nu}$ to the same finite bit budget.
+- **Reviewer Trap**: the mathematical proof that any coordinate detuning destroys the Equivalence Principle in the bulk.
+
 ## Modular Proof Engines
 
 The repository is partitioned into modular proof engines. These modules do not introduce adjustable phenomenology; they certify distinct sectors of the same branch-fixed architecture.
