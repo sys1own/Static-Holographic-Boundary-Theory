@@ -12,46 +12,31 @@ import numpy as np
 if __package__ in (None, ""):
     import sys
 
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    from pub.constants import (
-        LEPTON_INTERVALS,
-        LEPTON_LEVEL,
-        MIXING_SECTOR_RIGIDITY_MESSAGE,
-        PARENT_LEVEL,
-        PRIMARY_BENCHMARK_AUDIT_SUCCESS_MESSAGE,
-        QUARK_INTERVALS,
-        QUARK_LEVEL,
-        SVD_RIGIDITY_SHIELD_SIGMA_THRESHOLD,
-        SVD_RIGIDITY_SHIELD_VEV_DEFORMATION_FRACTION,
-    )
-    from pub.topological_kernel import pdg_parameters
-    from pub.tn import (
-        _angle_interval_from_modulus_interval as angle_interval_from_modulus_interval,
-        apply_higgs_vev_alignment_constraint,
-        calculate_126_higgs_cg_correction,
-        derive_boundary_bulk_interface,
-        derive_lie_algebraic_vev_residue,
-    )
-else:
-    from .constants import (
-        LEPTON_INTERVALS,
-        LEPTON_LEVEL,
-        MIXING_SECTOR_RIGIDITY_MESSAGE,
-        PARENT_LEVEL,
-        PRIMARY_BENCHMARK_AUDIT_SUCCESS_MESSAGE,
-        QUARK_INTERVALS,
-        QUARK_LEVEL,
-        SVD_RIGIDITY_SHIELD_SIGMA_THRESHOLD,
-        SVD_RIGIDITY_SHIELD_VEV_DEFORMATION_FRACTION,
-    )
-    from .topological_kernel import pdg_parameters
-    from .tn import (
-        _angle_interval_from_modulus_interval as angle_interval_from_modulus_interval,
-        apply_higgs_vev_alignment_constraint,
-        calculate_126_higgs_cg_correction,
-        derive_boundary_bulk_interface,
-        derive_lie_algebraic_vev_residue,
-    )
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent if parent.name == "src" else parent / "src"
+        if (candidate / "shbt").is_dir():
+            sys.path.insert(0, str(candidate))
+            break
+
+from shbt.constants import (
+    LEPTON_INTERVALS,
+    LEPTON_LEVEL,
+    MIXING_SECTOR_RIGIDITY_MESSAGE,
+    PARENT_LEVEL,
+    PRIMARY_BENCHMARK_AUDIT_SUCCESS_MESSAGE,
+    QUARK_INTERVALS,
+    QUARK_LEVEL,
+    SVD_RIGIDITY_SHIELD_SIGMA_THRESHOLD,
+    SVD_RIGIDITY_SHIELD_VEV_DEFORMATION_FRACTION,
+)
+from shbt.main import (
+    _angle_interval_from_modulus_interval as angle_interval_from_modulus_interval,
+    apply_higgs_vev_alignment_constraint,
+    calculate_126_higgs_cg_correction,
+    derive_boundary_bulk_interface,
+    derive_lie_algebraic_vev_residue,
+)
+from shbt.topological_kernel import pdg_parameters
 
 
 EXPECTED_BRANCH = (26, 8, 312)
