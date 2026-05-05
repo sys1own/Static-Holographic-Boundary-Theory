@@ -19,8 +19,13 @@ class ConfigLoader:
             self.config_dir = Path(config_dir).expanduser().resolve()
             return
         package_config_dir = (Path(__file__).resolve().parent / "config").resolve()
-        legacy_config_dir = (Path(__file__).resolve().parent.parent / "config").resolve()
-        self.config_dir = package_config_dir if package_config_dir.is_dir() else legacy_config_dir
+        repo_config_dir = (Path(__file__).resolve().parents[2] / "config").resolve()
+        src_config_dir = (Path(__file__).resolve().parents[1] / "config").resolve()
+        for candidate in (package_config_dir, repo_config_dir, src_config_dir):
+            if candidate.is_dir():
+                self.config_dir = candidate
+                return
+        self.config_dir = repo_config_dir
 
     @lru_cache(maxsize=128)
     def _load_yaml(self, filename: str) -> dict[str, Any]:
