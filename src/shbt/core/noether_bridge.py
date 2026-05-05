@@ -22,7 +22,7 @@ if __package__ in (None, ""):
 
 from shbt.constants import HOLOGRAPHIC_BITS, LEPTON_LEVEL, LIGHT_SPEED_M_PER_S, PARENT_LEVEL, PLANCK2018_LAMBDA_SI_M2, PLANCK_LENGTH_M, QUARK_LEVEL
 from shbt.core import algebra
-from shbt.resource_paths import resolve_resource_path
+from shbt.paths import resolve_resource_path
 
 PI = Decimal("3.14159265358979323846264338327950288419716939937510")
 HBAR_EV_SECONDS = Decimal("6.582119569e-16")
