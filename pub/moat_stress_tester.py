@@ -87,9 +87,15 @@ class MoatStressAudit:
         return tuple(witness for witness in self.witnesses if witness.branch != self.benchmark_branch)
 
     @property
+    def strictly_nonzero_detuned_cells(self) -> tuple[tuple[int, int, int], ...]:
+        return tuple(witness.branch for witness in self.detuned_witnesses if witness.closure_tensor.amplitude != 0)
+
+    @property
     def reviewer_trap_enforced(self) -> bool:
         return self.zero_tensor_cells == (self.benchmark_branch,) and all(
             witness.physically_void for witness in self.detuned_witnesses
+        ) and self.strictly_nonzero_detuned_cells == tuple(
+            witness.branch for witness in self.detuned_witnesses
         )
 
 
@@ -235,8 +241,8 @@ def enforce_reviewer_trap(audit: MoatStressAudit) -> MoatStressAudit:
         assert witness.delta_fr != 0, (
             f"Every detuned branch must reopen the visible framing anomaly; {_format_branch(witness.branch)} gave Delta_fr=0."
         )
-        assert not witness.closure_tensor.vanished, (
-            f"Every detuned branch must yield a non-vanishing bulk closure tensor; {_format_branch(witness.branch)} returned E_mu_nu=0."
+        assert witness.closure_tensor.amplitude != 0, (
+            f"Every detuned branch must yield a strictly non-zero bulk closure tensor; {_format_branch(witness.branch)} returned E_mu_nu=0."
         )
     return audit
 
