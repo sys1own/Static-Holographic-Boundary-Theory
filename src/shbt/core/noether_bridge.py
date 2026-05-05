@@ -22,6 +22,7 @@ if __package__ in (None, ""):
 
 from shbt.constants import HOLOGRAPHIC_BITS, LEPTON_LEVEL, LIGHT_SPEED_M_PER_S, PARENT_LEVEL, PLANCK2018_LAMBDA_SI_M2, PLANCK_LENGTH_M, QUARK_LEVEL
 from shbt.core import algebra
+from shbt.core.holographic_error_stabilizer import HolographicStabilizer
 from shbt.paths import resolve_resource_path
 
 PI = Decimal("3.14159265358979323846264338327950288419716939937510")
@@ -213,8 +214,6 @@ def _require_bulk_checksum(
     precision: int = DEFAULT_PRECISION,
     simulate_boundary_decoherence: bool = False,
 ) -> None:
-    from shbt.core.holographic_error_stabilizer import HolographicStabilizer
-
     verification = HolographicStabilizer(
         precision=max(int(precision), DEFAULT_PRECISION),
         simulate_boundary_decoherence=simulate_boundary_decoherence,
@@ -227,10 +226,16 @@ def _require_bulk_checksum(
 
 
 def branch_planck_mass_ev(*, simulate_boundary_decoherence: bool = False) -> Decimal:
-    _require_bulk_checksum(
+    stabilizer = HolographicStabilizer(
         precision=DEFAULT_PRECISION,
         simulate_boundary_decoherence=simulate_boundary_decoherence,
     )
+    verification = stabilizer.verify_bulk_checksum()
+    if not verification.passed:
+        raise DecoherenceError(
+            "Holographic stabilizer bulk checksum failed: "
+            f"{verification.detail}."
+        )
     with mpmath.workdps(DEFAULT_MPMATH_DPS):
         value = (_mp(HBAR_EV_SECONDS) * _mp(LIGHT_SPEED_M_PER_S)) / _mp(PLANCK_LENGTH_M)
     return _mp_to_decimal(value)
