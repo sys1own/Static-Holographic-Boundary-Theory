@@ -13,6 +13,7 @@ from shbt.constants import (
     STABILITY_REPORT_FILENAME,
     SVD_STABILITY_REPORT_FILENAME,
 )
+from shbt.export import collect_multidimensional_tensors, write_zarr_artifact
 
 
 def _audit_status(flag: object) -> str:
@@ -28,6 +29,38 @@ def _mass_ratio_rigidity_message(mass_ratio_stability_audit: Any) -> str:
     if callable(message):
         return str(message())
     return str(getattr(mass_ratio_stability_audit, "success_message", MIXING_SECTOR_RIGIDITY_MESSAGE))
+
+
+def write_report_tensor_sidecar(report_path: Path, *payloads: object) -> Path | None:
+    resolved_report_path = Path(report_path)
+    tensors: dict[str, Any] = {}
+    for index, payload in enumerate(payloads):
+        prefix = None if len(payloads) == 1 else f"payload_{index}"
+        tensors.update(collect_multidimensional_tensors(payload, prefix=prefix))
+    if not tensors:
+        return None
+    return write_zarr_artifact(
+        resolved_report_path.with_suffix(".zarr"),
+        tensors,
+        attrs={"report_filename": resolved_report_path.name},
+    )
+
+
+def _write_report_artifacts(
+    *,
+    report: str,
+    output_dir: Path | None,
+    filename: str,
+    tensor_payloads: tuple[object, ...] = (),
+) -> str:
+    if output_dir is None:
+        return report
+    output_dir.mkdir(parents=True, exist_ok=True)
+    report_path = output_dir / filename
+    report_path.write_text(report + "\n", encoding="utf-8")
+    if tensor_payloads:
+        write_report_tensor_sidecar(report_path, *tensor_payloads)
+    return report
 
 
 def write_audit_statement(
@@ -393,9 +426,12 @@ def write_audit_statement(
         )
 
     report = "\n".join(report_lines)
-    if output_dir is not None:
-        (output_dir / AUDIT_STATEMENT_FILENAME).write_text(report + "\n", encoding="utf-8")
-    return report
+    return _write_report_artifacts(
+        report=report,
+        output_dir=output_dir,
+        filename=AUDIT_STATEMENT_FILENAME,
+        tensor_payloads=(diagnostics,),
+    )
 
 
 def write_svd_stability_report(
@@ -431,9 +467,12 @@ def write_svd_stability_report(
         rigidity_message,
     ]
     report = "\n".join(report_lines)
-    if output_dir is not None:
-        (output_dir / SVD_STABILITY_REPORT_FILENAME).write_text(report + "\n", encoding="utf-8")
-    return report
+    return _write_report_artifacts(
+        report=report,
+        output_dir=output_dir,
+        filename=SVD_STABILITY_REPORT_FILENAME,
+        tensor_payloads=(mass_ratio_stability_audit,),
+    )
 
 
 def write_eigenvector_stability_audit(
@@ -458,9 +497,12 @@ def write_eigenvector_stability_audit(
         rigidity_message,
     ]
     report = "\n".join(report_lines)
-    if output_dir is not None:
-        (output_dir / EIGENVECTOR_STABILITY_AUDIT_FILENAME).write_text(report + "\n", encoding="utf-8")
-    return report
+    return _write_report_artifacts(
+        report=report,
+        output_dir=output_dir,
+        filename=EIGENVECTOR_STABILITY_AUDIT_FILENAME,
+        tensor_payloads=(weight_profile, mass_ratio_stability_audit),
+    )
 
 
 def write_seed_robustness_audit(
@@ -478,9 +520,12 @@ def write_seed_robustness_audit(
         f"max relative variance         : {seed_robustness_audit.max_relative_variance:.6e}",
     ]
     report = "\n".join(report_lines)
-    if output_dir is not None:
-        (output_dir / SEED_ROBUSTNESS_AUDIT_FILENAME).write_text(report + "\n", encoding="utf-8")
-    return report
+    return _write_report_artifacts(
+        report=report,
+        output_dir=output_dir,
+        filename=SEED_ROBUSTNESS_AUDIT_FILENAME,
+        tensor_payloads=(seed_robustness_audit,),
+    )
 
 
 def write_corollary_report(
@@ -535,9 +580,12 @@ def write_corollary_report(
         "It does not enter the benchmark-selection logic, the published pull table, or any benchmark pass/fail criterion.",
     ]
     report = "\n".join(report_lines)
-    if output_dir is not None:
-        (output_dir / COROLLARY_REPORT_FILENAME).write_text(report + "\n", encoding="utf-8")
-    return report
+    return _write_report_artifacts(
+        report=report,
+        output_dir=output_dir,
+        filename=COROLLARY_REPORT_FILENAME,
+        tensor_payloads=(corollary_audit, sparse_residue_audit),
+    )
 
 
 def write_stability_report(
@@ -567,6 +615,9 @@ def write_stability_report(
             svd_report,
         ]
     )
-    if output_dir is not None:
-        (output_dir / STABILITY_REPORT_FILENAME).write_text(report + "\n", encoding="utf-8")
-    return report
+    return _write_report_artifacts(
+        report=report,
+        output_dir=output_dir,
+        filename=STABILITY_REPORT_FILENAME,
+        tensor_payloads=(nonlinearity_audit,),
+    )
