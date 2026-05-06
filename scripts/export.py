@@ -27,11 +27,16 @@ from audit_generator import (
     export_support_overlap_table,
     export_supplementary_tolerance_table,
 )
-from evolutionary_engine import DEFAULT_PRECISION, UniverseFactory
+from evolutionary_engine import DEFAULT_PRECISION
 from plotting_runtime import managed_figure
+from shbt.core.evolutionary_engine import UniverseFactory
 from shbt.main import build_quantified_two_loop_residuals
 from shbt.paths import ProjectPaths
 from shbt.template_utils import render_latex_table
+
+
+_IMPORTED_EVOLUTIONARY_ENGINE = UniverseFactory
+EvolutionaryEngine = UniverseFactory
 
 
 def write_json_artifact(output_path: Path, payload: Mapping[str, object]) -> None:
@@ -167,10 +172,23 @@ def _default_residuals_path() -> Path:
     return ProjectPaths.RESULTS / "residuals.json"
 
 
+def _resolve_evolutionary_engine() -> type:
+    resolved_engine = globals().get("EvolutionaryEngine")
+    if resolved_engine is not None and resolved_engine is not _IMPORTED_EVOLUTIONARY_ENGINE:
+        return resolved_engine
+
+    resolved_factory = globals().get("UniverseFactory")
+    if resolved_factory is not None:
+        return resolved_factory
+
+    return _IMPORTED_EVOLUTIONARY_ENGINE
+
+
 def build_residual_export_payload(*, precision: int = DEFAULT_PRECISION) -> dict[str, object]:
     resolved_precision = max(int(precision), int(DEFAULT_PRECISION))
-    physical_ledger = UniverseFactory.calculate_physical_ledger(precision=resolved_precision)
-    lambda_surface = UniverseFactory.derive_lambda_surface(precision=resolved_precision)
+    engine = _resolve_evolutionary_engine()()
+    physical_ledger = engine.calculate_physical_ledger(precision=resolved_precision)
+    lambda_surface = engine.derive_lambda_surface(precision=resolved_precision)
 
     payload = dict(build_quantified_two_loop_residuals())
     payload["derivation_residues"] = {
@@ -233,6 +251,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 __all__ = [
+    "EvolutionaryEngine",
     "build_residual_export_payload",
     "derive_ih_singular_value_spectrum",
     "export_residual_payload",
