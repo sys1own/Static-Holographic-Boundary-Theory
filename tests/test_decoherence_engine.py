@@ -4,7 +4,7 @@ from decimal import Decimal
 
 import pytest
 
-from shbt.core.decoherence_engine import (
+from shbt.core.correspondence_engine import (
     BulkWavefunction,
     PointerStateDecoherenceError,
     PointerStateSelector,
@@ -41,6 +41,8 @@ def test_pointer_state_selector_keeps_only_parity_neutral_states() -> None:
     assert all(candidate.checksum.passed for candidate in filtered)
     assert selected.wavefunction.label == "neutral_high"
     assert selected.checksum.checksum_equation == "|c_vis + c_dark|"
+    assert selected.entrainment.correspondence_locked is True
+    assert selected.entrainment.entrainment_strength == Decimal("2.5")
     assert selected.crystallizes
 
 
