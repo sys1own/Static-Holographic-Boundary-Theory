@@ -2,17 +2,25 @@ from __future__ import annotations
 
 import csv
 import json
+import sys
 from pathlib import Path
 from typing import Iterable, Mapping, Sequence
 
-from .audit_generator import (
+if __package__ in (None, ""):
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent if parent.name == "src" else parent / "src"
+        if (candidate / "shbt").is_dir():
+            sys.path.insert(0, str(candidate))
+            break
+
+from audit_generator import (
     derive_ih_singular_value_spectrum,
     export_ih_singular_value_spectrum_figure,
     export_support_overlap_table,
     export_supplementary_tolerance_table,
 )
-from .plotting_runtime import managed_figure
-from .template_utils import render_latex_table
+from plotting_runtime import managed_figure
+from shbt.template_utils import render_latex_table
 
 
 def write_json_artifact(output_path: Path, payload: Mapping[str, object]) -> None:
