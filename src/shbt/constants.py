@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from decimal import Decimal
 from dataclasses import dataclass
 from fractions import Fraction
 from pathlib import Path
@@ -182,6 +183,8 @@ CODATA_FINE_STRUCTURE_ALPHA_INVERSE = float(
 HBAR_EV_SECONDS = float(_PHYSICAL_CONSTANTS_CONFIG.get("hbar_ev_seconds", 6.582119569e-16))
 HBAR_GEV_SECONDS = HBAR_EV_SECONDS * 1.0e-9
 PLANCK_MASS_GEV = PLANCK_MASS_EV * 1.0e-9
+
+AUDIT_TOLERANCE = Decimal("1e-38")
 
 GEOMETRIC_KAPPA = _coerce_float(_MODEL_CONFIG, "geometric_kappa")
 KAPPA_D5 = GEOMETRIC_KAPPA
