@@ -19,7 +19,7 @@ if __package__ in (None, ""):
             sys.path.insert(0, str(candidate))
             break
 
-from shbt.core.derivation_api import DEFAULT_PRECISION as DERIVATION_DEFAULT_PRECISION, UniverseFactory
+from shbt.core.evolutionary_engine import DEFAULT_PRECISION as DERIVATION_DEFAULT_PRECISION, EvolutionaryEngine
 from shbt.paths import ProjectPaths
 
 
@@ -137,12 +137,12 @@ def run_entire_proof(*, output_dir: Path, manuscript_dir: Path, validate_text: b
 
 def generate_topological_constants(*, precision: int = DERIVATION_DEFAULT_PRECISION) -> TopologicalConstants:
     resolved_precision = max(int(precision), int(DERIVATION_DEFAULT_PRECISION))
-    alpha = UniverseFactory.derive_alpha_surface(precision=resolved_precision)
-    kappa = UniverseFactory.derive_kappa_d5(precision=resolved_precision)
-    mass = UniverseFactory.derive_mass_bridge(precision=resolved_precision, kappa=kappa.kappa)
-    unity = UniverseFactory.derive_unity_of_scale(precision=resolved_precision, kappa=kappa.kappa, mass_bridge=mass)
-    lambda_surface = UniverseFactory.derive_lambda_surface(precision=resolved_precision)
-    derivation_ledger = UniverseFactory.generate_ledger(kind="derivation", precision=resolved_precision)
+    alpha = EvolutionaryEngine.derive_alpha_surface(precision=resolved_precision)
+    kappa = EvolutionaryEngine.derive_kappa_d5(precision=resolved_precision)
+    mass = EvolutionaryEngine.derive_mass_bridge(precision=resolved_precision, kappa=kappa.kappa)
+    unity = EvolutionaryEngine.derive_unity_of_scale(precision=resolved_precision, kappa=kappa.kappa, mass_bridge=mass)
+    lambda_surface = EvolutionaryEngine.derive_lambda_surface(precision=resolved_precision)
+    derivation_ledger = EvolutionaryEngine.generate_ledger(kind="universe", precision=resolved_precision)
     return TopologicalConstants(
         derivation_ledger=derivation_ledger,
         alpha_surface_inverse=float(alpha.alpha_inverse_decimal),
@@ -209,7 +209,7 @@ def build_manuscript(
         validate_text=validate_text,
     )
 
-    print("[build] Generating topological constants via UniverseFactory")
+    print("[build] Triggering EvolutionaryEngine derivation ledger")
     topological_constants = generate_topological_constants()
     print(
         "[build] Constants ready: "
