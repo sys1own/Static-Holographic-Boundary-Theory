@@ -138,7 +138,10 @@ def test_synchronize_system_updates_readme_and_physics_constants_idempotently(tm
         "\n".join(
             (
                 r"\def\FineStructureInverse{0}",
+                r"\def\PredictedAlphaInverse{0}",
                 r"\newcommand{\mZeroBenchmarkMeV}{0}",
+                r"\providecommand{\PredictedMassRatio}{0}",
+                r"\providecommand{\PredictedNeutrinoFloorMeV}{0}",
                 r"\providecommand{\alphaSurfBenchmarkDecimal}{0}",
                 r"\providecommand{\alphaSurfBenchmarkRounded}{0}",
                 r"\providecommand{\leptonThetaTwelveBetaTwoLoop}{0}",
@@ -201,6 +204,9 @@ def test_synchronize_system_updates_readme_and_physics_constants_idempotently(tm
     assert rf"\providecommand{{\benchmarkPlanckMassEv}}{{{module._format_latex_float(universal_snapshot.planck_mass_ev)}}}" in physics_text
     assert rf"\newcommand{{\mZeroBenchmarkMeV}}{{{module._format_latex_float(snapshot.neutrino_floor_mev)}}}" in physics_text
     assert rf"\def\FineStructureInverse{{{module._format_latex_float(universal_snapshot.topological_alpha_inverse)}}}" in physics_text
+    assert rf"\def\PredictedAlphaInverse{{{module._format_latex_float(universal_snapshot.topological_alpha_inverse)}}}" in physics_text
+    assert rf"\providecommand{{\PredictedMassRatio}}{{{module._format_latex_float(snapshot.proton_electron_mass_ratio)}}}" in physics_text
+    assert rf"\providecommand{{\PredictedNeutrinoFloorMeV}}{{{module._format_latex_float(snapshot.neutrino_floor_mev)}}}" in physics_text
     assert rf"\providecommand{{\leptonThetaTwelveBetaTwoLoop}}{{{module._format_latex_float(snapshot.lepton_theta12_two_loop_deg)}}}" in physics_text
     assert rf"\providecommand{{\quarkThetaThirteenBetaTwoLoop}}{{{module._format_latex_float(snapshot.quark_theta13_two_loop_deg)}}}" in physics_text
     assert module.PHYSICS_CONSTANTS_SYNC_START in physics_text
@@ -220,6 +226,39 @@ def test_synchronize_system_updates_readme_and_physics_constants_idempotently(tm
     assert readme_text_second_pass.count("### Machine-Synced Residual Ledger") == 1
     assert readme_text_second_pass.count(module.README_SYNC_START) == 1
     assert physics_text_second_pass.count(module.PHYSICS_CONSTANTS_SYNC_START) == 1
+
+
+def test_build_sync_snapshot_uses_universe_factory_mu_derivation(monkeypatch: pytest.MonkeyPatch) -> None:
+    module = _load_script_module()
+    universal_snapshot = module._build_universal_constants_snapshot(module.ConfigLoader())
+    calls: list[tuple[int, tuple[int, int, int]]] = []
+
+    def _fake_derive_proton_ratio(cls, *, precision: int, vacuum):
+        calls.append((precision, vacuum.branch))
+
+        class _Derivation:
+            mu_audit = module.Decimal("1999.5")
+
+        return _Derivation()
+
+    monkeypatch.setattr(module.UniverseFactory, "derive_proton_ratio", classmethod(_fake_derive_proton_ratio))
+
+    snapshot = module.build_sync_snapshot_with_universal_constants(
+        _sample_residual_payload(),
+        universal_snapshot=universal_snapshot,
+    )
+
+    assert calls == [
+        (
+            module.DEFAULT_PRECISION,
+            (
+                universal_snapshot.lepton_level,
+                universal_snapshot.quark_level,
+                universal_snapshot.parent_level,
+            ),
+        )
+    ]
+    assert snapshot.proton_electron_mass_ratio == 1999.5
 
 
 
