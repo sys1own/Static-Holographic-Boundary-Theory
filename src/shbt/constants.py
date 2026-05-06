@@ -160,18 +160,26 @@ PLANCK2018_SIN2_THETA_W_MZ = _coerce_float(_PHYSICAL_CONSTANTS_CONFIG, "planck20
 PLANCK2018_ALPHA_S_MZ = _coerce_float(_PHYSICAL_CONSTANTS_CONFIG, "planck2018_alpha_s_mz")
 
 PLANCK2018_H0_SI = PLANCK2018_H0_KM_S_MPC * 1.0e3 / MPC_IN_METERS
-PLANCK2018_LAMBDA_SI_M2 = (
+_PLANCK2018_LAMBDA_SI_M2_COMPUTED = (
     3.0 * PLANCK2018_OMEGA_LAMBDA * PLANCK2018_H0_SI * PLANCK2018_H0_SI / (LIGHT_SPEED_M_PER_S * LIGHT_SPEED_M_PER_S)
 )
-PLANCK2018_LAMBDA_FRACTIONAL_SIGMA = math.sqrt(
+PLANCK2018_LAMBDA_SI_M2 = float(
+    _PHYSICAL_CONSTANTS_CONFIG.get("planck2018_lambda_si_m2", _PLANCK2018_LAMBDA_SI_M2_COMPUTED)
+)
+_PLANCK2018_LAMBDA_FRACTIONAL_SIGMA_COMPUTED = math.sqrt(
     (PLANCK2018_OMEGA_LAMBDA_SIGMA / PLANCK2018_OMEGA_LAMBDA) ** 2
     + (2.0 * PLANCK2018_H0_SIGMA_KM_S_MPC / PLANCK2018_H0_KM_S_MPC) ** 2
+)
+PLANCK2018_LAMBDA_FRACTIONAL_SIGMA = float(
+    _PHYSICAL_CONSTANTS_CONFIG.get("planck2018_lambda_fractional_sigma", _PLANCK2018_LAMBDA_FRACTIONAL_SIGMA_COMPUTED)
 )
 PLANCK_HOLOGRAPHIC_BITS = 3.0 * math.pi / (PLANCK2018_LAMBDA_SI_M2 * PLANCK_LENGTH_M * PLANCK_LENGTH_M)
 HOLOGRAPHIC_BITS = PLANCK_HOLOGRAPHIC_BITS
 HOLOGRAPHIC_BITS_FRACTIONAL_SIGMA = PLANCK2018_LAMBDA_FRACTIONAL_SIGMA
-CODATA_FINE_STRUCTURE_ALPHA_INVERSE = 137.035999084
-HBAR_EV_SECONDS = 6.582119569e-16
+CODATA_FINE_STRUCTURE_ALPHA_INVERSE = float(
+    _PHYSICAL_CONSTANTS_CONFIG.get("codata_fine_structure_alpha_inverse", 137.035999084)
+)
+HBAR_EV_SECONDS = float(_PHYSICAL_CONSTANTS_CONFIG.get("hbar_ev_seconds", 6.582119569e-16))
 HBAR_GEV_SECONDS = HBAR_EV_SECONDS * 1.0e-9
 PLANCK_MASS_GEV = PLANCK_MASS_EV * 1.0e-9
 
@@ -182,7 +190,7 @@ LEPTON_FIXED_POINT_INDEX = _coerce_int(_MODEL_CONFIG, "lepton_fixed_point_index"
 QUARK_FIXED_POINT_INDEX = _coerce_int(_MODEL_CONFIG, "quark_fixed_point_index")
 LEPTON_LEVEL = PARENT_LEVEL // (2 * LEPTON_FIXED_POINT_INDEX)
 QUARK_LEVEL = PARENT_LEVEL // (3 * QUARK_FIXED_POINT_INDEX)
-G_SM = 15
+G_SM = _coerce_int(_MODEL_CONFIG, "g_sm") if "g_sm" in _MODEL_CONFIG else 15
 DIRAC_HIGGS_BENCHMARK_MASS_GEV = _coerce_float(_MODEL_CONFIG, "dirac_higgs_benchmark_mass_gev")
 
 SM_GUT_YUKAWA_BENCHMARKS = _coerce_float_mapping(_BENCHMARKS_CONFIG, "sm_gut_yukawa")
@@ -277,7 +285,12 @@ STRICT_BENCHMARK_TIER_DEFINITIONS = (
                 legacy_metadata_paths=("model.parent_level",),
                 allowed_legacy_classifications=("Topological Necessity",),
             ),
-            BenchmarkConstantDefinition(name="G_SM", value=G_SM),
+            BenchmarkConstantDefinition(
+                name="G_SM",
+                value=G_SM,
+                legacy_metadata_paths=("model.g_sm",),
+                allowed_legacy_classifications=("Topological Necessity",),
+            ),
         ),
     ),
     BenchmarkConstantTier(
