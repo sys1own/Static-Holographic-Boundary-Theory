@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from functools import lru_cache
 import json
 import math
@@ -11,10 +12,15 @@ import yaml
 from shbt.paths import ProjectPaths, resolve_resource_path
 
 
-VALID_PARAMETER_CLASSIFICATIONS = frozenset({"Topological Necessity", "Empirical Matching Ansatz"})
+COUNTER_UNIVERSAL_CLASSIFICATION = "Counter-Universal Scenario"
+VALID_PARAMETER_CLASSIFICATIONS = frozenset(
+    {"Topological Necessity", "Empirical Matching Ansatz", COUNTER_UNIVERSAL_CLASSIFICATION}
+)
 DEFAULT_BENCHMARK_CONFIG_PATH = resolve_resource_path("config", "benchmark_v1.yaml")
 DEFAULT_NUFIT_DATA_PATH = resolve_resource_path("data", "nufit_5_3.json")
-DEFAULT_UNIVERSAL_CONSTANTS_PATH = resolve_resource_path("data", "universal_constants.yaml")
+DEFAULT_PHYSICS_PROFILE_RELATIVE_PATH = Path("physics_profiles") / "standard_model.yaml"
+DEFAULT_PHYSICS_PROFILE_PATH = resolve_resource_path("config", str(DEFAULT_PHYSICS_PROFILE_RELATIVE_PATH))
+DEFAULT_UNIVERSAL_CONSTANTS_PATH = DEFAULT_PHYSICS_PROFILE_PATH
 
 
 def _require_mapping(mapping: dict[str, Any], key: str) -> dict[str, Any]:
@@ -35,23 +41,59 @@ def _deep_merge(base: dict[str, Any], overrides: dict[str, Any]) -> dict[str, An
     return merged
 
 
+def _iter_leaf_paths(node: Any, *, path: str = "") -> tuple[str, ...]:
+    if isinstance(node, dict):
+        leaf_paths: list[str] = []
+        for key, value in node.items():
+            child_path = f"{path}.{key}" if path else key
+            leaf_paths.extend(_iter_leaf_paths(value, path=child_path))
+        return tuple(leaf_paths)
+    if isinstance(node, list):
+        leaf_paths = []
+        for index, value in enumerate(node):
+            child_path = f"{path}[{index}]"
+            leaf_paths.extend(_iter_leaf_paths(value, path=child_path))
+        return tuple(leaf_paths)
+    return (path,) if path else ()
+
+
 class ConfigLoader:
-    """Load benchmark configuration and provenance-tracked data sources."""
+    """Load benchmark configuration and provenance-tracked data sources.
+
+    Physics constants can be sourced from the repository's standard-model
+    profile, an alternate on-disk profile, or directly injected mappings for
+    counter-universal scenario testing.
+    """
 
     def __init__(
         self,
         config_dir: Path | None = None,
+        physics_profile_path: str | Path | None = None,
         universal_constants_path: str | Path | None = None,
+        physics_profile: dict[str, Any] | None = None,
+        physics_parameter_overrides: dict[str, Any] | None = None,
     ) -> None:
         if config_dir is not None:
             self.config_dir = Path(config_dir).expanduser().resolve()
         else:
             self.config_dir = ProjectPaths.CONFIG.resolve()
-        self.universal_constants_path = (
-            Path(universal_constants_path)
+        resolved_profile_path = (
+            physics_profile_path
+            if physics_profile_path is not None
+            else universal_constants_path
             if universal_constants_path is not None
-            else DEFAULT_UNIVERSAL_CONSTANTS_PATH
+            else DEFAULT_PHYSICS_PROFILE_RELATIVE_PATH
         )
+        self.physics_profile_path = Path(resolved_profile_path)
+        self.universal_constants_path = self.physics_profile_path
+        self.physics_profile = deepcopy(physics_profile) if physics_profile is not None else None
+        self.physics_parameter_overrides = (
+            deepcopy(physics_parameter_overrides) if physics_parameter_overrides is not None else {}
+        )
+        if self.physics_profile is not None and not isinstance(self.physics_profile, dict):
+            raise TypeError("physics_profile must be a mapping when provided.")
+        if not isinstance(self.physics_parameter_overrides, dict):
+            raise TypeError("physics_parameter_overrides must be a mapping when provided.")
 
     def _benchmark_config_path(self) -> Path:
         if self.config_dir == ProjectPaths.CONFIG.resolve():
@@ -160,30 +202,54 @@ class ConfigLoader:
                 raise TypeError("Benchmark configuration must contain a top-level mapping")
             benchmark_config = normalized
 
-        universal_constants, universal_metadata = self._load_universal_constants_bundle()
-        if universal_constants:
+        physics_profile, physics_profile_metadata = self._load_physics_profile_bundle()
+        if physics_profile:
             benchmark_config = _deep_merge(
                 benchmark_config,
-                self._translate_universal_constants(universal_constants),
+                self._translate_physics_profile(physics_profile),
             )
-            metadata.update(self._translate_universal_constant_metadata(universal_constants, universal_metadata))
+            metadata.update(self._translate_physics_profile_metadata(physics_profile, physics_profile_metadata))
+        if self.physics_parameter_overrides:
+            override_metadata: dict[str, str] = {}
+            normalized_overrides = self._normalize_parameter_tree(
+                deepcopy(self.physics_parameter_overrides),
+                metadata=override_metadata,
+            )
+            if not isinstance(normalized_overrides, dict):
+                raise TypeError("Injected physics_parameter_overrides must normalize to a mapping.")
+            benchmark_config = _deep_merge(benchmark_config, normalized_overrides)
+            for leaf_path in _iter_leaf_paths(normalized_overrides):
+                override_metadata.setdefault(leaf_path, COUNTER_UNIVERSAL_CLASSIFICATION)
+            metadata.update(override_metadata)
         return benchmark_config, metadata
 
     @lru_cache(maxsize=4)
-    def _load_universal_constants_bundle(self) -> tuple[dict[str, Any], dict[str, str]]:
-        path = self._resolve_repo_or_config_path(self.universal_constants_path)
+    def _load_physics_profile_bundle(self) -> tuple[dict[str, Any], dict[str, str]]:
+        metadata: dict[str, str] = {}
+        if self.physics_profile is not None:
+            normalized = self._normalize_parameter_tree(deepcopy(self.physics_profile), metadata=metadata)
+            if not isinstance(normalized, dict):
+                raise TypeError("Injected physics_profile must contain a top-level mapping")
+            for leaf_path in _iter_leaf_paths(normalized):
+                metadata.setdefault(leaf_path, COUNTER_UNIVERSAL_CLASSIFICATION)
+            return normalized, metadata
+
+        path = self._resolve_repo_or_config_path(self.physics_profile_path)
         if not path.is_file():
             return {}, {}
         raw_constants = self._load_yaml_from_repo_or_config(path)
-        metadata: dict[str, str] = {}
         normalized = self._normalize_parameter_tree(raw_constants, metadata=metadata)
         if not isinstance(normalized, dict):
-            raise TypeError("Universal constants file must contain a top-level mapping")
+            raise TypeError("Physics profile file must contain a top-level mapping")
         return normalized, metadata
 
-    def _translate_universal_constants(self, universal_constants: dict[str, Any]) -> dict[str, Any]:
-        tier_1 = _require_mapping(universal_constants, "tier_1")
-        tier_2 = _require_mapping(universal_constants, "tier_2")
+    @lru_cache(maxsize=4)
+    def _load_universal_constants_bundle(self) -> tuple[dict[str, Any], dict[str, str]]:
+        return self._load_physics_profile_bundle()
+
+    def _translate_physics_profile(self, physics_profile: dict[str, Any]) -> dict[str, Any]:
+        tier_1 = _require_mapping(physics_profile, "tier_1")
+        tier_2 = _require_mapping(physics_profile, "tier_2")
 
         lepton_level = int(tier_1["lepton_level"])
         quark_level = int(tier_1["quark_level"])
@@ -218,12 +284,12 @@ class ConfigLoader:
             "physical_constants": physical_constants,
         }
 
-    def _translate_universal_constant_metadata(
+    def _translate_physics_profile_metadata(
         self,
-        universal_constants: dict[str, Any],
+        physics_profile: dict[str, Any],
         metadata: dict[str, str],
     ) -> dict[str, str]:
-        if not universal_constants:
+        if not physics_profile:
             return {}
         translated = {
             "model.parent_level": metadata.get("tier_1.parent_level", "Topological Necessity"),
@@ -231,7 +297,7 @@ class ConfigLoader:
             "model.quark_fixed_point_index": metadata.get("tier_1.quark_level", "Topological Necessity"),
             "model.g_sm": metadata.get("tier_1.g_sm", "Topological Necessity"),
         }
-        tier_2 = _require_mapping(universal_constants, "tier_2")
+        tier_2 = _require_mapping(physics_profile, "tier_2")
         for name in tier_2:
             translated[f"physical_constants.{name}"] = metadata.get(
                 f"tier_2.{name}",
@@ -247,13 +313,26 @@ class ConfigLoader:
         )
         return translated
 
+    def _translate_universal_constants(self, universal_constants: dict[str, Any]) -> dict[str, Any]:
+        return self._translate_physics_profile(universal_constants)
+
+    def _translate_universal_constant_metadata(
+        self,
+        universal_constants: dict[str, Any],
+        metadata: dict[str, str],
+    ) -> dict[str, str]:
+        return self._translate_physics_profile_metadata(universal_constants, metadata)
+
     def load_benchmark_config(self) -> dict[str, Any]:
         benchmark_config, _ = self._load_benchmark_bundle()
         return benchmark_config
 
+    def load_physics_profile(self) -> dict[str, Any]:
+        physics_profile, _ = self._load_physics_profile_bundle()
+        return physics_profile
+
     def load_universal_constants(self) -> dict[str, Any]:
-        universal_constants, _ = self._load_universal_constants_bundle()
-        return universal_constants
+        return self.load_physics_profile()
 
     def load_parameter_classifications(self) -> dict[str, str]:
         _, metadata = self._load_benchmark_bundle()
@@ -305,10 +384,13 @@ DEFAULT_CONFIG_LOADER = ConfigLoader()
 
 
 __all__ = [
+    "COUNTER_UNIVERSAL_CLASSIFICATION",
     "ConfigLoader",
     "DEFAULT_BENCHMARK_CONFIG_PATH",
     "DEFAULT_CONFIG_LOADER",
     "DEFAULT_NUFIT_DATA_PATH",
+    "DEFAULT_PHYSICS_PROFILE_PATH",
+    "DEFAULT_PHYSICS_PROFILE_RELATIVE_PATH",
     "DEFAULT_UNIVERSAL_CONSTANTS_PATH",
     "VALID_PARAMETER_CLASSIFICATIONS",
 ]
