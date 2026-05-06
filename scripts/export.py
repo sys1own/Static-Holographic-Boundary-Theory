@@ -2,40 +2,57 @@ from __future__ import annotations
 
 import argparse
 import csv
+import inspect
 import json
 import sys
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
-if __package__ in (None, ""):
-    script_dir = Path(__file__).resolve().parent
-    if str(script_dir) not in sys.path:
-        sys.path.insert(0, str(script_dir))
-    for parent in Path(__file__).resolve().parents:
-        candidate = parent if parent.name == "src" else parent / "src"
-        shbt_package_dir = candidate / "shbt"
-        if shbt_package_dir.is_dir():
-            if str(candidate) not in sys.path:
-                sys.path.insert(0, str(candidate))
-            if str(shbt_package_dir) not in sys.path:
-                sys.path.insert(0, str(shbt_package_dir))
-            break
 
-from audit_generator import (
-    derive_ih_singular_value_spectrum,
-    export_ih_singular_value_spectrum_figure,
-    export_support_overlap_table,
-    export_supplementary_tolerance_table,
-)
-from evolutionary_engine import DEFAULT_PRECISION
-from plotting_runtime import managed_figure
+script_dir = Path(__file__).resolve().parent
+if str(script_dir) not in sys.path:
+    sys.path.insert(0, str(script_dir))
+for parent in Path(__file__).resolve().parents:
+    candidate = parent if parent.name == "src" else parent / "src"
+    shbt_package_dir = candidate / "shbt"
+    if shbt_package_dir.is_dir():
+        if str(candidate) not in sys.path:
+            sys.path.insert(0, str(candidate))
+        if str(shbt_package_dir) not in sys.path:
+            sys.path.insert(0, str(shbt_package_dir))
+        break
+
+try:
+    from audit_generator import (
+        derive_ih_singular_value_spectrum,
+        export_ih_singular_value_spectrum_figure,
+        export_support_overlap_table,
+        export_supplementary_tolerance_table,
+    )
+except ImportError:
+    from .audit_generator import (
+        derive_ih_singular_value_spectrum,
+        export_ih_singular_value_spectrum_figure,
+        export_support_overlap_table,
+        export_supplementary_tolerance_table,
+    )
+
+try:
+    from evolutionary_engine import DEFAULT_PRECISION
+except ImportError:
+    from shbt.evolutionary_engine import DEFAULT_PRECISION
+
+try:
+    from plotting_runtime import managed_figure
+except ImportError:
+    from .plotting_runtime import managed_figure
+
 from shbt.core.evolutionary_engine import UniverseFactory
 from shbt.main import build_quantified_two_loop_residuals
 from shbt.paths import ProjectPaths
 from shbt.template_utils import render_latex_table
 
 
-_IMPORTED_EVOLUTIONARY_ENGINE = UniverseFactory
 EvolutionaryEngine = UniverseFactory
 
 
@@ -172,42 +189,66 @@ def _default_residuals_path() -> Path:
     return ProjectPaths.RESULTS / "residuals.json"
 
 
-def _resolve_evolutionary_engine() -> type:
-    resolved_engine = globals().get("EvolutionaryEngine")
-    if resolved_engine is not None and resolved_engine is not _IMPORTED_EVOLUTIONARY_ENGINE:
-        return resolved_engine
+def _get_member(container: object, name: str) -> Any:
+    if isinstance(container, Mapping):
+        return container[name]
+    return getattr(container, name)
 
-    resolved_factory = globals().get("UniverseFactory")
-    if resolved_factory is not None:
-        return resolved_factory
 
-    return _IMPORTED_EVOLUTIONARY_ENGINE
+def _accepts_precision(method: Any) -> bool:
+    try:
+        parameters = inspect.signature(method).parameters.values()
+    except (TypeError, ValueError):
+        return True
+
+    return any(
+        parameter.name == "precision" or parameter.kind is inspect.Parameter.VAR_KEYWORD
+        for parameter in parameters
+    )
+
+
+def _call_engine_method(engine: object, method_name: str, *, precision: int) -> Any:
+    method = getattr(engine, method_name)
+    if _accepts_precision(method):
+        return method(precision=precision)
+    return method()
 
 
 def build_residual_export_payload(*, precision: int = DEFAULT_PRECISION) -> dict[str, object]:
     resolved_precision = max(int(precision), int(DEFAULT_PRECISION))
-    engine = _resolve_evolutionary_engine()()
-    physical_ledger = engine.calculate_physical_ledger(precision=resolved_precision)
-    lambda_surface = engine.derive_lambda_surface(precision=resolved_precision)
+    engine = EvolutionaryEngine()
+    physical_ledger = _call_engine_method(engine, "calculate_physical_ledger", precision=resolved_precision)
+    lambda_surface = None
+    if hasattr(engine, "derive_lambda_surface"):
+        lambda_surface = _call_engine_method(engine, "derive_lambda_surface", precision=resolved_precision)
+
+    vacuum = _get_member(physical_ledger, "vacuum")
+    alpha_surface = _get_member(physical_ledger, "alpha_surface")
+    mass_bridge = _get_member(physical_ledger, "mass_bridge")
+    unity_of_scale = _get_member(physical_ledger, "unity_of_scale")
 
     payload = dict(build_quantified_two_loop_residuals())
-    payload["derivation_residues"] = {
+    derivation_residues = {
         "precision": resolved_precision,
         "benchmark_tuple": [
-            int(physical_ledger.vacuum.lepton_level),
-            int(physical_ledger.vacuum.quark_level),
-            int(physical_ledger.vacuum.parent_level),
+            int(_get_member(vacuum, "lepton_level")),
+            int(_get_member(vacuum, "quark_level")),
+            int(_get_member(vacuum, "parent_level")),
         ],
-        "alpha_inverse_decimal": float(physical_ledger.alpha_surface.alpha_inverse_decimal),
-        "codata_alpha_inverse": float(physical_ledger.alpha_surface.codata_alpha_inverse),
-        "m_nu_ev": float(physical_ledger.mass_bridge.neutrino_floor_ev),
-        "m_nu_mev": float(physical_ledger.mass_bridge.neutrino_floor_mev),
-        "lambda_holo_si_m2": float(lambda_surface.lambda_holo_si_m2),
-        "lambda_obs_si_m2": float(lambda_surface.anchor_lambda_si_m2),
-        "epsilon_lambda": float(physical_ledger.unity_of_scale.epsilon_lambda),
-        "decimal_tolerance": float(physical_ledger.unity_of_scale.decimal_tolerance),
-        "register_noise_floor": float(physical_ledger.unity_of_scale.register_noise_floor),
+        "alpha_inverse_decimal": float(_get_member(alpha_surface, "alpha_inverse_decimal")),
+        "codata_alpha_inverse": float(_get_member(alpha_surface, "codata_alpha_inverse")),
+        "m_nu_ev": float(_get_member(mass_bridge, "neutrino_floor_ev")),
+        "m_nu_mev": float(_get_member(mass_bridge, "neutrino_floor_mev")),
+        "epsilon_lambda": float(_get_member(unity_of_scale, "epsilon_lambda")),
+        "decimal_tolerance": float(_get_member(unity_of_scale, "decimal_tolerance")),
+        "register_noise_floor": float(_get_member(unity_of_scale, "register_noise_floor")),
     }
+
+    if lambda_surface is not None:
+        derivation_residues["lambda_holo_si_m2"] = float(_get_member(lambda_surface, "lambda_holo_si_m2"))
+        derivation_residues["lambda_obs_si_m2"] = float(_get_member(lambda_surface, "anchor_lambda_si_m2"))
+
+    payload["derivation_residues"] = derivation_residues
     return payload
 
 
