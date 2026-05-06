@@ -105,6 +105,32 @@
     "modular_efficiency": 0.2674143332131554,
     "topological_ghost_debt": 5.780852425251275
   },
+  "dark_sector_candidates": [
+    {
+      "candidate_supported": false,
+      "canonical_mass_lower_ev": 1e-06,
+      "canonical_mass_upper_ev": 0.01,
+      "label": "Axion",
+      "note": "benchmark residue is superheavy and therefore not QCD-axion-like",
+      "observer_projected_loading": 0.0707742959452236,
+      "predicted_mass_ev": 7.992597724221887e+21,
+      "predicted_mass_gev": 7992597724221.887,
+      "superheavy_extension_supported": false,
+      "within_canonical_window": false
+    },
+    {
+      "candidate_supported": true,
+      "canonical_mass_lower_ev": 10000000000.0,
+      "canonical_mass_upper_ev": 10000000000000.0,
+      "label": "WIMP",
+      "note": "benchmark completion lands in a superheavy WIMPzilla-like regime rather than the canonical thermal window",
+      "observer_projected_loading": 0.0707742959452236,
+      "predicted_mass_ev": 7.992597724221887e+21,
+      "predicted_mass_gev": 7992597724221.887,
+      "superheavy_extension_supported": true,
+      "within_canonical_window": false
+    }
+  ],
   "executable_proof_pass": true,
   "gravitational_wave": {
     "above_design_floor": true,
@@ -117,10 +143,69 @@
     "primordial_tensor_ratio": 0.089831589868969,
     "tensor_tilt": -0.011228948733621125
   },
+  "ligo_virgo_strain": {
+    "available": false,
+    "benchmark_consistent": false,
+    "data_source": "benchmark-config",
+    "dataset_label": "GW170817 LIGO/Virgo 4 kHz strain benchmark",
+    "detector_audits": [],
+    "event_name": "GW170817",
+    "event_version": "GW170817-v2",
+    "fetch_error": "live GWOSC pull disabled",
+    "mean_peak_over_rms": 0.0,
+    "mean_peak_over_rms_floor": 1.0,
+    "minimum_detector_count": 3,
+    "minimum_duty_cycle_percent": 10.0,
+    "minimum_peak_absolute_strain": 1e-22,
+    "network_peak_absolute_strain": 0.0,
+    "network_rss_peak_strain": 0.0,
+    "reported_detectors": [],
+    "requested_detectors": [
+      "H1",
+      "L1",
+      "V1"
+    ]
+  },
   "nufit_anchor": {
     "label": "NuFIT benchmark",
     "path": "data/nufit_5_3.json",
     "release": "NuFIT 5.3 (2024), normal ordering with SK atmospheric data"
+  },
+  "observer_horizon": {
+    "bekenstein_hawking_entropy_bits": 4.77906195052963e+122,
+    "coordinate_horizon_radius_m": 1.6596595363646105e+26,
+    "exposed_area_fraction": 1.0,
+    "global_horizon_radius_m": 1.6596595363646105e+26,
+    "local_available_bits": 3.312593316730926e+122,
+    "local_horizon_area_m2": 3.4613688059384698e+53,
+    "log_horizon_loading_factor": 0.012242882318890414,
+    "observer_radius_m": 0.0,
+    "relative_position": 0.0,
+    "remaining_horizon_fraction": 1.0,
+    "surface_bit_loading_bits_per_m2": 9.57018307626654e+68
+  },
+  "observer_moat": {
+    "benchmark_branch": [
+      26,
+      8,
+      312
+    ],
+    "benchmark_branch_selected": true,
+    "branch_chebyshev_distance": 0,
+    "evaluated_branch": [
+      26,
+      8,
+      312
+    ],
+    "fixed_parent_locked": true,
+    "framing_defect_fraction": "0/1",
+    "inside_published_visible_moat": true,
+    "moat_penalty_factor": 1.0,
+    "observer_moat_locked": true,
+    "observer_relative_position": 0.0,
+    "observer_shifted_defect": 0.0,
+    "published_visible_moat_radius": 2,
+    "remaining_horizon_fraction": 1.0
   },
   "scalar_tilt": {
     "observed_scalar_tilt": 0.9649,
