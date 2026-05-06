@@ -22,6 +22,7 @@ if __package__ in (None, ""):
 
 from shbt.constants import HOLOGRAPHIC_BITS, LEPTON_LEVEL, LIGHT_SPEED_M_PER_S, PARENT_LEVEL, PLANCK2018_LAMBDA_SI_M2, PLANCK_LENGTH_M, QUARK_LEVEL
 from shbt.core import algebra
+from shbt.core.decoherence_engine import PointerStateDecoherenceError, PointerStateSelector, build_mass_pointer_state
 from shbt.core.holographic_error_stabilizer import BENCHMARK_BRANCH, HolographicStabilizer
 from shbt.paths import resolve_resource_path
 
@@ -235,6 +236,28 @@ def _require_bulk_checksum(
         )
 
 
+def _crystallize_discrete_mass_scale(
+    observable: Any,
+    *,
+    label: str,
+    c_dark_fraction: Fraction,
+    precision: int = DEFAULT_PRECISION,
+) -> Any:
+    selector = PointerStateSelector(precision=max(int(precision), DEFAULT_PRECISION))
+    pointer_state = build_mass_pointer_state(
+        label=label,
+        c_dark_fraction=c_dark_fraction,
+        precision=max(int(precision), DEFAULT_PRECISION),
+    )
+    try:
+        return selector.crystallize_classical_observable(pointer_state, observable)
+    except PointerStateDecoherenceError as error:
+        raise DecoherenceError(
+            "Pointer-state selector rejected discrete mass-scale emergence: "
+            f"{error}"
+        ) from error
+
+
 def branch_planck_mass_ev(
     *,
     lepton_level: int = LEPTON_LEVEL,
@@ -251,7 +274,14 @@ def branch_planck_mass_ev(
     )
     with mpmath.workdps(DEFAULT_MPMATH_DPS):
         value = (_mp(HBAR_EV_SECONDS) * _mp(LIGHT_SPEED_M_PER_S)) / _mp(PLANCK_LENGTH_M)
-    return _mp_to_decimal(value)
+    return _mp_to_decimal(
+        _crystallize_discrete_mass_scale(
+            value,
+            label="branch_planck_mass_ev",
+            c_dark_fraction=load_c_dark_completion_fraction(),
+            precision=DEFAULT_PRECISION,
+        )
+    )
 
 
 def lambda_si_m2_to_ev2(lambda_si_m2: Decimal) -> Decimal:
@@ -295,7 +325,12 @@ def _high_precision_newton_lock_values(
     resolved_fraction = FALLBACK_C_DARK_COMPLETION if c_dark_fraction is None else c_dark_fraction
     with mpmath.workdps(_resolved_mpmath_dps(mpmath_dps)):
         c_dark = _mp(resolved_fraction)
-        planck_mass = (_mp(HBAR_EV_SECONDS) * _mp(LIGHT_SPEED_M_PER_S)) / _mp(PLANCK_LENGTH_M)
+        planck_mass = _crystallize_discrete_mass_scale(
+            (_mp(HBAR_EV_SECONDS) * _mp(LIGHT_SPEED_M_PER_S)) / _mp(PLANCK_LENGTH_M),
+            label="branch_planck_mass_ev",
+            c_dark_fraction=resolved_fraction,
+            precision=_resolved_mpmath_dps(mpmath_dps),
+        )
         g_topological = mpmath.mpf("1") / (planck_mass * planck_mass)
         eight_pi_g_effective = mpmath.mpf("12") / (c_dark * planck_mass * planck_mass)
         g_effective = eight_pi_g_effective / (mpmath.mpf("8") * mpmath.pi)
@@ -329,7 +364,12 @@ def high_precision_unity_of_scale_snapshot(
             raise ValueError("Holographic bit count must be positive.")
         resolved_kappa = _mp(kappa_d5)
         lambda_lhs_ev2 = _mp(lambda_obs_si_m2) * (_mp(HBAR_EV_SECONDS) * _mp(LIGHT_SPEED_M_PER_S)) ** 2
-        lightest_mass_ev = resolved_kappa * gravity_lock["planck_mass_ev"] * mpmath.power(resolved_bit_count, mpmath.mpf("-0.25"))
+        lightest_mass_ev = _crystallize_discrete_mass_scale(
+            resolved_kappa * gravity_lock["planck_mass_ev"] * mpmath.power(resolved_bit_count, mpmath.mpf("-0.25")),
+            label="lightest_mass_ev",
+            c_dark_fraction=resolved_fraction,
+            precision=_resolved_mpmath_dps(mpmath_dps),
+        )
         lambda_rhs_topological = (
             mpmath.mpf("3")
             * mpmath.pi
