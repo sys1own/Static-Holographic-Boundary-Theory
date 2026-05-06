@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+"""Build the SHBT executable paper from proofs, synced constants, and LaTeX."""
+
 import argparse
+import importlib.util
 import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
 
 if __package__ in (None, ""):
     for parent in Path(__file__).resolve().parents:
@@ -15,14 +19,15 @@ if __package__ in (None, ""):
             sys.path.insert(0, str(candidate))
             break
 
+from shbt.core.derivation_api import DEFAULT_PRECISION as DERIVATION_DEFAULT_PRECISION, UniverseFactory
 from shbt.paths import ProjectPaths
 
 
 TARGET_AUDIT_SECTORS = ("gravity", "cosmology", "flavor", "rigidity")
 PREFERRED_LATEX_BUILD_ORDER = ("supplementary.tex", "tn.tex", "gravity.tex")
-CANONICAL_JOURNAL_TEX = "tn.tex"
-CANONICAL_JOURNAL_PDF = "tn.pdf"
-SUPPORTED_LATEX_BACKENDS = ("latexmk", "pdflatex")
+MANUSCRIPT_TARGET_TEX = "gravity.tex"
+MANUSCRIPT_TARGET_PDF = "gravity.pdf"
+SUPPORTED_LATEX_BACKENDS = ("pdflatex",)
 
 
 @dataclass(frozen=True)
@@ -32,13 +37,23 @@ class LatexInstallation:
 
 
 @dataclass(frozen=True)
+class TopologicalConstants:
+    derivation_ledger: str
+    alpha_surface_inverse: float
+    kappa_d5: float
+    neutrino_floor_mev: float
+    epsilon_lambda: float
+    lambda_holo_si_m2: float
+
+
+@dataclass(frozen=True)
 class BuildResult:
     proof_output_dir: Path
     latex_artifact_dir: Path
     manuscript_dir: Path
-    latex_backend: str
+    latex_backend: str | None
     compiled_pdfs: tuple[Path, ...]
-    final_pdf: Path
+    final_pdf: Path | None
 
 
 def _display_path(path: Path) -> str:
@@ -46,6 +61,18 @@ def _display_path(path: Path) -> str:
         return str(path.relative_to(Path.cwd()))
     except ValueError:
         return str(path)
+
+
+@lru_cache(maxsize=1)
+def _load_sync_system_module() -> Any:
+    script_path = ProjectPaths.SCRIPTS / "sync_system.py"
+    spec = importlib.util.spec_from_file_location("sync_system", script_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Unable to load sync_system from {script_path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def resolve_latex_installation(backend: str = "auto") -> LatexInstallation:
@@ -61,7 +88,7 @@ def resolve_latex_installation(backend: str = "auto") -> LatexInstallation:
 
     if backend == "auto":
         raise RuntimeError(
-            "No local LaTeX installation detected. Install `latexmk` (preferred) or `pdflatex` and rerun `python scripts/build_manuscript.py`."
+            "No local LaTeX installation detected. Install `pdflatex` and rerun `python scripts/build_manuscript.py`."
         )
     raise RuntimeError(
         f"Requested LaTeX backend `{backend}` is not available on PATH. Install it or rerun with `--latex-backend auto`."
@@ -108,79 +135,53 @@ def run_entire_proof(*, output_dir: Path, manuscript_dir: Path, validate_text: b
     run_verifier(common_args)
 
 
-def mirror_manuscript_artifacts(build_output_dir: Path, *, latex_results_dir: Path = ProjectPaths.RESULTS) -> Path:
-    source_dir = Path(build_output_dir) / "final"
-    if not source_dir.is_dir():
-        raise FileNotFoundError(f"Universal audit did not produce manuscript artifacts in {source_dir}.")
-
-    target_dir = Path(latex_results_dir) / "final"
-    target_dir.mkdir(parents=True, exist_ok=True)
-
-    if source_dir.resolve() == target_dir.resolve():
-        return target_dir
-
-    for child in source_dir.iterdir():
-        destination = target_dir / child.name
-        if child.is_dir():
-            shutil.copytree(child, destination, dirs_exist_ok=True)
-            continue
-        shutil.copy2(child, destination)
-    return target_dir
-
-
-def refresh_manuscript_physics_constants(*, latex_artifact_dir: Path, manuscript_dir: Path) -> Path:
-    source_path = Path(latex_artifact_dir) / "physics_constants.tex"
-    if not source_path.is_file():
-        raise FileNotFoundError(
-            f"Expected generated manuscript macro export at {source_path}. Run the universal audit before compiling the papers."
-        )
-
-    target_path = Path(manuscript_dir) / "physics_constants.tex"
-    shutil.copy2(source_path, target_path)
-    return target_path
-
-
-def _latex_commands(installation: LatexInstallation, document_name: str) -> tuple[tuple[str, ...], ...]:
-    if installation.backend == "latexmk":
-        return (
-            (
-                installation.command,
-                "-pdf",
-                "-interaction=nonstopmode",
-                "-halt-on-error",
-                "-file-line-error",
-                document_name,
-            ),
-        )
-
-    return (
-        (
-            installation.command,
-            "-interaction=nonstopmode",
-            "-halt-on-error",
-            "-file-line-error",
-            document_name,
-        ),
-        (
-            installation.command,
-            "-interaction=nonstopmode",
-            "-halt-on-error",
-            "-file-line-error",
-            document_name,
-        ),
+def generate_topological_constants(*, precision: int = DERIVATION_DEFAULT_PRECISION) -> TopologicalConstants:
+    resolved_precision = max(int(precision), int(DERIVATION_DEFAULT_PRECISION))
+    alpha = UniverseFactory.derive_alpha_surface(precision=resolved_precision)
+    kappa = UniverseFactory.derive_kappa_d5(precision=resolved_precision)
+    mass = UniverseFactory.derive_mass_bridge(precision=resolved_precision, kappa=kappa.kappa)
+    unity = UniverseFactory.derive_unity_of_scale(precision=resolved_precision, kappa=kappa.kappa, mass_bridge=mass)
+    lambda_surface = UniverseFactory.derive_lambda_surface(precision=resolved_precision)
+    derivation_ledger = UniverseFactory.generate_ledger(kind="derivation", precision=resolved_precision)
+    return TopologicalConstants(
+        derivation_ledger=derivation_ledger,
+        alpha_surface_inverse=float(alpha.alpha_inverse_decimal),
+        kappa_d5=float(kappa.kappa),
+        neutrino_floor_mev=float(mass.neutrino_floor_mev),
+        epsilon_lambda=float(unity.epsilon_lambda),
+        lambda_holo_si_m2=float(lambda_surface.lambda_holo_si_m2),
     )
 
 
-def compile_latex_document(installation: LatexInstallation, document_path: Path, *, workdir: Path) -> Path:
-    resolved_workdir = Path(workdir)
-    source_name = Path(document_path).name
-    try:
-        for command in _latex_commands(installation, source_name):
-            subprocess.run(command, cwd=resolved_workdir, check=True)
-    except subprocess.CalledProcessError as exc:
-        raise RuntimeError(f"LaTeX compilation failed for {source_name} using `{installation.backend}`.") from exc
+def synchronize_manuscript_sources(*, output_dir: Path, manuscript_dir: Path) -> tuple[Path, Path]:
+    module = _load_sync_system_module()
+    return module.synchronize_system(
+        residuals_path=Path(output_dir) / "residuals.json",
+        readme_path=ProjectPaths.ROOT / "README.md",
+        physics_constants_path=Path(manuscript_dir) / "physics_constants.tex",
+        universal_constants_path=ProjectPaths.DATA / "universal_constants.yaml",
+    )
 
-    pdf_path = resolved_workdir / Path(source_name).with_suffix(".pdf")
+
+def compile_gravity_manuscript(pdflatex_command: str, document_path: Path, *, workdir: Path) -> Path:
+    resolved_workdir = Path(workdir)
+    resolved_document_path = Path(document_path)
+    if not resolved_document_path.is_file():
+        raise FileNotFoundError(f"Executable-paper source not found: {resolved_document_path}")
+
+    command = (
+        str(pdflatex_command),
+        "-interaction=nonstopmode",
+        "-halt-on-error",
+        "-file-line-error",
+        resolved_document_path.name,
+    )
+    try:
+        subprocess.run(command, cwd=resolved_workdir, check=True)
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(f"LaTeX compilation failed for {resolved_document_path.name} using `pdflatex`.") from exc
+
+    pdf_path = resolved_workdir / resolved_document_path.with_suffix(".pdf").name
     if not pdf_path.is_file():
         raise FileNotFoundError(f"Expected compiled PDF at {pdf_path}, but it was not created.")
     return pdf_path
@@ -195,13 +196,13 @@ def build_manuscript(
 ) -> BuildResult:
     resolved_manuscript_dir = Path(manuscript_dir)
     resolved_output_dir = Path(output_dir)
+    latex_artifact_dir = resolved_output_dir / "final"
 
+    if latex_backend not in {"auto", "pdflatex"}:
+        raise ValueError("build_manuscript only supports `pdflatex` for executable-paper generation.")
     if not resolved_manuscript_dir.is_dir():
         raise FileNotFoundError(f"Manuscript directory not found: {resolved_manuscript_dir}")
 
-    latex_installation = resolve_latex_installation(latex_backend)
-
-    print(f"[build] LaTeX backend: {latex_installation.backend}")
     print("[build] Running sector proofs and universal audit")
     run_entire_proof(
         output_dir=resolved_output_dir,
@@ -209,30 +210,49 @@ def build_manuscript(
         validate_text=validate_text,
     )
 
-    print("[build] Refreshing manuscript-facing artifact mirror")
-    latex_artifact_dir = mirror_manuscript_artifacts(resolved_output_dir, latex_results_dir=ProjectPaths.RESULTS)
-    refresh_manuscript_physics_constants(
-        latex_artifact_dir=latex_artifact_dir,
+    print("[build] Generating topological constants via UniverseFactory")
+    topological_constants = generate_topological_constants()
+    print(
+        "[build] Constants ready: "
+        f"alpha_surf^-1={topological_constants.alpha_surface_inverse:.9f}, "
+        f"kappa_D5={topological_constants.kappa_d5:.9f}, "
+        f"m_nu={topological_constants.neutrino_floor_mev:.9f} meV"
+    )
+
+    print("[build] Freezing live constants into manuscript sources")
+    synchronize_manuscript_sources(
+        output_dir=resolved_output_dir,
         manuscript_dir=resolved_manuscript_dir,
     )
 
-    print("[build] Compiling standalone papers")
-    compiled_pdfs = tuple(
-        compile_latex_document(latex_installation, document_path, workdir=resolved_manuscript_dir)
-        for document_path in discover_compile_targets(resolved_manuscript_dir)
-    )
+    try:
+        latex_installation = resolve_latex_installation("pdflatex" if latex_backend == "auto" else latex_backend)
+    except RuntimeError:
+        print("Mathematical proofs complete; LaTeX compiler not found for PDF generation")
+        return BuildResult(
+            proof_output_dir=resolved_output_dir,
+            latex_artifact_dir=latex_artifact_dir,
+            manuscript_dir=resolved_manuscript_dir,
+            latex_backend=None,
+            compiled_pdfs=(),
+            final_pdf=None,
+        )
 
-    final_pdf = resolved_manuscript_dir / CANONICAL_JOURNAL_PDF
-    if not final_pdf.is_file():
-        final_pdf = compiled_pdfs[0]
+    target_document = resolved_manuscript_dir / MANUSCRIPT_TARGET_TEX
+    print(f"[build] Compiling executable paper: {_display_path(target_document)}")
+    compiled_pdf = compile_gravity_manuscript(
+        latex_installation.command,
+        target_document,
+        workdir=resolved_manuscript_dir,
+    )
 
     return BuildResult(
         proof_output_dir=resolved_output_dir,
         latex_artifact_dir=latex_artifact_dir,
         manuscript_dir=resolved_manuscript_dir,
         latex_backend=latex_installation.backend,
-        compiled_pdfs=compiled_pdfs,
-        final_pdf=final_pdf,
+        compiled_pdfs=(compiled_pdf,),
+        final_pdf=compiled_pdf,
     )
 
 
@@ -240,11 +260,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manuscript-dir", type=Path, default=ProjectPaths.PAPERS)
     parser.add_argument("--output-dir", type=Path, default=ProjectPaths.RESULTS)
-    parser.add_argument("--latex-backend", choices=("auto", *SUPPORTED_LATEX_BACKENDS), default="auto")
+    parser.add_argument("--latex-backend", choices=("auto", "pdflatex"), default="auto")
     parser.add_argument(
         "--validate-text",
         action="store_true",
-        help="Pass `--validate-text` through to the universal audit before LaTeX compilation.",
+        help="Pass `--validate-text` through to the universal audit before freezing manuscript constants.",
     )
     return parser.parse_args(list(argv) if argv is not None else None)
 
@@ -258,12 +278,11 @@ def main(argv: Sequence[str] | None = None) -> None:
         validate_text=args.validate_text,
     )
 
-    supporting_pdfs = [pdf_path for pdf_path in result.compiled_pdfs if pdf_path != result.final_pdf]
+    if result.final_pdf is None:
+        return
+
     print("")
-    print(f"[build] Completed journal PDF: {_display_path(result.final_pdf)}")
-    if supporting_pdfs:
-        supporting_paths = ", ".join(_display_path(pdf_path) for pdf_path in supporting_pdfs)
-        print(f"[build] Supporting PDFs: {supporting_paths}")
+    print(f"[build] Completed executable paper PDF: {_display_path(result.final_pdf)}")
 
 
 if __name__ == "__main__":
