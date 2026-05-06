@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from shbt.core.decoherence_engine import PointerStateDecoherenceError, PointerStateSelector
+from shbt.core.correspondence_engine import PointerStateDecoherenceError, PointerStateSelector
 import shbt.core.noether_bridge as noether_bridge
 from shbt.core.holographic_error_stabilizer import BulkChecksumVerification, HolographicStabilizer
 
