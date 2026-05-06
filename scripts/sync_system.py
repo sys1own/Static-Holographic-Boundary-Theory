@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 import sys
 from dataclasses import dataclass
@@ -15,6 +16,7 @@ if __package__ in (None, ""):
             sys.path.insert(0, str(candidate))
             break
 
+from shbt.config_loader import ConfigLoader, DEFAULT_UNIVERSAL_CONSTANTS_PATH
 from shbt.main import derive_transport_curvature_audit
 from shbt.paths import ProjectPaths
 
@@ -53,11 +55,57 @@ class SyncSnapshot:
     quark_delta_two_loop_deg: float
 
 
+@dataclass(frozen=True)
+class UniversalConstantsSnapshot:
+    lepton_level: int
+    quark_level: int
+    parent_level: int
+    g_sm: int
+    lepton_descendant: int
+    quark_descendant: int
+    topological_alpha_inverse: float
+    topological_alpha_inverse_numerator: int
+    topological_alpha_inverse_denominator: int
+    planck_mass_ev: float
+    lambda_obs_si_m2: float
+
+
 def _require_mapping(payload: dict[str, Any], key: str) -> dict[str, Any]:
     value = payload.get(key)
     if not isinstance(value, dict):
-        raise KeyError(f"Expected '{key}' to be a mapping in residual payload.")
+        raise KeyError(f"Expected '{key}' to be a mapping.")
     return value
+
+
+def _build_universal_constants_snapshot(config_loader: ConfigLoader) -> UniversalConstantsSnapshot:
+    universal_constants = config_loader.load_universal_constants()
+    tier_1 = _require_mapping(universal_constants, "tier_1")
+    tier_2 = _require_mapping(universal_constants, "tier_2")
+
+    lepton_level = int(tier_1["lepton_level"])
+    quark_level = int(tier_1["quark_level"])
+    parent_level = int(tier_1["parent_level"])
+    g_sm = int(tier_1["g_sm"])
+    lepton_descendant = parent_level // (2 * lepton_level)
+    quark_descendant = parent_level // (3 * quark_level)
+    alpha_numerator = g_sm * parent_level
+    alpha_denominator = lepton_level + quark_level
+    topological_alpha_inverse = alpha_numerator / alpha_denominator
+    lambda_obs_si_m2 = float(tier_2["planck2018_lambda_si_m2"])
+
+    return UniversalConstantsSnapshot(
+        lepton_level=lepton_level,
+        quark_level=quark_level,
+        parent_level=parent_level,
+        g_sm=g_sm,
+        lepton_descendant=lepton_descendant,
+        quark_descendant=quark_descendant,
+        topological_alpha_inverse=topological_alpha_inverse,
+        topological_alpha_inverse_numerator=alpha_numerator,
+        topological_alpha_inverse_denominator=alpha_denominator,
+        planck_mass_ev=float(tier_2["planck_mass_ev"]),
+        lambda_obs_si_m2=lambda_obs_si_m2,
+    )
 
 
 def _format_markdown_float(value: float, *, digits: int = 6) -> str:
@@ -94,19 +142,53 @@ def _load_residual_payload(path: Path) -> dict[str, Any]:
 
 
 def build_sync_snapshot(payload: dict[str, Any]) -> SyncSnapshot:
-    benchmark_tuple = tuple(int(value) for value in payload.get("benchmark_tuple", (26, 8, 312)))
+    return build_sync_snapshot_with_universal_constants(payload)
+
+
+def build_sync_snapshot_with_universal_constants(
+    payload: dict[str, Any],
+    *,
+    universal_snapshot: UniversalConstantsSnapshot | None = None,
+) -> SyncSnapshot:
+    if universal_snapshot is None:
+        universal_snapshot = _build_universal_constants_snapshot(ConfigLoader())
+
+    expected_benchmark_tuple = (
+        universal_snapshot.lepton_level,
+        universal_snapshot.quark_level,
+        universal_snapshot.parent_level,
+    )
+    benchmark_tuple = tuple(int(value) for value in payload.get("benchmark_tuple", expected_benchmark_tuple))
     if len(benchmark_tuple) != 3:
         raise ValueError("benchmark_tuple must contain exactly three integers.")
+    if benchmark_tuple != expected_benchmark_tuple:
+        raise ValueError(
+            "Residual benchmark_tuple "
+            f"{benchmark_tuple} does not match the configured universal constants {expected_benchmark_tuple}."
+        )
 
     unity = _require_mapping(payload, "unity_of_scale_identity")
     gauge = _require_mapping(payload, "gauge_residual_bookkeeping")
     informational_costs = _require_mapping(payload, "informational_costs")
     mixing_angle_drifts = _require_mapping(payload, "mixing_angle_drifts_deg")
 
+    reported_alpha_inverse = float(gauge["topological_alpha_inverse"])
+    if not math.isclose(
+        reported_alpha_inverse,
+        universal_snapshot.topological_alpha_inverse,
+        rel_tol=0.0,
+        abs_tol=1.0e-9,
+    ):
+        raise ValueError(
+            "Residual gauge_residual_bookkeeping.topological_alpha_inverse "
+            f"{reported_alpha_inverse} does not match the configured universal constants "
+            f"{universal_snapshot.topological_alpha_inverse}."
+        )
+
     transport_curvature = derive_transport_curvature_audit(
-        lepton_level=int(benchmark_tuple[0]),
-        quark_level=int(benchmark_tuple[1]),
-        parent_level=int(benchmark_tuple[2]),
+        lepton_level=int(expected_benchmark_tuple[0]),
+        quark_level=int(expected_benchmark_tuple[1]),
+        parent_level=int(expected_benchmark_tuple[2]),
     )
 
     return SyncSnapshot(
@@ -115,7 +197,7 @@ def build_sync_snapshot(payload: dict[str, Any]) -> SyncSnapshot:
         exact_epsilon_lambda=float(unity.get("exact_epsilon_lambda", unity["epsilon_lambda"])),
         register_noise_floor=float(unity["register_noise_floor"]),
         exact_register_noise_floor=float(unity.get("exact_register_noise_floor", unity["register_noise_floor"])),
-        gauge_topological_alpha_inverse=float(gauge["topological_alpha_inverse"]),
+        gauge_topological_alpha_inverse=reported_alpha_inverse,
         gauge_codata_alpha_inverse=float(gauge["codata_alpha_inverse"]),
         gauge_two_loop_residual_fraction=float(gauge["two_loop_residual_fraction"]),
         gauge_two_loop_residual_percent=float(gauge["two_loop_residual_percent"]),
@@ -268,13 +350,30 @@ def _replace_or_insert_physics_constants_block(physics_text: str, block: str) ->
     return physics_text.rstrip() + "\n\n" + block + "\n"
 
 
-def sync_physics_constants(*, physics_constants_path: Path, snapshot: SyncSnapshot) -> Path:
+def sync_physics_constants(
+    *,
+    physics_constants_path: Path,
+    snapshot: SyncSnapshot,
+    universal_snapshot: UniversalConstantsSnapshot | None = None,
+) -> Path:
     resolved_path = Path(physics_constants_path)
     physics_text = resolved_path.read_text(encoding="utf-8")
+    if universal_snapshot is None:
+        universal_snapshot = _build_universal_constants_snapshot(ConfigLoader())
 
     macro_updates = {
-        "alphaSurfBenchmarkDecimal": _format_latex_float(snapshot.gauge_topological_alpha_inverse),
-        "alphaSurfBenchmarkRounded": f"{snapshot.gauge_topological_alpha_inverse:.3f}",
+        "alphaSurfBenchmarkDecimal": _format_latex_float(universal_snapshot.topological_alpha_inverse),
+        "alphaSurfBenchmarkExact": rf"\dfrac{{{universal_snapshot.topological_alpha_inverse_numerator}}}{{{universal_snapshot.topological_alpha_inverse_denominator}}}",
+        "alphaSurfBenchmarkRounded": f"{universal_snapshot.topological_alpha_inverse:.3f}",
+        "benchmarkLeptonDescendant": str(universal_snapshot.lepton_descendant),
+        "benchmarkLeptonLevel": str(universal_snapshot.lepton_level),
+        "benchmarkLambdaMetersInverseSquared": _format_latex_float(universal_snapshot.lambda_obs_si_m2),
+        "benchmarkParentLevel": str(universal_snapshot.parent_level),
+        "benchmarkPlanckMassEv": _format_latex_float(universal_snapshot.planck_mass_ev),
+        "benchmarkQuarkDescendant": str(universal_snapshot.quark_descendant),
+        "benchmarkQuarkLevel": str(universal_snapshot.quark_level),
+        "benchmarkVisibleBranch": f"({universal_snapshot.lepton_level},{universal_snapshot.quark_level},{universal_snapshot.parent_level})",
+        "benchmarkVisiblePair": f"({universal_snapshot.lepton_level},{universal_snapshot.quark_level})",
         "leptonThetaTwelveBetaTwoLoop": _format_latex_float(snapshot.lepton_theta12_two_loop_deg),
         "leptonThetaThirteenBetaTwoLoop": _format_latex_float(snapshot.lepton_theta13_two_loop_deg),
         "leptonThetaTwentyThreeBetaTwoLoop": _format_latex_float(snapshot.lepton_theta23_two_loop_deg),
@@ -300,13 +399,21 @@ def synchronize_system(
     residuals_path: Path = DEFAULT_RESIDUALS_PATH,
     readme_path: Path = DEFAULT_README_PATH,
     physics_constants_path: Path = DEFAULT_PHYSICS_CONSTANTS_PATH,
+    universal_constants_path: Path = DEFAULT_UNIVERSAL_CONSTANTS_PATH,
 ) -> tuple[Path, Path]:
     payload = _load_residual_payload(Path(residuals_path))
-    snapshot = build_sync_snapshot(payload)
+    universal_snapshot = _build_universal_constants_snapshot(
+        ConfigLoader(universal_constants_path=universal_constants_path)
+    )
+    snapshot = build_sync_snapshot_with_universal_constants(
+        payload,
+        universal_snapshot=universal_snapshot,
+    )
     updated_readme = sync_readme(readme_path=Path(readme_path), snapshot=snapshot)
     updated_physics_constants = sync_physics_constants(
         physics_constants_path=Path(physics_constants_path),
         snapshot=snapshot,
+        universal_snapshot=universal_snapshot,
     )
     return updated_readme, updated_physics_constants
 
@@ -316,6 +423,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--residuals-path", type=Path, default=DEFAULT_RESIDUALS_PATH)
     parser.add_argument("--readme-path", type=Path, default=DEFAULT_README_PATH)
     parser.add_argument("--physics-constants-path", type=Path, default=DEFAULT_PHYSICS_CONSTANTS_PATH)
+    parser.add_argument("--universal-constants-path", type=Path, default=DEFAULT_UNIVERSAL_CONSTANTS_PATH)
     return parser.parse_args(list(argv) if argv is not None else None)
 
 
@@ -325,6 +433,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         residuals_path=args.residuals_path,
         readme_path=args.readme_path,
         physics_constants_path=args.physics_constants_path,
+        universal_constants_path=args.universal_constants_path,
     )
     print(f"README synced                 : {updated_readme}")
     print(f"physics_constants synced      : {updated_physics_constants}")
@@ -335,8 +444,12 @@ __all__ = [
     "DEFAULT_PHYSICS_CONSTANTS_PATH",
     "DEFAULT_README_PATH",
     "DEFAULT_RESIDUALS_PATH",
+    "DEFAULT_UNIVERSAL_CONSTANTS_PATH",
     "SyncSnapshot",
+    "UniversalConstantsSnapshot",
     "build_sync_snapshot",
+    "build_sync_snapshot_with_universal_constants",
+    "_build_universal_constants_snapshot",
     "main",
     "parse_args",
     "sync_physics_constants",
