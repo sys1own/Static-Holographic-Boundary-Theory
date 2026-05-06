@@ -387,6 +387,306 @@ def render_residue_table(st: Any, residue_table: list[dict[str, str]], derivatio
     return residues
 
 
+def _require_plotly() -> Any:
+    try:
+        import plotly.graph_objects as go
+    except ModuleNotFoundError as error:
+        raise SystemExit(
+            "Plotly is required to render the Noether Bridge decoherence viewer. "
+            "Install it, then rerun: streamlit run scripts/dashboard.py"
+        ) from error
+    return go
+
+
+def _resolve_parent_plane(scan: Any, parent_level: int) -> tuple[np.ndarray, int]:
+    resolved_parent_level = int(parent_level)
+    parent_levels = tuple(int(level) for level in scan.parent_levels)
+    if resolved_parent_level in parent_levels:
+        parent_index = parent_levels.index(resolved_parent_level)
+    else:
+        parent_index = min(
+            range(len(parent_levels)),
+            key=lambda index: abs(parent_levels[index] - resolved_parent_level),
+        )
+        resolved_parent_level = parent_levels[parent_index]
+    return np.asarray(scan.delta_fr_grid[:, :, parent_index], dtype=float), resolved_parent_level
+
+
+@lru_cache(maxsize=256)
+def build_noether_bridge_symmetry_breaking_path(
+    lepton_level: int = LEPTON_LEVEL,
+    quark_level: int = QUARK_LEVEL,
+    parent_level: int = PARENT_LEVEL,
+    precision: int = DEFAULT_PRECISION,
+) -> tuple[DetuningSnapshot, ...]:
+    target_branch = (int(lepton_level), int(quark_level), int(parent_level))
+    max_shift = max(
+        abs(target_branch[0] - int(LEPTON_LEVEL)),
+        abs(target_branch[1] - int(QUARK_LEVEL)),
+        abs(target_branch[2] - int(PARENT_LEVEL)),
+    )
+    branches: list[tuple[int, int, int]] = []
+    for step in range(max_shift + 1):
+        branch_coordinates: list[int] = []
+        for axis, benchmark_coordinate in enumerate(BENCHMARK_BRANCH):
+            delta = target_branch[axis] - benchmark_coordinate
+            if delta > 0:
+                branch_coordinates.append(benchmark_coordinate + min(step, delta))
+            elif delta < 0:
+                branch_coordinates.append(benchmark_coordinate - min(step, -delta))
+            else:
+                branch_coordinates.append(benchmark_coordinate)
+        branch = tuple(branch_coordinates)
+        if not branches or branch != branches[-1]:
+            branches.append(branch)
+    return tuple(
+        build_detuning_snapshot_for_branch(*branch, precision=precision)
+        for branch in branches
+    )
+
+
+def build_noether_bridge_decoherence_figure(
+    scan: Any,
+    detuning: DetuningSnapshot,
+    *,
+    precision: int = DEFAULT_PRECISION,
+) -> Any:
+    go = _require_plotly()
+    path_snapshots = build_noether_bridge_symmetry_breaking_path(
+        *detuning.candidate_branch,
+        precision=precision,
+    )
+    quark_axis = np.asarray(scan.quark_levels, dtype=float)
+    lepton_axis = np.asarray(scan.lepton_levels, dtype=float)
+
+    z_ceiling = max(
+        max(
+            float(np.max(_resolve_parent_plane(scan, snapshot.candidate_branch[2])[0]))
+            for snapshot in path_snapshots
+        ),
+        max(float(snapshot.rigidity_point.delta_fr) for snapshot in path_snapshots),
+        1.0e-12,
+    )
+
+    def _frame_title(snapshot: DetuningSnapshot, step_index: int, step_count: int) -> str:
+        state_label = (
+            "benchmark lock"
+            if snapshot.benchmark_selected
+            else f"{KERNEL_PANIC_LABEL}: {_candidate_label(snapshot)}"
+        )
+        return (
+            "Noether Bridge Decoherence Renderer"
+            "<br><sup>"
+            f"Step {step_index}/{step_count} • "
+            f"K={snapshot.candidate_branch[2]} slice • "
+            "Z-axis = framing anomaly residue 𝓔 • "
+            f"{state_label}"
+            "</sup>"
+        )
+
+    def _surface_trace(snapshot: DetuningSnapshot) -> Any:
+        surface, resolved_parent_level = _resolve_parent_plane(
+            scan,
+            snapshot.candidate_branch[2],
+        )
+        return go.Surface(
+            x=quark_axis,
+            y=lepton_axis,
+            z=surface,
+            colorscale=[
+                [0.0, "#0f172a"],
+                [0.2, "#1d4ed8"],
+                [0.5, "#22c55e"],
+                [0.8, "#f59e0b"],
+                [1.0, "#dc2626"],
+            ],
+            cmin=0.0,
+            cmax=z_ceiling,
+            colorbar={"title": "𝓔 = Δ_fr"},
+            contours={
+                "z": {
+                    "show": True,
+                    "usecolormap": True,
+                    "highlightcolor": "#111827",
+                    "project_z": True,
+                }
+            },
+            hovertemplate=(
+                f"K={resolved_parent_level}<br>"
+                "k_q=%{x:.0f}<br>"
+                "k_l=%{y:.0f}<br>"
+                "𝓔=%{z:.3e}"
+                "<extra></extra>"
+            ),
+            name=f"K={resolved_parent_level} surface",
+            opacity=0.94,
+            showscale=True,
+        )
+
+    def _benchmark_trace() -> Any:
+        return go.Scatter3d(
+            x=[float(QUARK_LEVEL)],
+            y=[float(LEPTON_LEVEL)],
+            z=[0.0],
+            mode="markers+text",
+            marker={
+                "size": 8,
+                "color": "#f59e0b",
+                "symbol": "diamond",
+                "line": {"color": "white", "width": 1},
+            },
+            text=["benchmark"],
+            textposition="top center",
+            hovertemplate=(
+                f"benchmark={BENCHMARK_BRANCH}<br>"
+                "𝓔=0"
+                "<extra></extra>"
+            ),
+            name="Benchmark branch",
+        )
+
+    def _path_trace(path: tuple[DetuningSnapshot, ...]) -> Any:
+        return go.Scatter3d(
+            x=[float(snapshot.candidate_branch[1]) for snapshot in path],
+            y=[float(snapshot.candidate_branch[0]) for snapshot in path],
+            z=[float(snapshot.rigidity_point.delta_fr) for snapshot in path],
+            mode="lines+markers",
+            line={"color": "#111827", "width": 7},
+            marker={
+                "size": [7 if snapshot.benchmark_selected else 9 for snapshot in path],
+                "color": ["#10b981" if snapshot.benchmark_selected else "#ef4444" for snapshot in path],
+                "symbol": "circle",
+                "line": {"color": "white", "width": 0.8},
+            },
+            text=[
+                (
+                    f"branch={_candidate_label(snapshot)}<br>"
+                    f"Δ={_shift_label(snapshot)}<br>"
+                    f"𝓔={float(snapshot.rigidity_point.delta_fr):.3e}<br>"
+                    f"|E|={float(abs(snapshot.anomaly_audit.closure_tensor.amplitude)):.3e} eV^4<br>"
+                    f"|J|={float(abs(snapshot.anomaly_audit.anomalous_source_si_m2.amplitude)):.3e} m^-2"
+                )
+                for snapshot in path
+            ],
+            hovertemplate="%{text}<extra></extra>",
+            name="Symmetry-breaking path",
+        )
+
+    def _candidate_trace(snapshot: DetuningSnapshot) -> Any:
+        return go.Scatter3d(
+            x=[float(snapshot.candidate_branch[1])],
+            y=[float(snapshot.candidate_branch[0])],
+            z=[float(snapshot.rigidity_point.delta_fr)],
+            mode="markers+text",
+            marker={
+                "size": 12 if snapshot.benchmark_selected else 14,
+                "color": "#10b981" if snapshot.benchmark_selected else "#dc2626",
+                "symbol": "diamond",
+                "line": {"color": "white", "width": 1.2},
+            },
+            text=["locked" if snapshot.benchmark_selected else "decohered"],
+            textposition="top center",
+            hovertemplate=(
+                f"branch={_candidate_label(snapshot)}<br>"
+                f"Δ={_shift_label(snapshot)}<br>"
+                f"𝓔={float(snapshot.rigidity_point.delta_fr):.3e}<br>"
+                f"|E|={float(abs(snapshot.anomaly_audit.closure_tensor.amplitude)):.3e} eV^4<br>"
+                f"|J|={float(abs(snapshot.anomaly_audit.anomalous_source_si_m2.amplitude)):.3e} m^-2"
+                "<extra></extra>"
+            ),
+            name="Current branch",
+        )
+
+    def _frame_data(path_index: int) -> list[Any]:
+        snapshot = path_snapshots[path_index]
+        visible_path = path_snapshots[: path_index + 1]
+        return [
+            _surface_trace(snapshot),
+            _benchmark_trace(),
+            _path_trace(visible_path),
+            _candidate_trace(snapshot),
+        ]
+
+    frames = [
+        go.Frame(
+            name=f"step-{index}",
+            data=_frame_data(index),
+            layout={
+                "title": {
+                    "text": _frame_title(snapshot, index, len(path_snapshots) - 1),
+                }
+            },
+        )
+        for index, snapshot in enumerate(path_snapshots)
+    ]
+    initial_index = len(path_snapshots) - 1
+    figure = go.Figure(data=_frame_data(initial_index), frames=frames)
+    figure.update_layout(
+        title={"text": _frame_title(path_snapshots[initial_index], initial_index, initial_index)},
+        scene={
+            "xaxis": {"title": "k_q"},
+            "yaxis": {"title": "k_l"},
+            "zaxis": {
+                "title": "Framing anomaly residue 𝓔",
+                "range": [0.0, z_ceiling * 1.08],
+            },
+            "aspectmode": "cube",
+            "camera": {"eye": {"x": 1.6, "y": 1.5, "z": 1.1}},
+        },
+        legend={"orientation": "h", "y": 1.02, "x": 0.0},
+        margin={"l": 0, "r": 0, "t": 72, "b": 0},
+        updatemenus=[
+            {
+                "type": "buttons",
+                "direction": "left",
+                "x": 0.0,
+                "y": 1.08,
+                "buttons": [
+                    {
+                        "label": "Replay symmetry breaking",
+                        "method": "animate",
+                        "args": [
+                            None,
+                            {
+                                "fromcurrent": False,
+                                "frame": {"duration": 450, "redraw": True},
+                                "transition": {"duration": 0},
+                            },
+                        ],
+                    },
+                    {
+                        "label": "Pause",
+                        "method": "animate",
+                        "args": [[None], {"mode": "immediate", "frame": {"duration": 0, "redraw": False}}],
+                    },
+                ],
+            }
+        ],
+        sliders=[
+            {
+                "active": initial_index,
+                "currentvalue": {"prefix": "Detuning step: "},
+                "steps": [
+                    {
+                        "label": _candidate_label(snapshot),
+                        "method": "animate",
+                        "args": [
+                            [f"step-{index}"],
+                            {
+                                "mode": "immediate",
+                                "frame": {"duration": 0, "redraw": True},
+                                "transition": {"duration": 0},
+                            },
+                        ],
+                    }
+                    for index, snapshot in enumerate(path_snapshots)
+                ],
+            }
+        ],
+    )
+    return figure
+
+
 def build_rigidity_landscape_figure(
     scan: Any,
     detuning: DetuningSnapshot,
@@ -648,6 +948,22 @@ def render_dashboard() -> None:
 
     plot_column, detail_column = st.columns((1.5, 1.0), gap="large")
     with plot_column:
+        st.subheader("Noether Bridge Decoherence Renderer")
+        st.caption(
+            "3D surface = the current parent-layer slice K with Z-axis 𝓔=Δ_fr; "
+            "the animation replays the discrete symmetry-breaking path from the "
+            "benchmark branch to the selected candidate."
+        )
+        st.plotly_chart(
+            build_noether_bridge_decoherence_figure(
+                scan,
+                detuning,
+                precision=precision,
+            ),
+            use_container_width=True,
+        )
+
+        st.subheader("Rigidity Landscape (3D Moat Plot)")
         figure = build_rigidity_landscape_figure(scan, detuning, metric_key=metric_key, log_scale=log_scale)
         try:
             st.pyplot(figure, clear_figure=True, use_container_width=True)
