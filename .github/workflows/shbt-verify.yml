@@ -39,7 +39,7 @@ jobs:
       - name: Generate Residual Ledger
         run: |
           mkdir -p results
-          # Added scripts to PYTHONPATH to resolve standalone script imports[cite: 13]
+          # Critical: Added scripts to PYTHONPATH to resolve script-to-script imports[cite: 13, 14]
           export PYTHONPATH=$PYTHONPATH:$(pwd)/src:$(pwd)/scripts
           python scripts/export.py
       - name: Formal Rigidity Unit Tests
