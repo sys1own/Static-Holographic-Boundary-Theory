@@ -2,14 +2,22 @@ from __future__ import annotations
 
 from dataclasses import replace
 import math
+import sys
 from pathlib import Path
 
 import numpy as np
 
-from .constants import SUPPLEMENTARY_IH_SUPPORT_MAP_FILENAME, SUPPLEMENTARY_TOLERANCE_TABLE_FILENAME
-from .plotting_runtime import managed_figure
-from .runtime_config import DEFAULT_SOLVER_CONFIG, SolverConfig
-from .template_utils import render_latex_table
+if __package__ in (None, ""):
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent if parent.name == "src" else parent / "src"
+        if (candidate / "shbt").is_dir():
+            sys.path.insert(0, str(candidate))
+            break
+
+from plotting_runtime import managed_figure
+from shbt.constants import SUPPLEMENTARY_IH_SUPPORT_MAP_FILENAME, SUPPLEMENTARY_TOLERANCE_TABLE_FILENAME
+from shbt.runtime_config import DEFAULT_SOLVER_CONFIG, SolverConfig
+from shbt.template_utils import render_latex_table
 
 
 def _coerce_solver_config(config: SolverConfig | tuple[float, float]) -> tuple[SolverConfig, tuple[float, float]]:
