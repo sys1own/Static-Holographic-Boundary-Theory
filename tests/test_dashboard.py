@@ -172,6 +172,7 @@ def test_build_detuning_snapshot_detects_anomaly_spike() -> None:
 
     assert benchmark.benchmark_selected is True
     assert benchmark.candidate_branch == module.BENCHMARK_BRANCH
+    assert module._kernel_state_label(benchmark) == module.BENCHMARK_LOCKED_LABEL
     assert benchmark.rigidity_point.total_residue == 0.0
     assert benchmark.anomaly_audit.framing.delta_fr == 0
     assert benchmark.anomaly_audit.closure_tensor.amplitude == 0
@@ -179,6 +180,7 @@ def test_build_detuning_snapshot_detects_anomaly_spike() -> None:
 
     assert detuned.benchmark_selected is False
     assert detuned.candidate_branch == (27, 8, 312)
+    assert module._kernel_state_label(detuned) == module.KERNEL_PANIC_LABEL
     assert detuned.rigidity_point.total_residue > 0.0
     assert detuned.anomaly_audit.framing.delta_fr != 0
     assert detuned.anomaly_audit.closure_tensor.amplitude > 0
@@ -215,9 +217,9 @@ def test_render_dashboard_exposes_branch_sliders_and_live_residue_table(monkeypa
             "Lepton scan half-width": 2,
             "Quark scan half-width": 3,
             "Parent scan half-width": 4,
-            "k_l": 26,
-            "k_q": 8,
-            "K": 312,
+            "Δk_l": 1,
+            "Δk_q": -1,
+            "ΔK": -1,
         }
     )
     residue_table = [
@@ -236,15 +238,15 @@ def test_render_dashboard_exposes_branch_sliders_and_live_residue_table(monkeypa
     ]
     detuning = module.DetuningSnapshot(
         benchmark_branch=module.BENCHMARK_BRANCH,
-        candidate_branch=module.BENCHMARK_BRANCH,
-        shift=(0, 0, 0),
-        rigidity_point=SimpleNamespace(total_residue=0.0, delta_fr=0.0, c_dark_shift=0.0, diophantine_gap=0.0),
+        candidate_branch=(27, 7, 311),
+        shift=(1, -1, -1),
+        rigidity_point=SimpleNamespace(total_residue=1.25e-2, delta_fr=1.0 / 17.0, c_dark_shift=2.0e-3, diophantine_gap=1.0, coordinates=(27, 7, 311)),
         anomaly_audit=SimpleNamespace(
-            framing=SimpleNamespace(delta_fr=Fraction(0, 1), lepton_gap=Fraction(0, 1), quark_gap=Fraction(0, 1)),
-            closure_tensor=SimpleNamespace(amplitude=0.0),
-            anomalous_source_si_m2=SimpleNamespace(amplitude=0.0),
-            wep_status="Protected",
-            verdict="Benchmark locked",
+            framing=SimpleNamespace(delta_fr=Fraction(1, 17), lepton_gap=Fraction(1, 17), quark_gap=Fraction(-1, 17)),
+            closure_tensor=SimpleNamespace(amplitude=2.5e-4),
+            anomalous_source_si_m2=SimpleNamespace(amplitude=3.5e-7),
+            wep_status="Violated",
+            verdict="Kernel panic",
         ),
     )
     derivation = module.DerivationSnapshot(
@@ -264,7 +266,7 @@ def test_render_dashboard_exposes_branch_sliders_and_live_residue_table(monkeypa
 
     monkeypatch.setattr(module, "_require_streamlit", lambda: fake_st)
     monkeypatch.setattr(module, "build_rigidity_scan", lambda *args, **kwargs: SimpleNamespace())
-    monkeypatch.setattr(module, "build_detuning_snapshot_for_branch", lambda *args, **kwargs: detuning)
+    monkeypatch.setattr(module, "build_detuning_snapshot", lambda *args, **kwargs: detuning)
     monkeypatch.setattr(module, "build_derivation_snapshot", lambda *args, **kwargs: derivation)
     monkeypatch.setattr(module, "build_residue_comparison_table", lambda *args, **kwargs: residue_table)
     monkeypatch.setattr(module, "build_rigidity_landscape_figure", lambda *args, **kwargs: module.plt.figure())
@@ -275,10 +277,16 @@ def test_render_dashboard_exposes_branch_sliders_and_live_residue_table(monkeypa
     slider_calls = {call["label"]: call for call in fake_st.slider_calls}
 
     assert fake_st.page_config == {"page_title": "SHBT Universe Tuner", "layout": "wide"}
-    assert slider_calls["k_l"] == {"label": "k_l", "min_value": 24, "max_value": 28, "value": 26}
-    assert slider_calls["k_q"] == {"label": "k_q", "min_value": 5, "max_value": 11, "value": 8}
-    assert slider_calls["K"] == {"label": "K", "min_value": 308, "max_value": 316, "value": 312}
+    assert slider_calls["Δk_l"] == {"label": "Δk_l", "min_value": -2, "max_value": 2, "value": 0}
+    assert slider_calls["Δk_q"] == {"label": "Δk_q", "min_value": -3, "max_value": 3, "value": 0}
+    assert slider_calls["ΔK"] == {"label": "ΔK", "min_value": -4, "max_value": 4, "value": 0}
     assert "Live Residue vs Anchor Ledger" in fake_st.subheaders
+    assert fake_st.status_messages[0][0] == "error"
+    assert "Kernel Panic" in fake_st.status_messages[0][1]
+    first_metric_row = [metric for column in fake_st.column_sets[0] for metric in column.metric_calls]
+    assert ("Kernel state", "Kernel Panic") in first_metric_row
+    assert ("Nudge", "(+1, -1, -1)") in first_metric_row
     assert fake_st.dataframes[0]["dataframe"].to_dict("records") == residue_table
     assert fake_st.dataframes[0]["hide_index"] is True
     assert fake_st.dataframes[0]["use_container_width"] is True
+    assert fake_st.json_payloads[0]["kernel_state"] == {"label": "Kernel Panic", "panic": True}
