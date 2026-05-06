@@ -299,6 +299,14 @@ def test_render_dashboard_exposes_branch_sliders_and_live_residue_table(monkeypa
     assert fake_st.dataframes[0]["hide_index"] is True
     assert fake_st.dataframes[0]["use_container_width"] is True
     assert fake_st.json_payloads[0]["kernel_state"] == {"label": "Kernel Panic", "panic": True}
+    assert fake_st.json_payloads[0]["residues"] == {
+        "LEPTON_LEVEL": float(module.LEPTON_LEVEL),
+        "QUARK_LEVEL": float(module.QUARK_LEVEL),
+        "PARENT_LEVEL": float(module.PARENT_LEVEL),
+        "k_l": float(module.LEPTON_LEVEL),
+        "k_q": float(module.QUARK_LEVEL),
+        "K": float(module.PARENT_LEVEL),
+    }
 
 
 def test_render_dashboard_accepts_absolute_coordinate_aliases(monkeypatch) -> None:
