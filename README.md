@@ -129,7 +129,7 @@ The repository includes a production-grade diagnostic stack to ensure the mathem
 
 `plot_local_moat.py` generates a high-precision map of the Local Moat surrounding the anomaly-free island and writes `results/local_moat_topology.png`. The figure makes the moat visually explicit by showing the steep rise of the framing anomaly $\Delta_{\rm fr}$ under any off-shell coordinate shift away from $(26, 8, 312)$.
 
-`map_rigidity_landscape.py` renders a benchmark-centered $5 \times 5$ rigidity moat at fixed $K=312$ and writes `results/rigidity_moat.png` plus `results/rigidity_moat.json`. The resulting 3D heatmap lifts the framing-anomaly residue $\mathcal E = |\Delta_{\rm fr}|$ off the $(k_{\ell}, k_q)$ plane, exposing the $(26, 8, 312)$ branch as the singular stability valley and every integer detuning as immediate decoherence.
+`map_rigidity_landscape.py` renders a benchmark-centered $5 \times 5 \times 5$ rigidity moat around $(26, 8, 312)$ and writes `results/rigidity_moat.png` plus `results/rigidity_moat.json`. The resulting 3D heatmap colors the scanned $(k_{\ell}, k_q, K)$ lattice by the framing-anomaly residue $\mathcal E = |\Delta_{\rm fr}|$, exposing the published branch as the singular stability well and every integer detuning as immediate decoherence.
 
 ### Formal Exception Testing (`test_anomaly_logic.py`)
 
