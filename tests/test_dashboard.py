@@ -159,6 +159,9 @@ def test_build_derivation_snapshot_exposes_live_ledger() -> None:
     assert snapshot.neutrino_floor_mev > 0
     assert snapshot.epsilon_lambda <= snapshot.decimal_tolerance
     assert snapshot.decimal_passed is True
+    assert snapshot.residues["k_l"] == module.LEPTON_LEVEL
+    assert snapshot.residues["k_q"] == module.QUARK_LEVEL
+    assert snapshot.residues["K"] == module.PARENT_LEVEL
     assert "Derivation Ledger" in snapshot.ledger_text
     assert "Alpha Surface Inverse" in snapshot.ledger_text
     assert "Unity of Scale Identity" in snapshot.ledger_text
@@ -277,6 +280,9 @@ def test_render_dashboard_exposes_branch_sliders_and_live_residue_table(monkeypa
     slider_calls = {call["label"]: call for call in fake_st.slider_calls}
 
     assert fake_st.page_config == {"page_title": "SHBT Universe Tuner", "layout": "wide"}
+    assert slider_calls["k_l"] == {"label": "k_l", "min_value": 24, "max_value": 28, "value": 26}
+    assert slider_calls["k_q"] == {"label": "k_q", "min_value": 5, "max_value": 11, "value": 8}
+    assert slider_calls["K"] == {"label": "K", "min_value": 308, "max_value": 316, "value": 312}
     assert slider_calls["Δk_l"] == {"label": "Δk_l", "min_value": -2, "max_value": 2, "value": 0}
     assert slider_calls["Δk_q"] == {"label": "Δk_q", "min_value": -3, "max_value": 3, "value": 0}
     assert slider_calls["ΔK"] == {"label": "ΔK", "min_value": -4, "max_value": 4, "value": 0}
@@ -290,3 +296,62 @@ def test_render_dashboard_exposes_branch_sliders_and_live_residue_table(monkeypa
     assert fake_st.dataframes[0]["hide_index"] is True
     assert fake_st.dataframes[0]["use_container_width"] is True
     assert fake_st.json_payloads[0]["kernel_state"] == {"label": "Kernel Panic", "panic": True}
+
+
+def test_render_dashboard_accepts_absolute_coordinate_aliases(monkeypatch) -> None:
+    module = _load_script_module()
+    fake_st = _StreamlitStub(
+        slider_values={
+            "Lepton scan half-width": 2,
+            "Quark scan half-width": 3,
+            "Parent scan half-width": 4,
+            "k_l": 27,
+            "k_q": 7,
+            "K": 311,
+        }
+    )
+    detuning = module.DetuningSnapshot(
+        benchmark_branch=module.BENCHMARK_BRANCH,
+        candidate_branch=(27, 7, 311),
+        shift=(1, -1, -1),
+        rigidity_point=SimpleNamespace(total_residue=1.0, delta_fr=1.0, c_dark_shift=1.0, diophantine_gap=1.0),
+        anomaly_audit=SimpleNamespace(
+            framing=SimpleNamespace(delta_fr=Fraction(1, 17), lepton_gap=Fraction(1, 17), quark_gap=Fraction(-1, 17)),
+            closure_tensor=SimpleNamespace(amplitude=1.0),
+            anomalous_source_si_m2=SimpleNamespace(amplitude=1.0),
+            wep_status="Violated",
+            verdict="Kernel panic",
+        ),
+    )
+    call_log: dict[str, tuple[object, ...]] = {}
+
+    monkeypatch.setattr(module, "_require_streamlit", lambda: fake_st)
+    monkeypatch.setattr(module, "build_rigidity_scan", lambda *args, **kwargs: SimpleNamespace())
+    monkeypatch.setattr(module, "build_detuning_snapshot", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("delta path should not be used")))
+    monkeypatch.setattr(
+        module,
+        "build_detuning_snapshot_for_branch",
+        lambda *args, **kwargs: (call_log.setdefault("branch", args), detuning)[1],
+    )
+    monkeypatch.setattr(module, "build_derivation_snapshot", lambda *args, **kwargs: module.DerivationSnapshot(
+        precision=module.DEFAULT_PRECISION,
+        ledger_text="Derivation Ledger",
+        alpha_surface_inverse=Decimal("1"),
+        codata_alpha_inverse=Decimal("1"),
+        proton_electron_mass_ratio=Decimal("1"),
+        codata_proton_electron_mass_ratio=Decimal("1"),
+        kappa_d5=Decimal("1"),
+        neutrino_floor_mev=Decimal("1"),
+        epsilon_lambda=Decimal("1e-199"),
+        decimal_tolerance=Decimal("1e-120"),
+        register_noise_floor=Decimal("1e-123"),
+        decimal_passed=True,
+        residues={"k_l": module.LEPTON_LEVEL, "k_q": module.QUARK_LEVEL, "K": module.PARENT_LEVEL},
+    ))
+    monkeypatch.setattr(module, "build_residue_comparison_table", lambda *args, **kwargs: [])
+    monkeypatch.setattr(module, "build_rigidity_landscape_figure", lambda *args, **kwargs: module.plt.figure())
+    monkeypatch.setattr(module, "build_detuning_breakdown_figure", lambda *args, **kwargs: module.plt.figure())
+
+    module.render_dashboard()
+
+    assert call_log["branch"] == (27, 7, 311)
