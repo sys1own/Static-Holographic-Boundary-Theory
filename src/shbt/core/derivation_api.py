@@ -354,6 +354,24 @@ class PhysicalLedger:
     def neutrino_floor_mev(self) -> Decimal:
         return self.mass_bridge.neutrino_floor_mev
 
+    @property
+    def residues(self) -> dict[str, int | Decimal | bool]:
+        return {
+            "k_l": int(self.vacuum.lepton_level),
+            "k_q": int(self.vacuum.quark_level),
+            "K": int(self.vacuum.parent_level),
+            "LEPTON_LEVEL": int(self.vacuum.lepton_level),
+            "QUARK_LEVEL": int(self.vacuum.quark_level),
+            "PARENT_LEVEL": int(self.vacuum.parent_level),
+            "alpha_inverse_decimal": self.alpha_inverse_decimal,
+            "mu_residue": self.mu_residue,
+            "neutrino_floor_mev": self.neutrino_floor_mev,
+            "epsilon_lambda": self.unity_of_scale.epsilon_lambda,
+            "decimal_tolerance": self.unity_of_scale.decimal_tolerance,
+            "register_noise_floor": self.unity_of_scale.register_noise_floor,
+            "decimal_passed": self.unity_of_scale.passed,
+        }
+
 
 @dataclass(frozen=True)
 class CheckedInUnityPayload:
@@ -821,6 +839,10 @@ class UniverseFactory:
             mass_bridge=mass_bridge,
             unity_of_scale=unity_of_scale,
         )
+
+    @classmethod
+    def build_residue_dictionary(cls, *, precision: int = DEFAULT_PRECISION) -> dict[str, int | Decimal | bool]:
+        return cls.calculate_physical_ledger(precision=precision).residues
 
     @classmethod
     def build_derivation_ledger(cls, *, precision: int = DEFAULT_PRECISION) -> str:
