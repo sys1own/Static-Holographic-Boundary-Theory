@@ -149,7 +149,7 @@ To go from the branch-fixed integer inputs to the compiled manuscript PDFs in on
 python scripts/build_manuscript.py
 ```
 
-This orchestrator checks for a local `latexmk` or `pdflatex` installation, runs all four Sector Proofs, executes the full Universal Audit, refreshes the manuscript-facing macro export, and compiles the standalone sources in `papers/`, with `papers/tn.pdf` as the journal PDF.
+This orchestrator checks for a local `pdflatex` installation, runs all four Sector Proofs, executes the full Universal Audit, refreshes the manuscript-facing macro export, and compiles `papers/gravity.tex`, yielding `papers/gravity.pdf` when LaTeX is available.
 
 The package entrypoint in `src/shbt/main.py` regenerates the benchmark-facing artifacts, numerical audits, manuscript exports, and reviewer packets from the disclosed branch data. The intended use is verification of a rigid branch-fixed theorem stack, not parameter search.
 
