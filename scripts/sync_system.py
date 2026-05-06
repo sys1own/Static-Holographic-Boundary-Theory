@@ -137,8 +137,14 @@ def _resolve_sync_path(path: Path | str, *, base_dir: Path) -> Path:
     resolved_path = Path(path).expanduser()
     if resolved_path.is_absolute():
         return resolved_path.resolve()
+    cwd_relative_path = resolved_path.resolve()
+    if cwd_relative_path.exists():
+        return cwd_relative_path
+    repo_relative_path = (ProjectPaths.ROOT / resolved_path).resolve()
+    if repo_relative_path.exists():
+        return repo_relative_path
     if resolved_path.parts and resolved_path.parts[0] in _SYNC_TOP_LEVEL_PATHS:
-        return (ProjectPaths.ROOT / resolved_path).resolve()
+        return repo_relative_path
     return (Path(base_dir) / resolved_path).resolve()
 
 
@@ -205,13 +211,7 @@ def _format_latex_float(value: float, *, digits: int = 10) -> str:
 
 
 def _resolve_project_path(path: Path) -> Path:
-    candidate = Path(path).expanduser()
-    if candidate.is_absolute():
-        return candidate
-    cwd_relative_candidate = candidate.resolve()
-    if cwd_relative_candidate.exists():
-        return cwd_relative_candidate
-    return (ProjectPaths.ROOT / candidate).resolve()
+    return _resolve_sync_path(path, base_dir=ProjectPaths.ROOT)
 
 
 def _load_residual_payload(path: Path) -> dict[str, Any]:
