@@ -20,7 +20,7 @@ def _load_script_module():
     return module
 
 
-def test_build_centered_rigidity_landscape_scan_maps_5x5_benchmark_plane() -> None:
+def test_build_centered_rigidity_landscape_scan_maps_3d_benchmark_lattice() -> None:
     module = _load_script_module()
 
     scan = module.build_centered_rigidity_landscape_scan()
@@ -28,14 +28,15 @@ def test_build_centered_rigidity_landscape_scan_maps_5x5_benchmark_plane() -> No
     assert scan.benchmark_coordinates == (26, 8, 312)
     assert scan.lepton_levels == (24, 25, 26, 27, 28)
     assert scan.quark_levels == (6, 7, 8, 9, 10)
-    assert scan.parent_levels == (312,)
-    assert scan.delta_fr_grid.shape == (5, 5, 1)
+    assert scan.parent_levels == (310, 311, 312, 313, 314)
+    assert scan.delta_fr_grid.shape == (5, 5, 5)
     assert scan.benchmark_point.delta_fr == 0.0
     assert scan.benchmark_point.total_residue == 0.0
     assert scan.nearest_detuned_point.coordinates != scan.benchmark_coordinates
     assert scan.nearest_detuned_point.delta_fr > 0.0
     assert np.count_nonzero(scan.delta_fr_grid == 0.0) == 1
-    assert np.count_nonzero(scan.delta_fr_grid[:, :, 0] > 0.0) == 24
+    assert len(scan.points) == 125
+    assert np.count_nonzero(scan.delta_fr_grid > 0.0) == 124
 
 
 def test_main_writes_rigidity_moat_artifacts(tmp_path: Path) -> None:
@@ -53,9 +54,12 @@ def test_main_writes_rigidity_moat_artifacts(tmp_path: Path) -> None:
     payload = json.loads(data_path.read_text(encoding="utf-8"))
     assert payload["benchmark_coordinates"] == [26, 8, 312]
     assert payload["benchmark_plane_parent_level"] == 312
-    assert payload["grid_shape"] == [5, 5, 1]
+    assert payload["grid_shape"] == [5, 5, 5]
     assert payload["benchmark_point"]["delta_fr"] == 0.0
     assert payload["nearest_detuned_point"]["delta_fr"] > 0.0
-    assert len(payload["points"]) == 25
+    assert len(payload["points"]) == 125
+    assert len(payload["delta_fr_grid"]) == 5
+    assert len(payload["delta_fr_grid"][0]) == 5
+    assert len(payload["delta_fr_grid"][0][0]) == 5
     assert len(payload["delta_fr_grid_at_benchmark_parent"]) == 5
     assert len(payload["delta_fr_grid_at_benchmark_parent"][0]) == 5
