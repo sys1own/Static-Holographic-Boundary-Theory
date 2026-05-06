@@ -1,0 +1,59 @@
+tier_1:
+  lepton_level:
+    value: 26
+    classification: Topological Necessity
+  quark_level:
+    value: 8
+    classification: Topological Necessity
+  parent_level:
+    value: 312
+    classification: Topological Necessity
+  g_sm:
+    value: 15
+    classification: Topological Necessity
+tier_2:
+  planck_mass_ev:
+    value: 1.22089e28
+    classification: Empirical Matching Ansatz
+  planck_length_m:
+    value: 1.616255e-35
+    classification: Empirical Matching Ansatz
+  light_speed_m_per_s:
+    value: 299792458.0
+    classification: Empirical Matching Ansatz
+  mpc_in_meters:
+    value: 3.085677581491367e22
+    classification: Empirical Matching Ansatz
+  planck2018_h0_km_s_mpc:
+    value: 67.36
+    classification: Empirical Matching Ansatz
+  planck2018_h0_sigma_km_s_mpc:
+    value: 0.54
+    classification: Empirical Matching Ansatz
+  planck2018_omega_lambda:
+    value: 0.6847
+    classification: Empirical Matching Ansatz
+  planck2018_omega_lambda_sigma:
+    value: 0.0073
+    classification: Empirical Matching Ansatz
+  planck2018_lambda_si_m2:
+    value: 1.0891388337006832e-52
+    classification: Empirical Matching Ansatz
+  planck2018_lambda_fractional_sigma:
+    value: 0.019254480794057522
+    classification: Empirical Matching Ansatz
+  planck2018_alpha_em_inv_mz:
+    value: 127.955
+    classification: Empirical Matching Ansatz
+  planck2018_sin2_theta_w_mz:
+    value: 0.23122
+    classification: Empirical Matching Ansatz
+  planck2018_alpha_s_mz:
+    value: 0.1179
+    classification: Empirical Matching Ansatz
+  codata_fine_structure_alpha_inverse:
+    value: 137.035999084
+    classification: Empirical Matching Ansatz
+  hbar_ev_seconds:
+    value: 6.582119569e-16
+    classification: Empirical Matching Ansatz
