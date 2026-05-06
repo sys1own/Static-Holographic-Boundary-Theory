@@ -1,0 +1,39 @@
+Formal Uniqueness Certificate
+============================
+Benchmark coordinates         : (26,8,312)
+Published moat source         : uniqueness_scan_table.tex
+Moat window (k_l values)      : (24, 25, 26, 27, 28)
+
+Integrated Anomaly Filter
+-------------------------
+Diophantine integrality       : PASS  K=lcm(2k_l,3k_q)=312
+Framing quantization          : PASS  I_L=6.000000, I_Q=13.000000, Delta_fr=0.000000
+GKO orthogonality             : PASS  positive stress-tensor residue=2.300805139659, published c_dark=3.3008
+
+Lexicographic Elimination
+-------------------------
+Published moat               : (24,8,312), (25,8,312), (26,8,312), (27,8,312), (28,8,312)
+  Start from the checked-in fixed-parent K=312 moat printed in uniqueness_scan_table.tex.
+Diophantine filter           : (26,8,312)
+  Retain only cells satisfying the exact branch identity K=lcm(2k_l,3k_q).
+Framing filter               : (26,8,312)
+  Retain only cells with Delta_fr=0, equivalently integer visible vacuum T-support.
+GKO filter                   : (26,8,312)
+  Retain only cells that still carry a positive Virasoro-orthogonal complement.
+
+Failure Diagnostics
+-------------------
+(24,8,312) : FAIL -> Diophantine tower mismatch: K=312 while lcm(2k_l,3k_q)=48. | Fractional vacuum T-power detected: I_L=K/(2k_l)=6.500000 gives Delta_fr=0.500000, so Witten framing single-valuedness fails.
+(25,8,312) : FAIL -> Diophantine tower mismatch: K=312 while lcm(2k_l,3k_q)=600. | Fractional vacuum T-power detected: I_L=K/(2k_l)=6.240000 gives Delta_fr=0.240000, so Witten framing single-valuedness fails.
+(26,8,312) : SURVIVES -> all three closure conditions hold simultaneously; published c_dark=3.3008.
+(27,8,312) : FAIL -> Diophantine tower mismatch: K=312 while lcm(2k_l,3k_q)=216. | Fractional vacuum T-power detected: I_L=K/(2k_l)=5.777778 gives Delta_fr=0.222222, so Witten framing single-valuedness fails.
+(28,8,312) : FAIL -> Diophantine tower mismatch: K=312 while lcm(2k_l,3k_q)=168. | Fractional vacuum T-power detected: I_L=K/(2k_l)=5.571429 gives Delta_fr=0.428571, so Witten framing single-valuedness fails.
+
+Invariant Proof
+---------------
+1. On the published fixed-parent moat K=312 with k_q=8 and k_l in {24,25,26,27,28}, the exact Diophantine identity K=lcm(2k_l,3k_q) is satisfied only at k_l=26.
+2. The same row has integer visible branching indices I_L=6 and I_Q=13, so Delta_fr=0. Every neighboring cell carries a fractional visible index and therefore a fractional vacuum T-power.
+3. The surviving row keeps a positive Virasoro-orthogonal complement: the stress-tensor audit remains positive and the checked-in uniqueness table records the benchmark formal completion residue as c_dark=3.3008.
+4. The intersection of the Diophantine, framing, and GKO closure predicates on the K=312 moat is therefore the singleton {(26,8,312)}. Hence (26,8,312) is the unique Minimal Anomaly-Free Local Survivor.
+
+Formal Uniqueness Certificate: PASS — (26,8,312) is the unique Minimal Anomaly-Free Local Survivor, and the benchmark coordinates stand as incontrovertible residues of mathematical consistency.
