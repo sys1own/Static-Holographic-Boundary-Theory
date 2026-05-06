@@ -22,6 +22,7 @@ if __package__ in (None, ""):
 
 from shbt.constants import LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
 from shbt.core.noether_bridge import framing_defect
+from shbt.core.qcd_kernel import build_qcd_residue_audit
 from shbt.paths import resolve_resource_path
 
 
@@ -284,6 +285,11 @@ def build_proton_stability_audit() -> ProtonStabilityAudit:
     for row in published_rows:
         lepton_level, quark_level, parent_level = row.branch
         defect = framing_defect(parent_level=parent_level, lepton_level=lepton_level, quark_level=quark_level)
+        qcd_audit = build_qcd_residue_audit(
+            parent_level=parent_level,
+            lepton_level=lepton_level,
+            quark_level=quark_level,
+        )
         theorem_closed = defect.delta_fr == 0
         normalized_lifetime_label = " ".join(row.published_lifetime_label.split())
         normalized_triple_lock_label = " ".join(row.triple_lock_label.split()).lower()
@@ -300,6 +306,9 @@ def build_proton_stability_audit() -> ProtonStabilityAudit:
             )
             assert "locked" in normalized_triple_lock_label, (
                 f"Protected branch {row.branch} must remain triple-locked, received {row.triple_lock_label!r}."
+            )
+            assert qcd_audit.proton_stability_channel_locked, (
+                f"Protected branch {row.branch} must preserve the QCD flux-tube lock."
             )
             cells.append(
                 ProtonStabilityCellAudit(
@@ -321,6 +330,9 @@ def build_proton_stability_audit() -> ProtonStabilityAudit:
         )
         assert "broken" in normalized_triple_lock_label, (
             f"Off-shell branch {row.branch} must remain broken, received {row.triple_lock_label!r}."
+        )
+        assert not qcd_audit.proton_stability_channel_locked, (
+            f"Off-shell branch {row.branch} must reopen the QCD flux-tube residue."
         )
         cells.append(
             ProtonStabilityCellAudit(
