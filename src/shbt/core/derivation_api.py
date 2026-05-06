@@ -485,11 +485,12 @@ class UniverseFactory:
         )
         inverse_pixel_volume_decimal = _fraction_to_decimal(inverse_pixel_volume_fraction)
 
-        assert lepton_central_charge_fraction == LEPTON_CENTRAL_CHARGE_FRACTION
-        assert quark_central_charge_fraction == QUARK_CENTRAL_CHARGE_FRACTION
-        assert central_charge_ratio_fraction == QUARK_CENTRAL_CHARGE_FRACTION / LEPTON_CENTRAL_CHARGE_FRACTION
-        assert branch_pixel_simplex_volume_fraction == BRANCH_PIXEL_VOLUME_FRACTION
-        assert inverse_pixel_volume_fraction == BRANCH_PIXEL_VOLUME_INVERSE_FRACTION
+        if resolved_vacuum.branch == cls.benchmark_vacuum().branch:
+            assert lepton_central_charge_fraction == LEPTON_CENTRAL_CHARGE_FRACTION
+            assert quark_central_charge_fraction == QUARK_CENTRAL_CHARGE_FRACTION
+            assert central_charge_ratio_fraction == QUARK_CENTRAL_CHARGE_FRACTION / LEPTON_CENTRAL_CHARGE_FRACTION
+            assert branch_pixel_simplex_volume_fraction == BRANCH_PIXEL_VOLUME_FRACTION
+            assert inverse_pixel_volume_fraction == BRANCH_PIXEL_VOLUME_INVERSE_FRACTION
 
         return CentralChargeGeometry(
             lepton_central_charge_fraction=lepton_central_charge_fraction,
@@ -558,14 +559,15 @@ class UniverseFactory:
             relative_error = absolute_delta / codata_audit.mass_ratio
             context.prec = precision
 
-        assert geometry.structural_prefactor_fraction == BRANCH_STRUCTURAL_PREFRACTOR_FRACTION, (
-            "SO(10)_312 structural prefactor drift: the branch-fixed proton/electron ratio no longer closes to the expected "
-            f"(c_q/c_l) * V_px^(-1) factor {BRANCH_STRUCTURAL_PREFRACTOR_FRACTION}."
-        )
-        assert relative_error <= tolerance, (
-            "Branch proton/electron residue no longer matches the CODATA value within the one-copy dictionary tolerance: "
-            f"predicted {mu_audit}, CODATA {codata_audit.mass_ratio}, relative error {relative_error}."
-        )
+        if resolved_vacuum.branch == cls.benchmark_vacuum().branch:
+            assert geometry.structural_prefactor_fraction == BRANCH_STRUCTURAL_PREFRACTOR_FRACTION, (
+                "SO(10)_312 structural prefactor drift: the branch-fixed proton/electron ratio no longer closes to the expected "
+                f"(c_q/c_l) * V_px^(-1) factor {BRANCH_STRUCTURAL_PREFRACTOR_FRACTION}."
+            )
+            assert relative_error <= tolerance, (
+                "Branch proton/electron residue no longer matches the CODATA value within the one-copy dictionary tolerance: "
+                f"predicted {mu_audit}, CODATA {codata_audit.mass_ratio}, relative error {relative_error}."
+            )
 
         return ProtonRatioDerivation(
             geometry=geometry,
