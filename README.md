@@ -184,7 +184,8 @@ The benchmark now uses a split configuration model: `data/universal_constants.ya
 
 - **Tier 1 / Tier 2 source of truth:** `data/universal_constants.yaml`
 - **Auxiliary runtime config:** `config/benchmark_v1.yaml`
-- **SHA-256:** `737667c8d0a2925f09ae89e40a68f7d26d2177df383f4a220e7d9c2c6b55dbf4`
+- **SHA-256 (`data/universal_constants.yaml`):** `bd79105efbd211a81f23955cc1efa4c6497cda3c9b925c57d06495a6363d65d2`
+- **SHA-256 (`config/benchmark_v1.yaml`):** `37a8b88a5045e98a699638efae6f8f8b718b8fb8753aeabd8619d9deb4169604`
 - **Build backend:** `setuptools.build_meta`
 - **Python requirement:** `>=3.11`
 - **Pinned scientific stack:** `PyYAML==6.0.3`, `Jinja2==3.1.6`, `mpmath==1.3.0`, `numpy==1.26.4`, `scipy==1.12.0`, `matplotlib==3.8.3`, `sympy==1.12`
