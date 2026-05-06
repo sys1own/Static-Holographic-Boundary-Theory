@@ -159,7 +159,6 @@ def synchronize_manuscript_sources(*, output_dir: Path, manuscript_dir: Path) ->
         residuals_path=Path(output_dir) / "residuals.json",
         readme_path=ProjectPaths.ROOT / "README.md",
         physics_constants_path=Path(manuscript_dir) / "physics_constants.tex",
-        universal_constants_path=ProjectPaths.DATA / "universal_constants.yaml",
     )
 
 
