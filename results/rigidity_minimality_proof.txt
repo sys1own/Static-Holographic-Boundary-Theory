@@ -1,0 +1,22 @@
+Minimality Proof Table
+======================
+Benchmark branch              : (26, 8, 312)
+Required Majorana channel     : symmetric 16_F 16_F \overline{126}_H
+Benchmark c_dark residue      : 1197103/362670 = 3.300805139659
+
+Candidate                 Rank  Crit.A  Crit.B  Survives  Failure Mode
+-----------------------------------------------------------------------
+SO(10)                     5   PASS     PASS      YES     Minimal Local Survivor
+SU(5)                      4   FAIL     PASS       NO     Criterion A (Majorana Channel)
+SU(3) x SU(3) x SU(3)      6   FAIL     FAIL       NO     Criterion B (Parity Sink)
+
+Failure Notes
+-------------
+SO(10): SO(10) carries the direct symmetric 16_F16_F\overline{126}_H slot required for the benchmark renormalizable B-L=2 seesaw.
+SO(10): The benchmark branch retains a positive GKO-orthogonal residue and the exact completed-boundary parity sink c_dark=1197103/362670=3.300805139659.
+SU(5): No direct symmetric 126_H-type B-L=2 Majorana slot exists in the benchmark bookkeeping, so the seesaw closes only through non-minimal effective operators or extra alignment data.
+SU(5): Criterion B is not the elimination channel here; the uniqueness-from-failure audit already removes SU(5) at Criterion A.
+SU(3) x SU(3) x SU(3): The factorized parent does not furnish the benchmark-direct one-copy 126_H-type Majorana slot as a single canonical insertion.
+SU(3) x SU(3) x SU(3): The factorized parent does not supply the unique c_dark Virasoro-orthogonal complement required to keep the completed boundary block neutral.
+
+Minimal Local Survivor: SO(10) is the unique minimal Lie algebra in the benchmark class that simultaneously furnishes a direct symmetric 126_H-type Majorana channel and the c_dark Virasoro-orthogonal complement required for boundary neutrality on the anomaly-free (26, 8, 312) branch.
