@@ -82,6 +82,49 @@ def test_run_entire_proof_invokes_all_sector_audits_before_full_audit(
     assert (output_dir / "final").is_dir()
 
 
+def test_synchronize_manuscript_sources_uses_current_sync_system_api(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_script_module()
+    manuscript_dir = tmp_path / "papers"
+    manuscript_dir.mkdir()
+    output_dir = tmp_path / "proof-results"
+    output_dir.mkdir()
+
+    recorded_call: dict[str, Path] = {}
+
+    class FakeSyncModule:
+        @staticmethod
+        def synchronize_system(
+            *,
+            residuals_path: Path,
+            readme_path: Path,
+            physics_constants_path: Path,
+        ) -> tuple[Path, Path]:
+            recorded_call.update(
+                residuals_path=residuals_path,
+                readme_path=readme_path,
+                physics_constants_path=physics_constants_path,
+            )
+            return readme_path, physics_constants_path
+
+    monkeypatch.setattr(module, "_load_sync_system_module", lambda: FakeSyncModule)
+
+    updated_readme, updated_physics_constants = module.synchronize_manuscript_sources(
+        output_dir=output_dir,
+        manuscript_dir=manuscript_dir,
+    )
+
+    assert updated_readme == module.ProjectPaths.ROOT / "README.md"
+    assert updated_physics_constants == manuscript_dir / "physics_constants.tex"
+    assert recorded_call == {
+        "residuals_path": output_dir / "residuals.json",
+        "readme_path": module.ProjectPaths.ROOT / "README.md",
+        "physics_constants_path": manuscript_dir / "physics_constants.tex",
+    }
+
+
 def test_build_manuscript_runs_executable_paper_flow(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
