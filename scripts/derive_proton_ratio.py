@@ -17,8 +17,8 @@ if __package__ in (None, ""):
             sys.path.insert(0, str(candidate))
             break
 
-from derive_universe import derive_kappa_d5 as derive_decimal_kappa_d5
 from shbt.core import algebra
+from shbt.core.derivation_api import UniverseFactory
 from shbt.constants import (
     LEPTON_LEVEL,
     PARENT_LEVEL,
@@ -217,7 +217,7 @@ def derive_proton_ratio(
         central_charge_ratio = geometry.central_charge_ratio_decimal
         inverse_pixel_volume = geometry.inverse_pixel_volume_decimal
         structural_prefactor = central_charge_ratio * inverse_pixel_volume
-        kappa_d5 = derive_decimal_kappa_d5(precision=context.prec).kappa
+        kappa_d5 = UniverseFactory.derive_kappa_d5(precision=context.prec).kappa
         kappa_d5_cuberoot = decimal_cuberoot(kappa_d5, precision=context.prec)
         geometric_friction_factor = (Decimal(1) - kappa_d5) * kappa_d5_cuberoot
         pressure_loading = (vacuum_pressure.vacuum_pressure * vacuum_pressure.vacuum_pressure) / geometric_friction_factor
