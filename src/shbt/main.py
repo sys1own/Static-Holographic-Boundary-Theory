@@ -23,7 +23,7 @@ from functools import lru_cache
 from os import PathLike
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, ClassVar, Sequence
+from typing import Any, ClassVar, Mapping, Sequence
 
 if __package__ in (None, ""):
     for parent in Path(__file__).resolve().parents:
@@ -12424,14 +12424,7 @@ def build_benchmark_diagnostics(
         "benchmark_rms_pull": benchmark_result.rms_pull,
         "benchmark_reduced_chi2": benchmark_result.reduced_chi2,
         "benchmark_degrees_of_freedom": benchmark_result.degrees_of_freedom,
-        "unity_of_scale_identity": {
-            "epsilon_lambda": float(unity_of_scale["epsilon_lambda"]),
-            "exact_epsilon_lambda": float(unity_of_scale["exact_epsilon_lambda"]),
-            "numerical_residual": float(unity_of_scale["numerical_residual"]),
-            "register_noise_floor": float(unity_of_scale["register_noise_floor"]),
-            "exact_register_noise_floor": float(unity_of_scale["exact_register_noise_floor"]),
-            "passed": bool(unity_of_scale["passed"]),
-        },
+        "unity_of_scale_identity": _build_unity_of_scale_identity_payload(unity_of_scale),
         "holographic_consistency_relation": holographic_consistency_relation,
         "holographic_c_dark_residue": float(holographic_consistency_relation["c_dark"]),
         "holographic_tensor_ratio_observed": float(holographic_consistency_relation["r_obs"]),
@@ -12828,6 +12821,17 @@ def write_holographic_curvature_audit(
     return payload
 
 
+def _build_unity_of_scale_identity_payload(unity_of_scale: Mapping[str, object]) -> dict[str, object]:
+    return {
+        "epsilon_lambda": float(unity_of_scale["epsilon_lambda"]),
+        "exact_epsilon_lambda": float(unity_of_scale["exact_epsilon_lambda"]),
+        "numerical_residual": float(unity_of_scale["numerical_residual"]),
+        "register_noise_floor": float(unity_of_scale["register_noise_floor"]),
+        "exact_register_noise_floor": float(unity_of_scale["exact_register_noise_floor"]),
+        "passed": bool(unity_of_scale["passed"]),
+    }
+
+
 def build_quantified_two_loop_residuals(
     pmns: PmnsData | None = None,
     ckm: CkmData | None = None,
@@ -12915,14 +12919,7 @@ def build_quantified_two_loop_residuals(
         "off_shell_branch_condition": (
             "Any deviation from this benchmark residual export signals an unphysical off-shell branch."
         ),
-        "unity_of_scale_identity": {
-            "epsilon_lambda": float(unity_of_scale["epsilon_lambda"]),
-            "exact_epsilon_lambda": float(unity_of_scale["exact_epsilon_lambda"]),
-            "numerical_residual": float(unity_of_scale["numerical_residual"]),
-            "register_noise_floor": float(unity_of_scale["register_noise_floor"]),
-            "exact_register_noise_floor": float(unity_of_scale["exact_register_noise_floor"]),
-            "passed": bool(unity_of_scale["passed"]),
-        },
+        "unity_of_scale_identity": _build_unity_of_scale_identity_payload(unity_of_scale),
         "gauge_residual_bookkeeping": resolved_gauge_audit.residual_bookkeeping,
         "theoretical_uncertainty_fractions": {
             observable_name: float(observable_data["fractional_residual"])
@@ -12968,12 +12965,11 @@ def write_quantified_two_loop_residuals(
 
 
 def _load_checked_in_benchmark_diagnostics() -> dict[str, object]:
-    repo_root = Path(__file__).resolve().parent.parent
     for relative_path in (
         Path("results/final") / BENCHMARK_DIAGNOSTICS_FILENAME,
         Path("results") / BENCHMARK_DIAGNOSTICS_FILENAME,
     ):
-        candidate_path = repo_root / relative_path
+        candidate_path = ProjectPaths.ROOT / relative_path
         if candidate_path.is_file():
             return json.loads(candidate_path.read_text(encoding="utf-8"))
     return {}
