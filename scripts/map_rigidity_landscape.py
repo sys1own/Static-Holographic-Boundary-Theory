@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Map the 5x5 rigidity moat around the anomaly-free SHBT benchmark."""
+"""Map the 3D rigidity moat around the anomaly-free SHBT benchmark."""
 
 import argparse
 from dataclasses import dataclass
@@ -42,7 +42,7 @@ DEFAULT_DATA_FILENAME = "rigidity_moat.json"
 DEFAULT_DPI = 220
 DEFAULT_LEPTON_HALF_WIDTH = 2
 DEFAULT_QUARK_HALF_WIDTH = 2
-DEFAULT_PARENT_HALF_WIDTH = 0
+DEFAULT_PARENT_HALF_WIDTH = 2
 ZERO_TOLERANCE = 1.0e-15
 MIN_COLOR_CEILING = 1.0e-6
 
@@ -262,46 +262,37 @@ def render_rigidity_landscape_plot(
     resolved_output_path.parent.mkdir(parents=True, exist_ok=True)
 
     benchmark_kl, benchmark_kq, benchmark_parent = scan.benchmark_coordinates
-    benchmark_plane_neighbor = _benchmark_plane_neighbor(scan)
-    benchmark_plane = _benchmark_plane(scan)
-
-    quark_mesh, lepton_mesh = np.meshgrid(scan.quark_levels, scan.lepton_levels)
-    maximum_residue = float(np.max(benchmark_plane))
+    nearest_detuned_point = scan.nearest_detuned_point
+    maximum_residue = float(np.max(scan.delta_fr_grid))
     color_ceiling = max(maximum_residue, MIN_COLOR_CEILING)
     norm = mcolors.Normalize(vmin=0.0, vmax=color_ceiling)
-    base_offset = -max(color_ceiling * 0.16, 0.02)
 
-    figure = plt.figure(figsize=(11.2, 7.2), constrained_layout=True)
+    quark_coordinates = np.array([point.coordinates[1] for point in scan.points], dtype=float)
+    lepton_coordinates = np.array([point.coordinates[0] for point in scan.points], dtype=float)
+    parent_coordinates = np.array([point.coordinates[2] for point in scan.points], dtype=float)
+    residue_values = np.array([point.delta_fr for point in scan.points], dtype=float)
+
+    figure = plt.figure(figsize=(12.8, 7.2), constrained_layout=True)
     try:
         axis = figure.add_subplot(111, projection="3d")
 
-        surface = axis.plot_surface(
-            quark_mesh,
-            lepton_mesh,
-            benchmark_plane,
+        scatter = axis.scatter(
+            quark_coordinates,
+            lepton_coordinates,
+            parent_coordinates,
+            c=residue_values,
             cmap="viridis",
             norm=norm,
-            edgecolor="white",
-            linewidth=0.75,
-            antialiased=True,
-            alpha=0.95,
-        )
-        axis.contourf(
-            quark_mesh,
-            lepton_mesh,
-            benchmark_plane,
-            zdir="z",
-            offset=base_offset,
-            levels=np.linspace(0.0, color_ceiling, 12),
-            cmap="viridis",
-            norm=norm,
-            alpha=0.82,
+            s=58,
+            alpha=0.92,
+            linewidths=0.0,
+            depthshade=False,
         )
 
         axis.scatter(
             [benchmark_kq],
             [benchmark_kl],
-            [scan.benchmark_point.delta_fr],
+            [benchmark_parent],
             marker="*",
             s=280,
             color="#ef4444",
@@ -310,9 +301,9 @@ def render_rigidity_landscape_plot(
             zorder=5,
         )
         axis.scatter(
-            [benchmark_plane_neighbor.coordinates[1]],
-            [benchmark_plane_neighbor.coordinates[0]],
-            [benchmark_plane_neighbor.delta_fr],
+            [nearest_detuned_point.coordinates[1]],
+            [nearest_detuned_point.coordinates[0]],
+            [nearest_detuned_point.coordinates[2]],
             marker="o",
             s=90,
             facecolors="none",
@@ -321,37 +312,22 @@ def render_rigidity_landscape_plot(
             zorder=6,
         )
 
-        for point in scan.points:
-            if point.coordinates[2] != benchmark_parent:
-                continue
-            label_color = "#111827" if point.delta_fr <= color_ceiling * 0.55 else "white"
-            axis.text(
-                point.coordinates[1],
-                point.coordinates[0],
-                point.delta_fr + color_ceiling * 0.015,
-                point.delta_fr_label,
-                ha="center",
-                va="bottom",
-                fontsize=7.2,
-                color=label_color,
-            )
-
         axis.text(
             benchmark_kq + 0.10,
             benchmark_kl + 0.10,
-            color_ceiling * 0.045,
+            benchmark_parent + 0.18,
             "benchmark\n(26, 8, 312)\nE = 0",
             fontsize=9,
             color="#111827",
             bbox={"facecolor": "white", "edgecolor": "#6b7280", "alpha": 0.94, "boxstyle": "round,pad=0.24"},
         )
         axis.text(
-            benchmark_plane_neighbor.coordinates[1] + 0.08,
-            benchmark_plane_neighbor.coordinates[0] + 0.08,
-            benchmark_plane_neighbor.delta_fr + color_ceiling * 0.05,
+            nearest_detuned_point.coordinates[1] + 0.08,
+            nearest_detuned_point.coordinates[0] + 0.08,
+            nearest_detuned_point.coordinates[2] + 0.18,
             "nearest detuned cell\n"
-            rf"{benchmark_plane_neighbor.coordinates}\n"
-            rf"E = {benchmark_plane_neighbor.delta_fr_label}",
+            rf"{nearest_detuned_point.coordinates}\n"
+            rf"E = {nearest_detuned_point.delta_fr_label}",
             fontsize=8.5,
             color="#111827",
             bbox={"facecolor": "white", "edgecolor": "#6b7280", "alpha": 0.94, "boxstyle": "round,pad=0.24"},
@@ -362,8 +338,8 @@ def render_rigidity_landscape_plot(
             "\n".join(
                 (
                     "E = |Delta_fr| = max(|K/(2 k_l) - Z|, |K/(3 k_q) - Z|)",
-                    rf"5x5 benchmark-plane scan at fixed K={benchmark_parent}",
-                    rf"24/24 detuned cells reopen the framing anomaly; nearest moat wall carries E={benchmark_plane_neighbor.delta_fr_label}.",
+                    rf"5x5x5 benchmark-centered lattice scan around (26, 8, 312)",
+                    rf"{len(scan.points) - 1}/{len(scan.points) - 1} detuned cells reopen the framing anomaly; nearest moat wall carries E={nearest_detuned_point.delta_fr_label}.",
                 )
             ),
             transform=axis.transAxes,
@@ -382,13 +358,13 @@ def render_rigidity_landscape_plot(
         )
         axis.set_xlabel(r"$k_q$")
         axis.set_ylabel(r"$k_\ell$")
-        axis.set_zlabel(r"Framing anomaly residue $\mathcal{E}$")
+        axis.set_zlabel(r"$K$")
         axis.set_xticks(scan.quark_levels)
         axis.set_yticks(scan.lepton_levels)
-        axis.set_zlim(base_offset, color_ceiling * 1.10)
-        axis.view_init(elev=33, azim=-58)
+        axis.set_zticks(scan.parent_levels)
+        axis.view_init(elev=24, azim=45)
 
-        colorbar = figure.colorbar(surface, ax=axis, pad=0.08, fraction=0.05, shrink=0.82)
+        colorbar = figure.colorbar(scatter, ax=axis, pad=0.08, fraction=0.05, shrink=0.82)
         colorbar.set_label(r"Framing anomaly residue $\mathcal{E}$")
 
         figure.savefig(resolved_output_path, dpi=int(dpi), format="png")
@@ -423,10 +399,12 @@ def write_rigidity_landscape_json(scan: RigidityLandscapeScan, output_path: Path
         "framing_residue_definition": {
             "mathcal_E": "max(|K/(2 k_l) - Z|, |K/(3 k_q) - Z|)",
             "reported_plane": "benchmark parent plane K=312",
+            "reported_lattice": "benchmark-centered 3D moat lattice",
         },
         "benchmark_point": _point_payload(scan.benchmark_point),
         "nearest_detuned_point": _point_payload(scan.nearest_detuned_point),
         "maximum_residue_point": _point_payload(scan.maximum_residue_point),
+        "delta_fr_grid": scan.delta_fr_grid.tolist(),
         "delta_fr_grid_at_benchmark_parent": _benchmark_plane(scan).tolist(),
         "points": [_point_payload(point) for point in scan.points],
     }
