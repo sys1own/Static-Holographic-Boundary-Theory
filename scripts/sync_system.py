@@ -22,7 +22,7 @@ if __package__ in (None, ""):
             sys.path.insert(0, str(candidate))
             break
 
-from shbt.config_loader import ConfigLoader, DEFAULT_PHYSICS_PROFILE_PATH as CONFIG_LOADER_DEFAULT_PHYSICS_PROFILE_PATH
+from shbt.config_loader import ConfigLoader
 from shbt.constants import SU2_DIMENSION, SU2_DUAL_COXETER, SU3_DIMENSION, SU3_DUAL_COXETER
 from shbt.core.derivation_api import (
     DEFAULT_PRECISION as DERIVATION_DEFAULT_PRECISION,
@@ -38,7 +38,7 @@ from shbt.paths import ProjectPaths
 DEFAULT_RESIDUALS_PATH = ProjectPaths.RESULTS / "residuals.json"
 DEFAULT_README_PATH = ProjectPaths.ROOT / "README.md"
 DEFAULT_PHYSICS_CONSTANTS_PATH = ProjectPaths.PAPERS / "physics_constants.tex"
-DEFAULT_PHYSICS_PROFILE_PATH = CONFIG_LOADER_DEFAULT_PHYSICS_PROFILE_PATH
+DEFAULT_PHYSICS_PROFILE_PATH = (ProjectPaths.CONFIG / "physics_profiles" / "standard_model.yaml").resolve()
 DEFAULT_UNIVERSAL_CONSTANTS_PATH = DEFAULT_PHYSICS_PROFILE_PATH
 DEFAULT_PRECISION = max(int(DERIVATION_DEFAULT_PRECISION), 50)
 _GUARD_DIGITS = 12
@@ -120,6 +120,28 @@ def _format_fraction(value: Fraction) -> str:
     return f"{value.numerator}/{value.denominator}"
 
 
+_SYNC_TOP_LEVEL_PATHS = frozenset(
+    {
+        ProjectPaths.RESULTS.name,
+        ProjectPaths.PAPERS.name,
+        ProjectPaths.CONFIG.name,
+        ProjectPaths.DATA.name,
+        ProjectPaths.SCRIPTS.name,
+        ProjectPaths.SRC.name,
+        "README.md",
+    }
+)
+
+
+def _resolve_sync_path(path: Path | str, *, base_dir: Path) -> Path:
+    resolved_path = Path(path).expanduser()
+    if resolved_path.is_absolute():
+        return resolved_path.resolve()
+    if resolved_path.parts and resolved_path.parts[0] in _SYNC_TOP_LEVEL_PATHS:
+        return (ProjectPaths.ROOT / resolved_path).resolve()
+    return (Path(base_dir) / resolved_path).resolve()
+
+
 def _build_topological_vacuum(universal_snapshot: UniversalConstantsSnapshot) -> TopologicalVacuum:
     return TopologicalVacuum(
         lepton_level=universal_snapshot.lepton_level,
@@ -182,8 +204,18 @@ def _format_latex_float(value: float, *, digits: int = 10) -> str:
     return f"{numeric_value:.{digits}f}".rstrip("0").rstrip(".")
 
 
+def _resolve_project_path(path: Path) -> Path:
+    candidate = Path(path).expanduser()
+    if candidate.is_absolute():
+        return candidate
+    cwd_relative_candidate = candidate.resolve()
+    if cwd_relative_candidate.exists():
+        return cwd_relative_candidate
+    return (ProjectPaths.ROOT / candidate).resolve()
+
+
 def _load_residual_payload(path: Path) -> dict[str, Any]:
-    resolved_path = Path(path)
+    resolved_path = _resolve_project_path(path)
     if not resolved_path.is_file():
         raise FileNotFoundError(
             f"Residual ledger not found at {resolved_path}. Run the verifier to generate results/residuals.json first."
@@ -509,7 +541,7 @@ def sync_readme(
     snapshot: SyncSnapshot,
     universal_snapshot: UniversalConstantsSnapshot | None = None,
 ) -> Path:
-    resolved_path = Path(readme_path)
+    resolved_path = _resolve_project_path(readme_path)
     readme_text = resolved_path.read_text(encoding="utf-8")
     if universal_snapshot is None:
         universal_snapshot = _build_universal_constants_snapshot(ConfigLoader())
@@ -536,6 +568,10 @@ def _replace_macro(
         ),
         re.compile(
             rf"^(?P<prefix>\\def\\{re.escape(macro_name)}\{{)(?P<value>.*?)(?P<suffix>\}})$",
+            flags=re.MULTILINE,
+        ),
+        re.compile(
+            rf"^(?P<prefix>\\{re.escape(macro_name)}\{{)(?P<value>.*?)(?P<suffix>\}})$",
             flags=re.MULTILINE,
         ),
     )
@@ -587,7 +623,7 @@ def sync_physics_constants(
     snapshot: SyncSnapshot,
     universal_snapshot: UniversalConstantsSnapshot | None = None,
 ) -> Path:
-    resolved_path = Path(physics_constants_path)
+    resolved_path = _resolve_project_path(physics_constants_path)
     physics_text = resolved_path.read_text(encoding="utf-8")
     if universal_snapshot is None:
         universal_snapshot = _build_universal_constants_snapshot(ConfigLoader())
@@ -623,6 +659,7 @@ def sync_physics_constants(
 
     legacy_macro_updates = {
         "FineStructureInverse": _format_latex_float(universal_snapshot.topological_alpha_inverse),
+        "NeutrinoFloor": _format_latex_float(snapshot.neutrino_floor_mev),
     }
     for macro_name, macro_value in legacy_macro_updates.items():
         physics_text = _replace_macro(
@@ -648,11 +685,10 @@ def synchronize_system(
     physics_profile_path: Path | None = None,
     universal_constants_path: Path = DEFAULT_UNIVERSAL_CONSTANTS_PATH,
 ) -> tuple[Path, Path]:
-    payload = _load_residual_payload(Path(residuals_path))
-    resolved_physics_profile_path = (
-        Path(physics_profile_path)
-        if physics_profile_path is not None
-        else Path(universal_constants_path)
+    payload = _load_residual_payload(residuals_path)
+    resolved_physics_profile_path = _resolve_sync_path(
+        physics_profile_path if physics_profile_path is not None else universal_constants_path,
+        base_dir=ProjectPaths.CONFIG,
     )
     universal_snapshot = _build_universal_constants_snapshot(
         ConfigLoader(physics_profile_path=resolved_physics_profile_path)
