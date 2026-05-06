@@ -162,6 +162,9 @@ def test_build_derivation_snapshot_exposes_live_ledger() -> None:
     assert snapshot.residues["k_l"] == module.LEPTON_LEVEL
     assert snapshot.residues["k_q"] == module.QUARK_LEVEL
     assert snapshot.residues["K"] == module.PARENT_LEVEL
+    assert snapshot.residues["LEPTON_LEVEL"] == module.LEPTON_LEVEL
+    assert snapshot.residues["QUARK_LEVEL"] == module.QUARK_LEVEL
+    assert snapshot.residues["PARENT_LEVEL"] == module.PARENT_LEVEL
     assert "Derivation Ledger" in snapshot.ledger_text
     assert "Alpha Surface Inverse" in snapshot.ledger_text
     assert "Unity of Scale Identity" in snapshot.ledger_text
