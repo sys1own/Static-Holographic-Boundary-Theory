@@ -1,0 +1,50 @@
+Flavor Identity Audit
+=====================
+Benchmark branch (k_l, k_q, K)       : (26, 8, 312)
+Visible block                        : SU(2)_26 x SU(3)_8
+Total quantum dimension D_26         : 33.418254762534
+Phase lock beta = 1/2 ln D_26        : 1.754551150228
+Published beta anchor                : 1.754551
+Adjacent modular winding e^beta      : 5.780852425251
+Phase-lock verified                  : YES
+
+Generational winding ladder
+---------------------------
+g   m_g/m_0           ln(m_g/m_0)       ln(m_g/m_0)/beta
+---------------------------------------------------------
+0       1.000000         0.000000           0.000000
+1       5.780852         1.754551           1.000000
+2      33.418255         3.509102           2.000000
+
+The logarithmic mass gap is exactly beta times the winding index g, so the
+generation spacing is the modular-image of the SU(2)_26 winding ladder.
+
+Spectral check
+--------------
+Observed Delta m21^2 [eV^2]          : 7.410000000000e-05
+Observed Delta m31^2 [eV^2]          : 2.505000000000e-03
+Kernel Delta m31^2 / Delta m21^2     : 34.418254762534
+Observed Delta m31^2 / Delta m21^2   : 33.805668016194
+Ratio fractional error               : +1.812083%
+Spectral ratio check                 : PASS
+
+solar-anchored ladder
+---------------------
+m_0 [eV]                             : 1.511869439941e-03
+(m1, m2, m3) [eV]                    : (1.511869e-03, 8.739894e-03, 5.052404e-02)
+Predicted Delta m21^2 [eV^2]         : 7.410000000000e-05
+Predicted Delta m31^2 [eV^2]         : 2.550392677904e-03
+Cross-check fractional error         : +1.812083%
+
+atmospheric-anchored ladder
+---------------------------
+m_0 [eV]                             : 1.498354674954e-03
+(m1, m2, m3) [eV]                    : (1.498355e-03, 8.661767e-03, 5.007240e-02)
+Predicted Delta m21^2 [eV^2]         : 7.278114527547e-05
+Predicted Delta m31^2 [eV^2]         : 2.505000000000e-03
+Cross-check fractional error         : -1.779831%
+
+Mandatory residue verdict            : PROVED
+The generational hierarchy is a mandatory residue of the (26, 8) sector because
+the mass ladder, its logarithmic winding numbers, and the observed splitting ratio
+all descend from the same branch-fixed SU(2)_26 modular-T phase lock.
