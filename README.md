@@ -180,17 +180,17 @@ The benchmark branch is fixed by the Tier 1 topological coordinates $(k_{\ell}, 
 
 ## Reproducibility
 
-The benchmark now uses a split configuration model: `data/universal_constants.yaml` is the single source of truth for Tier 1 / Tier 2 inputs, while `config/benchmark_v1.yaml` retains the auxiliary runtime and reporting configuration.
+The benchmark now uses a split configuration model: `config/physics_profiles/standard_model.yaml` is the single source of truth for Tier 1 / Tier 2 inputs, while `config/benchmark_v1.yaml` retains the auxiliary runtime and reporting configuration.
 
-- **Tier 1 / Tier 2 source of truth:** `data/universal_constants.yaml`
+- **Tier 1 / Tier 2 source of truth:** `config/physics_profiles/standard_model.yaml`
 - **Auxiliary runtime config:** `config/benchmark_v1.yaml`
-- **SHA-256 (`data/universal_constants.yaml`):** `bd79105efbd211a81f23955cc1efa4c6497cda3c9b925c57d06495a6363d65d2`
+- **SHA-256 (`config/physics_profiles/standard_model.yaml`):** `bd79105efbd211a81f23955cc1efa4c6497cda3c9b925c57d06495a6363d65d2`
 - **SHA-256 (`config/benchmark_v1.yaml`):** `37a8b88a5045e98a699638efae6f8f8b718b8fb8753aeabd8619d9deb4169604`
 - **Build backend:** `setuptools.build_meta`
 - **Python requirement:** `>=3.11`
 - **Pinned scientific stack:** `PyYAML==6.0.3`, `Jinja2==3.1.6`, `mpmath==1.3.0`, `numpy==1.26.4`, `scipy==1.12.0`, `matplotlib==3.8.3`, `sympy==1.12`
 - **Link Ledger:** `python scripts/derive_universe.py` prints the branch-fixed gauge-density residue `alpha_surf^-1 = 2340/17`; together with the `Derivation Ledger` above, this makes explicit that the benchmark's physical constants are derived residues disclosed against external comparators, not fit parameters reopened by hand.
-- **Paper Sync:** `PYTHONPATH=src python scripts/sync_system.py` refreshes the machine-managed derivation table and residual ledger in `README.md`, plus the synchronized audit macros in `papers/physics_constants.tex`, from `results/residuals.json` and `data/universal_constants.yaml`.
+- **Paper Sync:** `PYTHONPATH=src python scripts/sync_system.py` refreshes the machine-managed derivation table and residual ledger in `README.md`, plus the synchronized audit macros in `papers/physics_constants.tex`, from `results/residuals.json` and `config/physics_profiles/standard_model.yaml`.
 
 ### Constant Tiers
 
