@@ -1,0 +1,39 @@
+Sakharov Audit Report
+=====================
+Benchmark branch                : (26,8,312)
+
+Sakharov Alignment
+------------------
+C_sph                           : 28/79 = 0.354430379747
+B-L violation channel           : \overline{\mathbf{126}}_H
+CP lock present                 : 1
+Static out-of-equilibrium lock  : 1
+
+Topological Holonomy
+--------------------
+I_L                             : 6
+I_Q                             : 13
+R_GUT                           : 2/7 = 0.285714285714
+kappa_D5                        : 0.9887710512663789
+sqrt(1-kappa_D5^2)              : 1.494383089358E-1
+sin(2π k_q / k_ell)             : 9.350162426854E-1
+J_CP^topo                       : 1.279553536029E-4
+J_CP rigidity check             : PASS
+
+Asymmetry Identity
+------------------
+eta_B = C_sph J_CP^topo (M_N/M_P)
+Pi_rank                         : 7.180703308173E-1
+deltaPi_126^match               : 3.370000000000E-2
+Structural exponent             : 4.746521984904E+0
+M_N [GeV]                       : 1.736367663673E+14
+M_N/M_P                         : 1.422214666082E-5
+Scale separation log10(M_P/M_N) : 4.847034847165E+0
+eta_B                           : 6.449923359416E-10
+Rigidity check                  : PASS
+
+Static RG Proof
+---------------
+Static RG incompatibility       : VERIFIED
+Free baryogenesis parameters    : 0
+Matter-antimatter asymmetry is a mandatory residue of modular-T closure on the anomaly-free branch.
