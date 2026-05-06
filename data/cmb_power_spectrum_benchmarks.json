@@ -36,5 +36,21 @@
     "tensor_ratio_upper_bound_95cl": 0.036,
     "tensor_ratio_design_floor": 0.001,
     "dataset_label": "BK18+WMAP+Planck public tensor ceiling with archived CMB-S4 design sensitivity"
+  },
+  "ligo_virgo": {
+    "dataset_label": "GW170817 LIGO/Virgo 4 kHz strain benchmark",
+    "event_name": "GW170817",
+    "event_version": "GW170817-v2",
+    "gwosc_api_base_url": "https://gwosc.org/api/v2",
+    "sample_rate_khz": 4,
+    "detectors": [
+      "H1",
+      "L1",
+      "V1"
+    ],
+    "minimum_detector_count": 3,
+    "minimum_peak_absolute_strain": 1e-22,
+    "mean_peak_over_rms_floor": 1.0,
+    "minimum_duty_cycle_percent": 10.0
   }
 }
