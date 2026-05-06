@@ -1041,6 +1041,14 @@ class UniverseFactory:
         return "\n".join(lines)
 
     @classmethod
+    def generate_residual_payload(cls) -> dict[str, object]:
+        """Return the benchmark Quantified Two-Loop Residuals payload."""
+
+        from shbt.main import build_quantified_two_loop_residuals
+
+        return build_quantified_two_loop_residuals(model=cls.benchmark_vacuum())
+
+    @classmethod
     def generate_ledger(
         cls,
         *,
