@@ -366,6 +366,23 @@ def build_residue_comparison_table(
     ]
 
 
+def _build_ui_residue_payload(derivation: DerivationSnapshot) -> dict[str, object]:
+    residues = dict(getattr(derivation, "residues", {}))
+    residues["LEPTON_LEVEL"] = float(LEPTON_LEVEL)
+    residues["QUARK_LEVEL"] = float(QUARK_LEVEL)
+    residues["PARENT_LEVEL"] = float(PARENT_LEVEL)
+    residues["k_l"] = float(LEPTON_LEVEL)
+    residues["k_q"] = float(QUARK_LEVEL)
+    residues["K"] = float(PARENT_LEVEL)
+    return residues
+
+
+def render_residue_table(st: Any, residue_table: list[dict[str, str]], derivation: DerivationSnapshot) -> dict[str, object]:
+    residues = _build_ui_residue_payload(derivation)
+    st.dataframe(pd.DataFrame(residue_table), hide_index=True, use_container_width=True)
+    return residues
+
+
 def build_rigidity_landscape_figure(
     scan: Any,
     detuning: DetuningSnapshot,
@@ -607,6 +624,7 @@ def render_dashboard() -> None:
         )
     derivation = build_derivation_snapshot(precision=precision)
     residue_table = build_residue_comparison_table(*detuning.candidate_branch, precision=precision)
+    ui_residues = _build_ui_residue_payload(derivation)
 
     _render_detuning_status(st, detuning)
 
@@ -652,6 +670,7 @@ def render_dashboard() -> None:
                     "delta_k_q": detuning.shift[1],
                     "delta_K": detuning.shift[2],
                 },
+                "residues": ui_residues,
                 "rigidity": {
                     "lepton_framing_gap": _fraction_to_float(detuning.anomaly_audit.framing.lepton_gap),
                     "quark_framing_gap": _fraction_to_float(detuning.anomaly_audit.framing.quark_gap),
@@ -680,7 +699,7 @@ def render_dashboard() -> None:
     st.caption(
         f"ε_Λ = {_format_decimal(derivation.epsilon_lambda, digits=6)}; Decimal tolerance = {_format_decimal(derivation.decimal_tolerance, digits=6)}"
     )
-    st.dataframe(pd.DataFrame(residue_table), hide_index=True, use_container_width=True)
+    render_residue_table(st, residue_table, derivation)
     with st.expander("Raw derivation ledger", expanded=False):
         st.code(derivation.ledger_text, language="text")
 
