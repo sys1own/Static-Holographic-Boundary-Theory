@@ -1,1 +1,2057 @@
-rigidity_moat.json
+{
+  "benchmark_coordinates": [
+    26,
+    8,
+    312
+  ],
+  "benchmark_plane_parent_level": 312,
+  "grid_shape": [
+    5,
+    5,
+    5
+  ],
+  "lepton_levels": [
+    24,
+    25,
+    26,
+    27,
+    28
+  ],
+  "quark_levels": [
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "parent_levels": [
+    310,
+    311,
+    312,
+    313,
+    314
+  ],
+  "framing_residue_definition": {
+    "mathcal_E": "max(|K/(2 k_l) - Z|, |K/(3 k_q) - Z|)",
+    "reported_plane": "benchmark parent plane K=312",
+    "reported_lattice": "benchmark-centered 3D moat lattice"
+  },
+  "benchmark_point": {
+    "coordinates": [
+      26,
+      8,
+      312
+    ],
+    "lepton_framing_gap": 0.0,
+    "quark_framing_gap": 0.0,
+    "delta_fr": 0.0,
+    "delta_fr_label": "0",
+    "c_dark_shift": 0.0,
+    "diophantine_gap": 0.0,
+    "total_residue": 0.0
+  },
+  "nearest_detuned_point": {
+    "coordinates": [
+      26,
+      8,
+      311
+    ],
+    "lepton_framing_gap": 0.019230769230769232,
+    "quark_framing_gap": 0.041666666666666664,
+    "delta_fr": 0.041666666666666664,
+    "delta_fr_label": "1/24",
+    "c_dark_shift": 0.0003036936473370666,
+    "diophantine_gap": 0.003205128205128205,
+    "total_residue": 0.041666666666666664
+  },
+  "maximum_residue_point": {
+    "coordinates": [
+      24,
+      10,
+      312
+    ],
+    "lepton_framing_gap": 0.5,
+    "quark_framing_gap": 0.4,
+    "delta_fr": 0.5,
+    "delta_fr_label": "1/2",
+    "c_dark_shift": 0.319180819180819,
+    "diophantine_gap": 0.3,
+    "total_residue": 0.5
+  },
+  "delta_fr_grid": [
+    [
+      [
+        0.4583333333333333,
+        0.4791666666666667,
+        0.5,
+        0.4791666666666667,
+        0.4583333333333333
+      ],
+      [
+        0.4583333333333333,
+        0.4791666666666667,
+        0.5,
+        0.4791666666666667,
+        0.4583333333333333
+      ],
+      [
+        0.4583333333333333,
+        0.4791666666666667,
+        0.5,
+        0.4791666666666667,
+        0.4583333333333333
+      ],
+      [
+        0.48148148148148145,
+        0.48148148148148145,
+        0.5,
+        0.4791666666666667,
+        0.4583333333333333
+      ],
+      [
+        0.4583333333333333,
+        0.4791666666666667,
+        0.5,
+        0.4791666666666667,
+        0.4666666666666667
+      ]
+    ],
+    [
+      [
+        0.2222222222222222,
+        0.2777777777777778,
+        0.3333333333333333,
+        0.3888888888888889,
+        0.4444444444444444
+      ],
+      [
+        0.23809523809523808,
+        0.22,
+        0.24,
+        0.26,
+        0.28
+      ],
+      [
+        0.2,
+        0.22,
+        0.24,
+        0.26,
+        0.28
+      ],
+      [
+        0.48148148148148145,
+        0.48148148148148145,
+        0.4444444444444444,
+        0.4074074074074074,
+        0.37037037037037035
+      ],
+      [
+        0.3333333333333333,
+        0.36666666666666664,
+        0.4,
+        0.43333333333333335,
+        0.4666666666666667
+      ]
+    ],
+    [
+      [
+        0.2222222222222222,
+        0.2777777777777778,
+        0.3333333333333333,
+        0.3888888888888889,
+        0.4444444444444444
+      ],
+      [
+        0.23809523809523808,
+        0.19047619047619047,
+        0.14285714285714285,
+        0.09523809523809523,
+        0.047619047619047616
+      ],
+      [
+        0.08333333333333333,
+        0.041666666666666664,
+        0.0,
+        0.041666666666666664,
+        0.08333333333333333
+      ],
+      [
+        0.48148148148148145,
+        0.48148148148148145,
+        0.4444444444444444,
+        0.4074074074074074,
+        0.37037037037037035
+      ],
+      [
+        0.3333333333333333,
+        0.36666666666666664,
+        0.4,
+        0.43333333333333335,
+        0.4666666666666667
+      ]
+    ],
+    [
+      [
+        0.25925925925925924,
+        0.2777777777777778,
+        0.3333333333333333,
+        0.3888888888888889,
+        0.4444444444444444
+      ],
+      [
+        0.25925925925925924,
+        0.24074074074074073,
+        0.2222222222222222,
+        0.2037037037037037,
+        0.18518518518518517
+      ],
+      [
+        0.25925925925925924,
+        0.24074074074074073,
+        0.2222222222222222,
+        0.2037037037037037,
+        0.18518518518518517
+      ],
+      [
+        0.48148148148148145,
+        0.48148148148148145,
+        0.4444444444444444,
+        0.4074074074074074,
+        0.37037037037037035
+      ],
+      [
+        0.3333333333333333,
+        0.36666666666666664,
+        0.4,
+        0.43333333333333335,
+        0.4666666666666667
+      ]
+    ],
+    [
+      [
+        0.4642857142857143,
+        0.44642857142857145,
+        0.42857142857142855,
+        0.4107142857142857,
+        0.4444444444444444
+      ],
+      [
+        0.4642857142857143,
+        0.44642857142857145,
+        0.42857142857142855,
+        0.4107142857142857,
+        0.39285714285714285
+      ],
+      [
+        0.4642857142857143,
+        0.44642857142857145,
+        0.42857142857142855,
+        0.4107142857142857,
+        0.39285714285714285
+      ],
+      [
+        0.48148148148148145,
+        0.48148148148148145,
+        0.4444444444444444,
+        0.4107142857142857,
+        0.39285714285714285
+      ],
+      [
+        0.4642857142857143,
+        0.44642857142857145,
+        0.42857142857142855,
+        0.43333333333333335,
+        0.4666666666666667
+      ]
+    ]
+  ],
+  "delta_fr_grid_at_benchmark_parent": [
+    [
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    [
+      0.3333333333333333,
+      0.24,
+      0.24,
+      0.4444444444444444,
+      0.4
+    ],
+    [
+      0.3333333333333333,
+      0.14285714285714285,
+      0.0,
+      0.4444444444444444,
+      0.4
+    ],
+    [
+      0.3333333333333333,
+      0.2222222222222222,
+      0.2222222222222222,
+      0.4444444444444444,
+      0.4
+    ],
+    [
+      0.42857142857142855,
+      0.42857142857142855,
+      0.42857142857142855,
+      0.4444444444444444,
+      0.42857142857142855
+    ]
+  ],
+  "points": [
+    {
+      "coordinates": [
+        24,
+        6,
+        310
+      ],
+      "lepton_framing_gap": 0.4583333333333333,
+      "quark_framing_gap": 0.2222222222222222,
+      "delta_fr": 0.4583333333333333,
+      "delta_fr_label": "11/24",
+      "c_dark_shift": 0.5007226722525568,
+      "diophantine_gap": 1.1527777777777777,
+      "total_residue": 0.4583333333333333
+    },
+    {
+      "coordinates": [
+        24,
+        6,
+        311
+      ],
+      "lepton_framing_gap": 0.4791666666666667,
+      "quark_framing_gap": 0.2777777777777778,
+      "delta_fr": 0.4791666666666667,
+      "delta_fr_label": "23/48",
+      "c_dark_shift": 0.5010283076846647,
+      "diophantine_gap": 1.1597222222222223,
+      "total_residue": 0.4791666666666667
+    },
+    {
+      "coordinates": [
+        24,
+        6,
+        312
+      ],
+      "lepton_framing_gap": 0.5,
+      "quark_framing_gap": 0.3333333333333333,
+      "delta_fr": 0.5,
+      "delta_fr_label": "1/2",
+      "c_dark_shift": 0.5013320013320022,
+      "diophantine_gap": 1.1666666666666667,
+      "total_residue": 0.5
+    },
+    {
+      "coordinates": [
+        24,
+        6,
+        313
+      ],
+      "lepton_framing_gap": 0.4791666666666667,
+      "quark_framing_gap": 0.3888888888888889,
+      "delta_fr": 0.4791666666666667,
+      "delta_fr_label": "23/48",
+      "c_dark_shift": 0.501633771641028,
+      "diophantine_gap": 1.1736111111111112,
+      "total_residue": 0.4791666666666667
+    },
+    {
+      "coordinates": [
+        24,
+        6,
+        314
+      ],
+      "lepton_framing_gap": 0.4583333333333333,
+      "quark_framing_gap": 0.4444444444444444,
+      "delta_fr": 0.4583333333333333,
+      "delta_fr_label": "11/24",
+      "c_dark_shift": 0.5019336368252918,
+      "diophantine_gap": 1.1805555555555556,
+      "total_residue": 0.4583333333333333
+    },
+    {
+      "coordinates": [
+        24,
+        7,
+        310
+      ],
+      "lepton_framing_gap": 0.4583333333333333,
+      "quark_framing_gap": 0.23809523809523808,
+      "delta_fr": 0.4583333333333333,
+      "delta_fr_label": "11/24",
+      "c_dark_shift": 0.23405600558589024,
+      "diophantine_gap": 0.07738095238095238,
+      "total_residue": 0.4583333333333333
+    },
+    {
+      "coordinates": [
+        24,
+        7,
+        311
+      ],
+      "lepton_framing_gap": 0.4791666666666667,
+      "quark_framing_gap": 0.19047619047619047,
+      "delta_fr": 0.4791666666666667,
+      "delta_fr_label": "23/48",
+      "c_dark_shift": 0.23436164101799806,
+      "diophantine_gap": 0.0744047619047619,
+      "total_residue": 0.4791666666666667
+    },
+    {
+      "coordinates": [
+        24,
+        7,
+        312
+      ],
+      "lepton_framing_gap": 0.5,
+      "quark_framing_gap": 0.14285714285714285,
+      "delta_fr": 0.5,
+      "delta_fr_label": "1/2",
+      "c_dark_shift": 0.23466533466533557,
+      "diophantine_gap": 0.07142857142857142,
+      "total_residue": 0.5
+    },
+    {
+      "coordinates": [
+        24,
+        7,
+        313
+      ],
+      "lepton_framing_gap": 0.4791666666666667,
+      "quark_framing_gap": 0.09523809523809523,
+      "delta_fr": 0.4791666666666667,
+      "delta_fr_label": "23/48",
+      "c_dark_shift": 0.23496710497436135,
+      "diophantine_gap": 0.06845238095238096,
+      "total_residue": 0.4791666666666667
+    },
+    {
+      "coordinates": [
+        24,
+        7,
+        314
+      ],
+      "lepton_framing_gap": 0.4583333333333333,
+      "quark_framing_gap": 0.047619047619047616,
+      "delta_fr": 0.4583333333333333,
+      "delta_fr_label": "11/24",
+      "c_dark_shift": 0.2352669701586252,
+      "diophantine_gap": 0.06547619047619048,
+      "total_residue": 0.4583333333333333
+    },
+    {
+      "coordinates": [
+        24,
+        8,
+        310
+      ],
+      "lepton_framing_gap": 0.4583333333333333,
+      "quark_framing_gap": 0.08333333333333333,
+      "delta_fr": 0.4583333333333333,
+      "delta_fr_label": "11/24",
+      "c_dark_shift": 0.015874187404071538,
+      "diophantine_gap": 5.458333333333333,
+      "total_residue": 0.4583333333333333
+    },
+    {
+      "coordinates": [
+        24,
+        8,
+        311
+      ],
+      "lepton_framing_gap": 0.4791666666666667,
+      "quark_framing_gap": 0.041666666666666664,
+      "delta_fr": 0.4791666666666667,
+      "delta_fr_label": "23/48",
+      "c_dark_shift": 0.01617982283617936,
+      "diophantine_gap": 5.479166666666667,
+      "total_residue": 0.4791666666666667
+    },
+    {
+      "coordinates": [
+        24,
+        8,
+        312
+      ],
+      "lepton_framing_gap": 0.5,
+      "quark_framing_gap": 0.0,
+      "delta_fr": 0.5,
+      "delta_fr_label": "1/2",
+      "c_dark_shift": 0.01648351648351687,
+      "diophantine_gap": 5.5,
+      "total_residue": 0.5
+    },
+    {
+      "coordinates": [
+        24,
+        8,
+        313
+      ],
+      "lepton_framing_gap": 0.4791666666666667,
+      "quark_framing_gap": 0.041666666666666664,
+      "delta_fr": 0.4791666666666667,
+      "delta_fr_label": "23/48",
+      "c_dark_shift": 0.016785286792542653,
+      "diophantine_gap": 5.520833333333333,
+      "total_residue": 0.4791666666666667
+    },
+    {
+      "coordinates": [
+        24,
+        8,
+        314
+      ],
+      "lepton_framing_gap": 0.4583333333333333,
+      "quark_framing_gap": 0.08333333333333333,
+      "delta_fr": 0.4583333333333333,
+      "delta_fr_label": "11/24",
+      "c_dark_shift": 0.01708515197680649,
+      "diophantine_gap": 5.541666666666667,
+      "total_residue": 0.4583333333333333
+    },
+    {
+      "coordinates": [
+        24,
+        9,
+        310
+      ],
+      "lepton_framing_gap": 0.4583333333333333,
+      "quark_framing_gap": 0.48148148148148145,
+      "delta_fr": 0.48148148148148145,
+      "delta_fr_label": "13/27",
+      "c_dark_shift": 0.16594399441411012,
+      "diophantine_gap": 0.2824074074074074,
+      "total_residue": 0.48148148148148145
+    },
+    {
+      "coordinates": [
+        24,
+        9,
+        311
+      ],
+      "lepton_framing_gap": 0.4791666666666667,
+      "quark_framing_gap": 0.48148148148148145,
+      "delta_fr": 0.48148148148148145,
+      "delta_fr_label": "13/27",
+      "c_dark_shift": 0.1656383589820023,
+      "diophantine_gap": 0.2800925925925926,
+      "total_residue": 0.48148148148148145
+    },
+    {
+      "coordinates": [
+        24,
+        9,
+        312
+      ],
+      "lepton_framing_gap": 0.5,
+      "quark_framing_gap": 0.4444444444444444,
+      "delta_fr": 0.5,
+      "delta_fr_label": "1/2",
+      "c_dark_shift": 0.1653346653346648,
+      "diophantine_gap": 0.2777777777777778,
+      "total_residue": 0.5
+    },
+    {
+      "coordinates": [
+        24,
+        9,
+        313
+      ],
+      "lepton_framing_gap": 0.4791666666666667,
+      "quark_framing_gap": 0.4074074074074074,
+      "delta_fr": 0.4791666666666667,
+      "delta_fr_label": "23/48",
+      "c_dark_shift": 0.165032895025639,
+      "diophantine_gap": 0.27546296296296297,
+      "total_residue": 0.4791666666666667
+    },
+    {
+      "coordinates": [
+        24,
+        9,
+        314
+      ],
+      "lepton_framing_gap": 0.4583333333333333,
+      "quark_framing_gap": 0.37037037037037035,
+      "delta_fr": 0.4583333333333333,
+      "delta_fr_label": "11/24",
+      "c_dark_shift": 0.16473302984137517,
+      "diophantine_gap": 0.27314814814814814,
+      "total_residue": 0.4583333333333333
+    },
+    {
+      "coordinates": [
+        24,
+        10,
+        310
+      ],
+      "lepton_framing_gap": 0.4583333333333333,
+      "quark_framing_gap": 0.3333333333333333,
+      "delta_fr": 0.4583333333333333,
+      "delta_fr_label": "11/24",
+      "c_dark_shift": 0.3197901482602643,
+      "diophantine_gap": 0.2916666666666667,
+      "total_residue": 0.4583333333333333
+    },
+    {
+      "coordinates": [
+        24,
+        10,
+        311
+      ],
+      "lepton_framing_gap": 0.4791666666666667,
+      "quark_framing_gap": 0.36666666666666664,
+      "delta_fr": 0.4791666666666667,
+      "delta_fr_label": "23/48",
+      "c_dark_shift": 0.3194845128281565,
+      "diophantine_gap": 0.29583333333333334,
+      "total_residue": 0.4791666666666667
+    },
+    {
+      "coordinates": [
+        24,
+        10,
+        312
+      ],
+      "lepton_framing_gap": 0.5,
+      "quark_framing_gap": 0.4,
+      "delta_fr": 0.5,
+      "delta_fr_label": "1/2",
+      "c_dark_shift": 0.319180819180819,
+      "diophantine_gap": 0.3,
+      "total_residue": 0.5
+    },
+    {
+      "coordinates": [
+        24,
+        10,
+        313
+      ],
+      "lepton_framing_gap": 0.4791666666666667,
+      "quark_framing_gap": 0.43333333333333335,
+      "delta_fr": 0.4791666666666667,
+      "delta_fr_label": "23/48",
+      "c_dark_shift": 0.3188790488717932,
+      "diophantine_gap": 0.30416666666666664,
+      "total_residue": 0.4791666666666667
+    },
+    {
+      "coordinates": [
+        24,
+        10,
+        314
+      ],
+      "lepton_framing_gap": 0.4583333333333333,
+      "quark_framing_gap": 0.4666666666666667,
+      "delta_fr": 0.4666666666666667,
+      "delta_fr_label": "7/15",
+      "c_dark_shift": 0.31857918368752935,
+      "diophantine_gap": 0.30833333333333335,
+      "total_residue": 0.4666666666666667
+    },
+    {
+      "coordinates": [
+        25,
+        6,
+        310
+      ],
+      "lepton_framing_gap": 0.2,
+      "quark_framing_gap": 0.2222222222222222,
+      "delta_fr": 0.2222222222222222,
+      "delta_fr_label": "2/9",
+      "c_dark_shift": 0.4921756637055483,
+      "diophantine_gap": 0.3111111111111111,
+      "total_residue": 0.2222222222222222
+    },
+    {
+      "coordinates": [
+        25,
+        6,
+        311
+      ],
+      "lepton_framing_gap": 0.22,
+      "quark_framing_gap": 0.2777777777777778,
+      "delta_fr": 0.2777777777777778,
+      "delta_fr_label": "5/18",
+      "c_dark_shift": 0.49248129913765615,
+      "diophantine_gap": 0.3088888888888889,
+      "total_residue": 0.2777777777777778
+    },
+    {
+      "coordinates": [
+        25,
+        6,
+        312
+      ],
+      "lepton_framing_gap": 0.24,
+      "quark_framing_gap": 0.3333333333333333,
+      "delta_fr": 0.3333333333333333,
+      "delta_fr_label": "1/3",
+      "c_dark_shift": 0.49278499278499366,
+      "diophantine_gap": 0.30666666666666664,
+      "total_residue": 0.3333333333333333
+    },
+    {
+      "coordinates": [
+        25,
+        6,
+        313
+      ],
+      "lepton_framing_gap": 0.26,
+      "quark_framing_gap": 0.3888888888888889,
+      "delta_fr": 0.3888888888888889,
+      "delta_fr_label": "7/18",
+      "c_dark_shift": 0.49308676309401944,
+      "diophantine_gap": 0.30444444444444446,
+      "total_residue": 0.3888888888888889
+    },
+    {
+      "coordinates": [
+        25,
+        6,
+        314
+      ],
+      "lepton_framing_gap": 0.28,
+      "quark_framing_gap": 0.4444444444444444,
+      "delta_fr": 0.4444444444444444,
+      "delta_fr_label": "4/9",
+      "c_dark_shift": 0.4933866282782833,
+      "diophantine_gap": 0.3022222222222222,
+      "total_residue": 0.4444444444444444
+    },
+    {
+      "coordinates": [
+        25,
+        7,
+        310
+      ],
+      "lepton_framing_gap": 0.2,
+      "quark_framing_gap": 0.23809523809523808,
+      "delta_fr": 0.23809523809523808,
+      "delta_fr_label": "5/21",
+      "c_dark_shift": 0.22550899703888172,
+      "diophantine_gap": 0.7047619047619048,
+      "total_residue": 0.23809523809523808
+    },
+    {
+      "coordinates": [
+        25,
+        7,
+        311
+      ],
+      "lepton_framing_gap": 0.22,
+      "quark_framing_gap": 0.19047619047619047,
+      "delta_fr": 0.22,
+      "delta_fr_label": "11/50",
+      "c_dark_shift": 0.22581463247098954,
+      "diophantine_gap": 0.7038095238095238,
+      "total_residue": 0.22
+    },
+    {
+      "coordinates": [
+        25,
+        7,
+        312
+      ],
+      "lepton_framing_gap": 0.24,
+      "quark_framing_gap": 0.14285714285714285,
+      "delta_fr": 0.24,
+      "delta_fr_label": "6/25",
+      "c_dark_shift": 0.22611832611832705,
+      "diophantine_gap": 0.7028571428571428,
+      "total_residue": 0.24
+    },
+    {
+      "coordinates": [
+        25,
+        7,
+        313
+      ],
+      "lepton_framing_gap": 0.26,
+      "quark_framing_gap": 0.09523809523809523,
+      "delta_fr": 0.26,
+      "delta_fr_label": "13/50",
+      "c_dark_shift": 0.22642009642735283,
+      "diophantine_gap": 0.7019047619047619,
+      "total_residue": 0.26
+    },
+    {
+      "coordinates": [
+        25,
+        7,
+        314
+      ],
+      "lepton_framing_gap": 0.28,
+      "quark_framing_gap": 0.047619047619047616,
+      "delta_fr": 0.28,
+      "delta_fr_label": "7/25",
+      "c_dark_shift": 0.22671996161161667,
+      "diophantine_gap": 0.700952380952381,
+      "total_residue": 0.28
+    },
+    {
+      "coordinates": [
+        25,
+        8,
+        310
+      ],
+      "lepton_framing_gap": 0.2,
+      "quark_framing_gap": 0.08333333333333333,
+      "delta_fr": 0.2,
+      "delta_fr_label": "1/5",
+      "c_dark_shift": 0.007327178857063021,
+      "diophantine_gap": 0.48333333333333334,
+      "total_residue": 0.2
+    },
+    {
+      "coordinates": [
+        25,
+        8,
+        311
+      ],
+      "lepton_framing_gap": 0.22,
+      "quark_framing_gap": 0.041666666666666664,
+      "delta_fr": 0.22,
+      "delta_fr_label": "11/50",
+      "c_dark_shift": 0.007632814289170842,
+      "diophantine_gap": 0.4816666666666667,
+      "total_residue": 0.22
+    },
+    {
+      "coordinates": [
+        25,
+        8,
+        312
+      ],
+      "lepton_framing_gap": 0.24,
+      "quark_framing_gap": 0.0,
+      "delta_fr": 0.24,
+      "delta_fr_label": "6/25",
+      "c_dark_shift": 0.007936507936508352,
+      "diophantine_gap": 0.48,
+      "total_residue": 0.24
+    },
+    {
+      "coordinates": [
+        25,
+        8,
+        313
+      ],
+      "lepton_framing_gap": 0.26,
+      "quark_framing_gap": 0.041666666666666664,
+      "delta_fr": 0.26,
+      "delta_fr_label": "13/50",
+      "c_dark_shift": 0.008238278245534136,
+      "diophantine_gap": 0.47833333333333333,
+      "total_residue": 0.26
+    },
+    {
+      "coordinates": [
+        25,
+        8,
+        314
+      ],
+      "lepton_framing_gap": 0.28,
+      "quark_framing_gap": 0.08333333333333333,
+      "delta_fr": 0.28,
+      "delta_fr_label": "7/25",
+      "c_dark_shift": 0.008538143429797973,
+      "diophantine_gap": 0.4766666666666667,
+      "total_residue": 0.28
+    },
+    {
+      "coordinates": [
+        25,
+        9,
+        310
+      ],
+      "lepton_framing_gap": 0.2,
+      "quark_framing_gap": 0.48148148148148145,
+      "delta_fr": 0.48148148148148145,
+      "delta_fr_label": "13/27",
+      "c_dark_shift": 0.17449100296111864,
+      "diophantine_gap": 0.7703703703703704,
+      "total_residue": 0.48148148148148145
+    },
+    {
+      "coordinates": [
+        25,
+        9,
+        311
+      ],
+      "lepton_framing_gap": 0.22,
+      "quark_framing_gap": 0.48148148148148145,
+      "delta_fr": 0.48148148148148145,
+      "delta_fr_label": "13/27",
+      "c_dark_shift": 0.17418536752901081,
+      "diophantine_gap": 0.7696296296296297,
+      "total_residue": 0.48148148148148145
+    },
+    {
+      "coordinates": [
+        25,
+        9,
+        312
+      ],
+      "lepton_framing_gap": 0.24,
+      "quark_framing_gap": 0.4444444444444444,
+      "delta_fr": 0.4444444444444444,
+      "delta_fr_label": "4/9",
+      "c_dark_shift": 0.1738816738816733,
+      "diophantine_gap": 0.7688888888888888,
+      "total_residue": 0.4444444444444444
+    },
+    {
+      "coordinates": [
+        25,
+        9,
+        313
+      ],
+      "lepton_framing_gap": 0.26,
+      "quark_framing_gap": 0.4074074074074074,
+      "delta_fr": 0.4074074074074074,
+      "delta_fr_label": "11/27",
+      "c_dark_shift": 0.17357990357264752,
+      "diophantine_gap": 0.7681481481481481,
+      "total_residue": 0.4074074074074074
+    },
+    {
+      "coordinates": [
+        25,
+        9,
+        314
+      ],
+      "lepton_framing_gap": 0.28,
+      "quark_framing_gap": 0.37037037037037035,
+      "delta_fr": 0.37037037037037035,
+      "delta_fr_label": "10/27",
+      "c_dark_shift": 0.17328003838838368,
+      "diophantine_gap": 0.7674074074074074,
+      "total_residue": 0.37037037037037035
+    },
+    {
+      "coordinates": [
+        25,
+        10,
+        310
+      ],
+      "lepton_framing_gap": 0.2,
+      "quark_framing_gap": 0.3333333333333333,
+      "delta_fr": 0.3333333333333333,
+      "delta_fr_label": "1/3",
+      "c_dark_shift": 0.3283371568072728,
+      "diophantine_gap": 1.0666666666666667,
+      "total_residue": 0.3333333333333333
+    },
+    {
+      "coordinates": [
+        25,
+        10,
+        311
+      ],
+      "lepton_framing_gap": 0.22,
+      "quark_framing_gap": 0.36666666666666664,
+      "delta_fr": 0.36666666666666664,
+      "delta_fr_label": "11/30",
+      "c_dark_shift": 0.328031521375165,
+      "diophantine_gap": 1.0733333333333333,
+      "total_residue": 0.36666666666666664
+    },
+    {
+      "coordinates": [
+        25,
+        10,
+        312
+      ],
+      "lepton_framing_gap": 0.24,
+      "quark_framing_gap": 0.4,
+      "delta_fr": 0.4,
+      "delta_fr_label": "2/5",
+      "c_dark_shift": 0.3277278277278275,
+      "diophantine_gap": 1.08,
+      "total_residue": 0.4
+    },
+    {
+      "coordinates": [
+        25,
+        10,
+        313
+      ],
+      "lepton_framing_gap": 0.26,
+      "quark_framing_gap": 0.43333333333333335,
+      "delta_fr": 0.43333333333333335,
+      "delta_fr_label": "13/30",
+      "c_dark_shift": 0.3274260574188017,
+      "diophantine_gap": 1.0866666666666667,
+      "total_residue": 0.43333333333333335
+    },
+    {
+      "coordinates": [
+        25,
+        10,
+        314
+      ],
+      "lepton_framing_gap": 0.28,
+      "quark_framing_gap": 0.4666666666666667,
+      "delta_fr": 0.4666666666666667,
+      "delta_fr_label": "7/15",
+      "c_dark_shift": 0.32712619223453787,
+      "diophantine_gap": 1.0933333333333333,
+      "total_residue": 0.4666666666666667
+    },
+    {
+      "coordinates": [
+        26,
+        6,
+        310
+      ],
+      "lepton_framing_gap": 0.038461538461538464,
+      "quark_framing_gap": 0.2222222222222222,
+      "delta_fr": 0.2222222222222222,
+      "delta_fr_label": "2/9",
+      "c_dark_shift": 0.4842391557690404,
+      "diophantine_gap": 0.33760683760683763,
+      "total_residue": 0.2222222222222222
+    },
+    {
+      "coordinates": [
+        26,
+        6,
+        311
+      ],
+      "lepton_framing_gap": 0.019230769230769232,
+      "quark_framing_gap": 0.2777777777777778,
+      "delta_fr": 0.2777777777777778,
+      "delta_fr_label": "5/18",
+      "c_dark_shift": 0.48454479120114824,
+      "diophantine_gap": 0.33547008547008544,
+      "total_residue": 0.2777777777777778
+    },
+    {
+      "coordinates": [
+        26,
+        6,
+        312
+      ],
+      "lepton_framing_gap": 0.0,
+      "quark_framing_gap": 0.3333333333333333,
+      "delta_fr": 0.3333333333333333,
+      "delta_fr_label": "1/3",
+      "c_dark_shift": 0.48484848484848575,
+      "diophantine_gap": 0.3333333333333333,
+      "total_residue": 0.3333333333333333
+    },
+    {
+      "coordinates": [
+        26,
+        6,
+        313
+      ],
+      "lepton_framing_gap": 0.019230769230769232,
+      "quark_framing_gap": 0.3888888888888889,
+      "delta_fr": 0.3888888888888889,
+      "delta_fr_label": "7/18",
+      "c_dark_shift": 0.48515025515751153,
+      "diophantine_gap": 0.3311965811965812,
+      "total_residue": 0.3888888888888889
+    },
+    {
+      "coordinates": [
+        26,
+        6,
+        314
+      ],
+      "lepton_framing_gap": 0.038461538461538464,
+      "quark_framing_gap": 0.4444444444444444,
+      "delta_fr": 0.4444444444444444,
+      "delta_fr_label": "4/9",
+      "c_dark_shift": 0.48545012034177537,
+      "diophantine_gap": 0.32905982905982906,
+      "total_residue": 0.4444444444444444
+    },
+    {
+      "coordinates": [
+        26,
+        7,
+        310
+      ],
+      "lepton_framing_gap": 0.038461538461538464,
+      "quark_framing_gap": 0.23809523809523808,
+      "delta_fr": 0.23809523809523808,
+      "delta_fr_label": "5/21",
+      "c_dark_shift": 0.2175724891023738,
+      "diophantine_gap": 0.7161172161172161,
+      "total_residue": 0.23809523809523808
+    },
+    {
+      "coordinates": [
+        26,
+        7,
+        311
+      ],
+      "lepton_framing_gap": 0.019230769230769232,
+      "quark_framing_gap": 0.19047619047619047,
+      "delta_fr": 0.19047619047619047,
+      "delta_fr_label": "4/21",
+      "c_dark_shift": 0.21787812453448163,
+      "diophantine_gap": 0.7152014652014652,
+      "total_residue": 0.19047619047619047
+    },
+    {
+      "coordinates": [
+        26,
+        7,
+        312
+      ],
+      "lepton_framing_gap": 0.0,
+      "quark_framing_gap": 0.14285714285714285,
+      "delta_fr": 0.14285714285714285,
+      "delta_fr_label": "1/7",
+      "c_dark_shift": 0.21818181818181914,
+      "diophantine_gap": 0.7142857142857143,
+      "total_residue": 0.14285714285714285
+    },
+    {
+      "coordinates": [
+        26,
+        7,
+        313
+      ],
+      "lepton_framing_gap": 0.019230769230769232,
+      "quark_framing_gap": 0.09523809523809523,
+      "delta_fr": 0.09523809523809523,
+      "delta_fr_label": "2/21",
+      "c_dark_shift": 0.21848358849084493,
+      "diophantine_gap": 0.7133699633699634,
+      "total_residue": 0.09523809523809523
+    },
+    {
+      "coordinates": [
+        26,
+        7,
+        314
+      ],
+      "lepton_framing_gap": 0.038461538461538464,
+      "quark_framing_gap": 0.047619047619047616,
+      "delta_fr": 0.047619047619047616,
+      "delta_fr_label": "1/21",
+      "c_dark_shift": 0.21878345367510876,
+      "diophantine_gap": 0.7124542124542125,
+      "total_residue": 0.047619047619047616
+    },
+    {
+      "coordinates": [
+        26,
+        8,
+        310
+      ],
+      "lepton_framing_gap": 0.038461538461538464,
+      "quark_framing_gap": 0.08333333333333333,
+      "delta_fr": 0.08333333333333333,
+      "delta_fr_label": "1/12",
+      "c_dark_shift": 0.0006093290794448869,
+      "diophantine_gap": 0.00641025641025641,
+      "total_residue": 0.08333333333333333
+    },
+    {
+      "coordinates": [
+        26,
+        8,
+        311
+      ],
+      "lepton_framing_gap": 0.019230769230769232,
+      "quark_framing_gap": 0.041666666666666664,
+      "delta_fr": 0.041666666666666664,
+      "delta_fr_label": "1/24",
+      "c_dark_shift": 0.0003036936473370666,
+      "diophantine_gap": 0.003205128205128205,
+      "total_residue": 0.041666666666666664
+    },
+    {
+      "coordinates": [
+        26,
+        8,
+        312
+      ],
+      "lepton_framing_gap": 0.0,
+      "quark_framing_gap": 0.0,
+      "delta_fr": 0.0,
+      "delta_fr_label": "0",
+      "c_dark_shift": 0.0,
+      "diophantine_gap": 0.0,
+      "total_residue": 0.0
+    },
+    {
+      "coordinates": [
+        26,
+        8,
+        313
+      ],
+      "lepton_framing_gap": 0.019230769230769232,
+      "quark_framing_gap": 0.041666666666666664,
+      "delta_fr": 0.041666666666666664,
+      "delta_fr_label": "1/24",
+      "c_dark_shift": 0.00030177030902622803,
+      "diophantine_gap": 0.003205128205128205,
+      "total_residue": 0.041666666666666664
+    },
+    {
+      "coordinates": [
+        26,
+        8,
+        314
+      ],
+      "lepton_framing_gap": 0.038461538461538464,
+      "quark_framing_gap": 0.08333333333333333,
+      "delta_fr": 0.08333333333333333,
+      "delta_fr_label": "1/12",
+      "c_dark_shift": 0.0006016354932900647,
+      "diophantine_gap": 0.00641025641025641,
+      "total_residue": 0.08333333333333333
+    },
+    {
+      "coordinates": [
+        26,
+        9,
+        310
+      ],
+      "lepton_framing_gap": 0.038461538461538464,
+      "quark_framing_gap": 0.48148148148148145,
+      "delta_fr": 0.48148148148148145,
+      "delta_fr_label": "13/27",
+      "c_dark_shift": 0.18242751089762654,
+      "diophantine_gap": 0.7792022792022792,
+      "total_residue": 0.48148148148148145
+    },
+    {
+      "coordinates": [
+        26,
+        9,
+        311
+      ],
+      "lepton_framing_gap": 0.019230769230769232,
+      "quark_framing_gap": 0.48148148148148145,
+      "delta_fr": 0.48148148148148145,
+      "delta_fr_label": "13/27",
+      "c_dark_shift": 0.18212187546551872,
+      "diophantine_gap": 0.7784900284900285,
+      "total_residue": 0.48148148148148145
+    },
+    {
+      "coordinates": [
+        26,
+        9,
+        312
+      ],
+      "lepton_framing_gap": 0.0,
+      "quark_framing_gap": 0.4444444444444444,
+      "delta_fr": 0.4444444444444444,
+      "delta_fr_label": "4/9",
+      "c_dark_shift": 0.1818181818181812,
+      "diophantine_gap": 0.7777777777777778,
+      "total_residue": 0.4444444444444444
+    },
+    {
+      "coordinates": [
+        26,
+        9,
+        313
+      ],
+      "lepton_framing_gap": 0.019230769230769232,
+      "quark_framing_gap": 0.4074074074074074,
+      "delta_fr": 0.4074074074074074,
+      "delta_fr_label": "11/27",
+      "c_dark_shift": 0.18151641150915543,
+      "diophantine_gap": 0.7770655270655271,
+      "total_residue": 0.4074074074074074
+    },
+    {
+      "coordinates": [
+        26,
+        9,
+        314
+      ],
+      "lepton_framing_gap": 0.038461538461538464,
+      "quark_framing_gap": 0.37037037037037035,
+      "delta_fr": 0.37037037037037035,
+      "delta_fr_label": "10/27",
+      "c_dark_shift": 0.1812165463248916,
+      "diophantine_gap": 0.7763532763532763,
+      "total_residue": 0.37037037037037035
+    },
+    {
+      "coordinates": [
+        26,
+        10,
+        310
+      ],
+      "lepton_framing_gap": 0.038461538461538464,
+      "quark_framing_gap": 0.3333333333333333,
+      "delta_fr": 0.3333333333333333,
+      "delta_fr_label": "1/3",
+      "c_dark_shift": 0.33627366474378073,
+      "diophantine_gap": 0.6025641025641025,
+      "total_residue": 0.3333333333333333
+    },
+    {
+      "coordinates": [
+        26,
+        10,
+        311
+      ],
+      "lepton_framing_gap": 0.019230769230769232,
+      "quark_framing_gap": 0.36666666666666664,
+      "delta_fr": 0.36666666666666664,
+      "delta_fr_label": "11/30",
+      "c_dark_shift": 0.3359680293116729,
+      "diophantine_gap": 0.6012820512820513,
+      "total_residue": 0.36666666666666664
+    },
+    {
+      "coordinates": [
+        26,
+        10,
+        312
+      ],
+      "lepton_framing_gap": 0.0,
+      "quark_framing_gap": 0.4,
+      "delta_fr": 0.4,
+      "delta_fr_label": "2/5",
+      "c_dark_shift": 0.3356643356643354,
+      "diophantine_gap": 0.6,
+      "total_residue": 0.4
+    },
+    {
+      "coordinates": [
+        26,
+        10,
+        313
+      ],
+      "lepton_framing_gap": 0.019230769230769232,
+      "quark_framing_gap": 0.43333333333333335,
+      "delta_fr": 0.43333333333333335,
+      "delta_fr_label": "13/30",
+      "c_dark_shift": 0.3353625653553096,
+      "diophantine_gap": 0.5987179487179487,
+      "total_residue": 0.43333333333333335
+    },
+    {
+      "coordinates": [
+        26,
+        10,
+        314
+      ],
+      "lepton_framing_gap": 0.038461538461538464,
+      "quark_framing_gap": 0.4666666666666667,
+      "delta_fr": 0.4666666666666667,
+      "delta_fr_label": "7/15",
+      "c_dark_shift": 0.3350627001710458,
+      "diophantine_gap": 0.5974358974358974,
+      "total_residue": 0.4666666666666667
+    },
+    {
+      "coordinates": [
+        27,
+        6,
+        310
+      ],
+      "lepton_framing_gap": 0.25925925925925924,
+      "quark_framing_gap": 0.2222222222222222,
+      "delta_fr": 0.25925925925925924,
+      "delta_fr_label": "7/27",
+      "c_dark_shift": 0.4768499932074639,
+      "diophantine_gap": 4.7407407407407405,
+      "total_residue": 0.25925925925925924
+    },
+    {
+      "coordinates": [
+        27,
+        6,
+        311
+      ],
+      "lepton_framing_gap": 0.24074074074074073,
+      "quark_framing_gap": 0.2777777777777778,
+      "delta_fr": 0.2777777777777778,
+      "delta_fr_label": "5/18",
+      "c_dark_shift": 0.4771556286395717,
+      "diophantine_gap": 4.7592592592592595,
+      "total_residue": 0.2777777777777778
+    },
+    {
+      "coordinates": [
+        27,
+        6,
+        312
+      ],
+      "lepton_framing_gap": 0.2222222222222222,
+      "quark_framing_gap": 0.3333333333333333,
+      "delta_fr": 0.3333333333333333,
+      "delta_fr_label": "1/3",
+      "c_dark_shift": 0.47745932228690924,
+      "diophantine_gap": 4.777777777777778,
+      "total_residue": 0.3333333333333333
+    },
+    {
+      "coordinates": [
+        27,
+        6,
+        313
+      ],
+      "lepton_framing_gap": 0.2037037037037037,
+      "quark_framing_gap": 0.3888888888888889,
+      "delta_fr": 0.3888888888888889,
+      "delta_fr_label": "7/18",
+      "c_dark_shift": 0.477761092595935,
+      "diophantine_gap": 4.796296296296297,
+      "total_residue": 0.3888888888888889
+    },
+    {
+      "coordinates": [
+        27,
+        6,
+        314
+      ],
+      "lepton_framing_gap": 0.18518518518518517,
+      "quark_framing_gap": 0.4444444444444444,
+      "delta_fr": 0.4444444444444444,
+      "delta_fr_label": "4/9",
+      "c_dark_shift": 0.47806095778019886,
+      "diophantine_gap": 4.814814814814815,
+      "total_residue": 0.4444444444444444
+    },
+    {
+      "coordinates": [
+        27,
+        7,
+        310
+      ],
+      "lepton_framing_gap": 0.25925925925925924,
+      "quark_framing_gap": 0.23809523809523808,
+      "delta_fr": 0.25925925925925924,
+      "delta_fr_label": "7/27",
+      "c_dark_shift": 0.2101833265407973,
+      "diophantine_gap": 0.17989417989417988,
+      "total_residue": 0.25925925925925924
+    },
+    {
+      "coordinates": [
+        27,
+        7,
+        311
+      ],
+      "lepton_framing_gap": 0.24074074074074073,
+      "quark_framing_gap": 0.19047619047619047,
+      "delta_fr": 0.24074074074074073,
+      "delta_fr_label": "13/54",
+      "c_dark_shift": 0.21048896197290512,
+      "diophantine_gap": 0.17724867724867724,
+      "total_residue": 0.24074074074074073
+    },
+    {
+      "coordinates": [
+        27,
+        7,
+        312
+      ],
+      "lepton_framing_gap": 0.2222222222222222,
+      "quark_framing_gap": 0.14285714285714285,
+      "delta_fr": 0.2222222222222222,
+      "delta_fr_label": "2/9",
+      "c_dark_shift": 0.21079265562024263,
+      "diophantine_gap": 0.1746031746031746,
+      "total_residue": 0.2222222222222222
+    },
+    {
+      "coordinates": [
+        27,
+        7,
+        313
+      ],
+      "lepton_framing_gap": 0.2037037037037037,
+      "quark_framing_gap": 0.09523809523809523,
+      "delta_fr": 0.2037037037037037,
+      "delta_fr_label": "11/54",
+      "c_dark_shift": 0.21109442592926841,
+      "diophantine_gap": 0.17195767195767195,
+      "total_residue": 0.2037037037037037
+    },
+    {
+      "coordinates": [
+        27,
+        7,
+        314
+      ],
+      "lepton_framing_gap": 0.18518518518518517,
+      "quark_framing_gap": 0.047619047619047616,
+      "delta_fr": 0.18518518518518517,
+      "delta_fr_label": "5/27",
+      "c_dark_shift": 0.21139429111353225,
+      "diophantine_gap": 0.1693121693121693,
+      "total_residue": 0.18518518518518517
+    },
+    {
+      "coordinates": [
+        27,
+        8,
+        310
+      ],
+      "lepton_framing_gap": 0.25925925925925924,
+      "quark_framing_gap": 0.08333333333333333,
+      "delta_fr": 0.25925925925925924,
+      "delta_fr_label": "7/27",
+      "c_dark_shift": 0.007998491641021399,
+      "diophantine_gap": 0.4351851851851852,
+      "total_residue": 0.25925925925925924
+    },
+    {
+      "coordinates": [
+        27,
+        8,
+        311
+      ],
+      "lepton_framing_gap": 0.24074074074074073,
+      "quark_framing_gap": 0.041666666666666664,
+      "delta_fr": 0.24074074074074073,
+      "delta_fr_label": "13/54",
+      "c_dark_shift": 0.007692856208913579,
+      "diophantine_gap": 0.4398148148148148,
+      "total_residue": 0.24074074074074073
+    },
+    {
+      "coordinates": [
+        27,
+        8,
+        312
+      ],
+      "lepton_framing_gap": 0.2222222222222222,
+      "quark_framing_gap": 0.0,
+      "delta_fr": 0.2222222222222222,
+      "delta_fr_label": "2/9",
+      "c_dark_shift": 0.007389162561576068,
+      "diophantine_gap": 0.4444444444444444,
+      "total_residue": 0.2222222222222222
+    },
+    {
+      "coordinates": [
+        27,
+        8,
+        313
+      ],
+      "lepton_framing_gap": 0.2037037037037037,
+      "quark_framing_gap": 0.041666666666666664,
+      "delta_fr": 0.2037037037037037,
+      "delta_fr_label": "11/54",
+      "c_dark_shift": 0.007087392252550284,
+      "diophantine_gap": 0.44907407407407407,
+      "total_residue": 0.2037037037037037
+    },
+    {
+      "coordinates": [
+        27,
+        8,
+        314
+      ],
+      "lepton_framing_gap": 0.18518518518518517,
+      "quark_framing_gap": 0.08333333333333333,
+      "delta_fr": 0.18518518518518517,
+      "delta_fr_label": "5/27",
+      "c_dark_shift": 0.0067875270682864475,
+      "diophantine_gap": 0.4537037037037037,
+      "total_residue": 0.18518518518518517
+    },
+    {
+      "coordinates": [
+        27,
+        9,
+        310
+      ],
+      "lepton_framing_gap": 0.25925925925925924,
+      "quark_framing_gap": 0.48148148148148145,
+      "delta_fr": 0.48148148148148145,
+      "delta_fr_label": "13/27",
+      "c_dark_shift": 0.18981667345920306,
+      "diophantine_gap": 4.7407407407407405,
+      "total_residue": 0.48148148148148145
+    },
+    {
+      "coordinates": [
+        27,
+        9,
+        311
+      ],
+      "lepton_framing_gap": 0.24074074074074073,
+      "quark_framing_gap": 0.48148148148148145,
+      "delta_fr": 0.48148148148148145,
+      "delta_fr_label": "13/27",
+      "c_dark_shift": 0.18951103802709524,
+      "diophantine_gap": 4.7592592592592595,
+      "total_residue": 0.48148148148148145
+    },
+    {
+      "coordinates": [
+        27,
+        9,
+        312
+      ],
+      "lepton_framing_gap": 0.2222222222222222,
+      "quark_framing_gap": 0.4444444444444444,
+      "delta_fr": 0.4444444444444444,
+      "delta_fr_label": "4/9",
+      "c_dark_shift": 0.18920734437975772,
+      "diophantine_gap": 4.777777777777778,
+      "total_residue": 0.4444444444444444
+    },
+    {
+      "coordinates": [
+        27,
+        9,
+        313
+      ],
+      "lepton_framing_gap": 0.2037037037037037,
+      "quark_framing_gap": 0.4074074074074074,
+      "delta_fr": 0.4074074074074074,
+      "delta_fr_label": "11/27",
+      "c_dark_shift": 0.18890557407073194,
+      "diophantine_gap": 4.796296296296297,
+      "total_residue": 0.4074074074074074
+    },
+    {
+      "coordinates": [
+        27,
+        9,
+        314
+      ],
+      "lepton_framing_gap": 0.18518518518518517,
+      "quark_framing_gap": 0.37037037037037035,
+      "delta_fr": 0.37037037037037035,
+      "delta_fr_label": "10/27",
+      "c_dark_shift": 0.1886057088864681,
+      "diophantine_gap": 4.814814814814815,
+      "total_residue": 0.37037037037037035
+    },
+    {
+      "coordinates": [
+        27,
+        10,
+        310
+      ],
+      "lepton_framing_gap": 0.25925925925925924,
+      "quark_framing_gap": 0.3333333333333333,
+      "delta_fr": 0.3333333333333333,
+      "delta_fr_label": "1/3",
+      "c_dark_shift": 0.34366282730535724,
+      "diophantine_gap": 0.14814814814814814,
+      "total_residue": 0.3333333333333333
+    },
+    {
+      "coordinates": [
+        27,
+        10,
+        311
+      ],
+      "lepton_framing_gap": 0.24074074074074073,
+      "quark_framing_gap": 0.36666666666666664,
+      "delta_fr": 0.36666666666666664,
+      "delta_fr_label": "11/30",
+      "c_dark_shift": 0.3433571918732494,
+      "diophantine_gap": 0.15185185185185185,
+      "total_residue": 0.36666666666666664
+    },
+    {
+      "coordinates": [
+        27,
+        10,
+        312
+      ],
+      "lepton_framing_gap": 0.2222222222222222,
+      "quark_framing_gap": 0.4,
+      "delta_fr": 0.4,
+      "delta_fr_label": "2/5",
+      "c_dark_shift": 0.3430534982259119,
+      "diophantine_gap": 0.15555555555555556,
+      "total_residue": 0.4
+    },
+    {
+      "coordinates": [
+        27,
+        10,
+        313
+      ],
+      "lepton_framing_gap": 0.2037037037037037,
+      "quark_framing_gap": 0.43333333333333335,
+      "delta_fr": 0.43333333333333335,
+      "delta_fr_label": "13/30",
+      "c_dark_shift": 0.34275172791688613,
+      "diophantine_gap": 0.15925925925925927,
+      "total_residue": 0.43333333333333335
+    },
+    {
+      "coordinates": [
+        27,
+        10,
+        314
+      ],
+      "lepton_framing_gap": 0.18518518518518517,
+      "quark_framing_gap": 0.4666666666666667,
+      "delta_fr": 0.4666666666666667,
+      "delta_fr_label": "7/15",
+      "c_dark_shift": 0.3424518627326223,
+      "diophantine_gap": 0.16296296296296298,
+      "total_residue": 0.4666666666666667
+    },
+    {
+      "coordinates": [
+        28,
+        6,
+        310
+      ],
+      "lepton_framing_gap": 0.4642857142857143,
+      "quark_framing_gap": 0.2222222222222222,
+      "delta_fr": 0.4642857142857143,
+      "delta_fr_label": "13/28",
+      "c_dark_shift": 0.4699534414833262,
+      "diophantine_gap": 0.38492063492063494,
+      "total_residue": 0.4642857142857143
+    },
+    {
+      "coordinates": [
+        28,
+        6,
+        311
+      ],
+      "lepton_framing_gap": 0.44642857142857145,
+      "quark_framing_gap": 0.2777777777777778,
+      "delta_fr": 0.44642857142857145,
+      "delta_fr_label": "25/56",
+      "c_dark_shift": 0.470259076915434,
+      "diophantine_gap": 0.38293650793650796,
+      "total_residue": 0.44642857142857145
+    },
+    {
+      "coordinates": [
+        28,
+        6,
+        312
+      ],
+      "lepton_framing_gap": 0.42857142857142855,
+      "quark_framing_gap": 0.3333333333333333,
+      "delta_fr": 0.42857142857142855,
+      "delta_fr_label": "3/7",
+      "c_dark_shift": 0.4705627705627715,
+      "diophantine_gap": 0.38095238095238093,
+      "total_residue": 0.42857142857142855
+    },
+    {
+      "coordinates": [
+        28,
+        6,
+        313
+      ],
+      "lepton_framing_gap": 0.4107142857142857,
+      "quark_framing_gap": 0.3888888888888889,
+      "delta_fr": 0.4107142857142857,
+      "delta_fr_label": "23/56",
+      "c_dark_shift": 0.4708645408717973,
+      "diophantine_gap": 0.37896825396825395,
+      "total_residue": 0.4107142857142857
+    },
+    {
+      "coordinates": [
+        28,
+        6,
+        314
+      ],
+      "lepton_framing_gap": 0.39285714285714285,
+      "quark_framing_gap": 0.4444444444444444,
+      "delta_fr": 0.4444444444444444,
+      "delta_fr_label": "4/9",
+      "c_dark_shift": 0.47116440605606114,
+      "diophantine_gap": 0.376984126984127,
+      "total_residue": 0.4444444444444444
+    },
+    {
+      "coordinates": [
+        28,
+        7,
+        310
+      ],
+      "lepton_framing_gap": 0.4642857142857143,
+      "quark_framing_gap": 0.23809523809523808,
+      "delta_fr": 0.4642857142857143,
+      "delta_fr_label": "13/28",
+      "c_dark_shift": 0.20328677481665958,
+      "diophantine_gap": 0.8452380952380952,
+      "total_residue": 0.4642857142857143
+    },
+    {
+      "coordinates": [
+        28,
+        7,
+        311
+      ],
+      "lepton_framing_gap": 0.44642857142857145,
+      "quark_framing_gap": 0.19047619047619047,
+      "delta_fr": 0.44642857142857145,
+      "delta_fr_label": "25/56",
+      "c_dark_shift": 0.2035924102487674,
+      "diophantine_gap": 0.8511904761904762,
+      "total_residue": 0.44642857142857145
+    },
+    {
+      "coordinates": [
+        28,
+        7,
+        312
+      ],
+      "lepton_framing_gap": 0.42857142857142855,
+      "quark_framing_gap": 0.14285714285714285,
+      "delta_fr": 0.42857142857142855,
+      "delta_fr_label": "3/7",
+      "c_dark_shift": 0.2038961038961049,
+      "diophantine_gap": 0.8571428571428571,
+      "total_residue": 0.42857142857142855
+    },
+    {
+      "coordinates": [
+        28,
+        7,
+        313
+      ],
+      "lepton_framing_gap": 0.4107142857142857,
+      "quark_framing_gap": 0.09523809523809523,
+      "delta_fr": 0.4107142857142857,
+      "delta_fr_label": "23/56",
+      "c_dark_shift": 0.2041978742051307,
+      "diophantine_gap": 0.8630952380952381,
+      "total_residue": 0.4107142857142857
+    },
+    {
+      "coordinates": [
+        28,
+        7,
+        314
+      ],
+      "lepton_framing_gap": 0.39285714285714285,
+      "quark_framing_gap": 0.047619047619047616,
+      "delta_fr": 0.39285714285714285,
+      "delta_fr_label": "11/28",
+      "c_dark_shift": 0.20449773938939453,
+      "diophantine_gap": 0.8690476190476191,
+      "total_residue": 0.39285714285714285
+    },
+    {
+      "coordinates": [
+        28,
+        8,
+        310
+      ],
+      "lepton_framing_gap": 0.4642857142857143,
+      "quark_framing_gap": 0.08333333333333333,
+      "delta_fr": 0.4642857142857143,
+      "delta_fr_label": "13/28",
+      "c_dark_shift": 0.014895043365159122,
+      "diophantine_gap": 0.8452380952380952,
+      "total_residue": 0.4642857142857143
+    },
+    {
+      "coordinates": [
+        28,
+        8,
+        311
+      ],
+      "lepton_framing_gap": 0.44642857142857145,
+      "quark_framing_gap": 0.041666666666666664,
+      "delta_fr": 0.44642857142857145,
+      "delta_fr_label": "25/56",
+      "c_dark_shift": 0.014589407933051302,
+      "diophantine_gap": 0.8511904761904762,
+      "total_residue": 0.44642857142857145
+    },
+    {
+      "coordinates": [
+        28,
+        8,
+        312
+      ],
+      "lepton_framing_gap": 0.42857142857142855,
+      "quark_framing_gap": 0.0,
+      "delta_fr": 0.42857142857142855,
+      "delta_fr_label": "3/7",
+      "c_dark_shift": 0.014285714285713791,
+      "diophantine_gap": 0.8571428571428571,
+      "total_residue": 0.42857142857142855
+    },
+    {
+      "coordinates": [
+        28,
+        8,
+        313
+      ],
+      "lepton_framing_gap": 0.4107142857142857,
+      "quark_framing_gap": 0.041666666666666664,
+      "delta_fr": 0.4107142857142857,
+      "delta_fr_label": "23/56",
+      "c_dark_shift": 0.013983943976688007,
+      "diophantine_gap": 0.8630952380952381,
+      "total_residue": 0.4107142857142857
+    },
+    {
+      "coordinates": [
+        28,
+        8,
+        314
+      ],
+      "lepton_framing_gap": 0.39285714285714285,
+      "quark_framing_gap": 0.08333333333333333,
+      "delta_fr": 0.39285714285714285,
+      "delta_fr_label": "11/28",
+      "c_dark_shift": 0.01368407879242417,
+      "diophantine_gap": 0.8690476190476191,
+      "total_residue": 0.39285714285714285
+    },
+    {
+      "coordinates": [
+        28,
+        9,
+        310
+      ],
+      "lepton_framing_gap": 0.4642857142857143,
+      "quark_framing_gap": 0.48148148148148145,
+      "delta_fr": 0.48148148148148145,
+      "delta_fr_label": "13/27",
+      "c_dark_shift": 0.19671322518334078,
+      "diophantine_gap": 0.794973544973545,
+      "total_residue": 0.48148148148148145
+    },
+    {
+      "coordinates": [
+        28,
+        9,
+        311
+      ],
+      "lepton_framing_gap": 0.44642857142857145,
+      "quark_framing_gap": 0.48148148148148145,
+      "delta_fr": 0.48148148148148145,
+      "delta_fr_label": "13/27",
+      "c_dark_shift": 0.19640758975123296,
+      "diophantine_gap": 0.7943121693121693,
+      "total_residue": 0.48148148148148145
+    },
+    {
+      "coordinates": [
+        28,
+        9,
+        312
+      ],
+      "lepton_framing_gap": 0.42857142857142855,
+      "quark_framing_gap": 0.4444444444444444,
+      "delta_fr": 0.4444444444444444,
+      "delta_fr_label": "4/9",
+      "c_dark_shift": 0.19610389610389545,
+      "diophantine_gap": 0.7936507936507936,
+      "total_residue": 0.4444444444444444
+    },
+    {
+      "coordinates": [
+        28,
+        9,
+        313
+      ],
+      "lepton_framing_gap": 0.4107142857142857,
+      "quark_framing_gap": 0.4074074074074074,
+      "delta_fr": 0.4107142857142857,
+      "delta_fr_label": "23/56",
+      "c_dark_shift": 0.19580212579486966,
+      "diophantine_gap": 0.792989417989418,
+      "total_residue": 0.4107142857142857
+    },
+    {
+      "coordinates": [
+        28,
+        9,
+        314
+      ],
+      "lepton_framing_gap": 0.39285714285714285,
+      "quark_framing_gap": 0.37037037037037035,
+      "delta_fr": 0.39285714285714285,
+      "delta_fr_label": "11/28",
+      "c_dark_shift": 0.19550226061060583,
+      "diophantine_gap": 0.7923280423280423,
+      "total_residue": 0.39285714285714285
+    },
+    {
+      "coordinates": [
+        28,
+        10,
+        310
+      ],
+      "lepton_framing_gap": 0.4642857142857143,
+      "quark_framing_gap": 0.3333333333333333,
+      "delta_fr": 0.4642857142857143,
+      "delta_fr_label": "13/28",
+      "c_dark_shift": 0.35055937902949497,
+      "diophantine_gap": 0.6309523809523809,
+      "total_residue": 0.4642857142857143
+    },
+    {
+      "coordinates": [
+        28,
+        10,
+        311
+      ],
+      "lepton_framing_gap": 0.44642857142857145,
+      "quark_framing_gap": 0.36666666666666664,
+      "delta_fr": 0.44642857142857145,
+      "delta_fr_label": "25/56",
+      "c_dark_shift": 0.35025374359738715,
+      "diophantine_gap": 0.6297619047619047,
+      "total_residue": 0.44642857142857145
+    },
+    {
+      "coordinates": [
+        28,
+        10,
+        312
+      ],
+      "lepton_framing_gap": 0.42857142857142855,
+      "quark_framing_gap": 0.4,
+      "delta_fr": 0.42857142857142855,
+      "delta_fr_label": "3/7",
+      "c_dark_shift": 0.34995004995004964,
+      "diophantine_gap": 0.6285714285714286,
+      "total_residue": 0.42857142857142855
+    },
+    {
+      "coordinates": [
+        28,
+        10,
+        313
+      ],
+      "lepton_framing_gap": 0.4107142857142857,
+      "quark_framing_gap": 0.43333333333333335,
+      "delta_fr": 0.43333333333333335,
+      "delta_fr_label": "13/30",
+      "c_dark_shift": 0.34964827964102385,
+      "diophantine_gap": 0.6273809523809524,
+      "total_residue": 0.43333333333333335
+    },
+    {
+      "coordinates": [
+        28,
+        10,
+        314
+      ],
+      "lepton_framing_gap": 0.39285714285714285,
+      "quark_framing_gap": 0.4666666666666667,
+      "delta_fr": 0.4666666666666667,
+      "delta_fr_label": "7/15",
+      "c_dark_shift": 0.34934841445676,
+      "diophantine_gap": 0.6261904761904762,
+      "total_residue": 0.4666666666666667
+    }
+  ]
+}
