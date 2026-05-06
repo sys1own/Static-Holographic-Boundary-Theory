@@ -368,12 +368,16 @@ def build_residue_comparison_table(
 
 def _build_ui_residue_payload(derivation: DerivationSnapshot) -> dict[str, object]:
     residues = dict(getattr(derivation, "residues", {}))
-    residues["LEPTON_LEVEL"] = float(LEPTON_LEVEL)
-    residues["QUARK_LEVEL"] = float(QUARK_LEVEL)
-    residues["PARENT_LEVEL"] = float(PARENT_LEVEL)
-    residues["k_l"] = float(LEPTON_LEVEL)
-    residues["k_q"] = float(QUARK_LEVEL)
-    residues["K"] = float(PARENT_LEVEL)
+    residues.update(
+        {
+            "k_l": float(LEPTON_LEVEL),
+            "k_q": float(QUARK_LEVEL),
+            "K": float(PARENT_LEVEL),
+            "LEPTON_LEVEL": float(LEPTON_LEVEL),
+            "QUARK_LEVEL": float(QUARK_LEVEL),
+            "PARENT_LEVEL": float(PARENT_LEVEL),
+        }
+    )
     return residues
 
 
