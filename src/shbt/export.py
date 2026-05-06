@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import csv
 from dataclasses import asdict, is_dataclass
+from decimal import Decimal
 import json
 from pathlib import Path
+import shutil
 from typing import Any, Iterable, Mapping, Sequence
 
 import matplotlib.pyplot as plt
@@ -13,6 +15,8 @@ import numpy as np
 def _normalize_json_value(value: Any) -> Any:
     if is_dataclass(value):
         return asdict(value)
+    if isinstance(value, Decimal):
+        return str(value)
     if isinstance(value, Path):
         return value.as_posix()
     if isinstance(value, np.ndarray):
@@ -42,6 +46,180 @@ def _normalize_csv_value(value: Any) -> Any:
     if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
         return json.dumps(list(value), default=_normalize_json_value)
     return str(value)
+
+
+def _normalize_zarr_attr_value(value: Any) -> Any:
+    if isinstance(value, Decimal):
+        return str(value)
+    return _normalize_json_value(value)
+
+
+def _coerce_tensor_array(value: Any) -> np.ndarray | None:
+    if isinstance(value, np.ndarray):
+        resolved_array = value
+    elif isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+        resolved_array = np.asarray(value)
+    else:
+        return None
+
+    if resolved_array.ndim < 2:
+        return None
+    if resolved_array.dtype != object:
+        return np.ascontiguousarray(resolved_array)
+
+    flattened = tuple(resolved_array.reshape(-1))
+    if not flattened:
+        return np.ascontiguousarray(resolved_array.astype(float))
+    if all(isinstance(item, Decimal) for item in flattened):
+        return np.ascontiguousarray(np.asarray(value, dtype=str))
+    if all(isinstance(item, (int, float, np.integer, np.floating, bool, np.bool_)) for item in flattened):
+        return np.ascontiguousarray(np.asarray(value, dtype=float))
+    if all(isinstance(item, complex) for item in flattened):
+        return np.ascontiguousarray(np.asarray(value, dtype=np.complex128))
+    if all(isinstance(item, str) for item in flattened):
+        return np.ascontiguousarray(np.asarray(value, dtype=str))
+    return None
+
+
+def _normalize_dataset_component(component: str) -> str:
+    normalized = component.replace("\\", "/").replace(" ", "_")
+    normalized = normalized.replace("..", ".")
+    normalized = normalized.strip("/.")
+    return normalized or "tensor"
+
+
+def collect_multidimensional_tensors(payload: Any, *, prefix: str | None = None) -> dict[str, np.ndarray]:
+    tensor = _coerce_tensor_array(payload)
+    if tensor is not None:
+        dataset_name = _normalize_dataset_component(prefix or "tensor")
+        return {dataset_name: tensor}
+
+    if is_dataclass(payload):
+        payload = asdict(payload)
+
+    extracted: dict[str, np.ndarray] = {}
+    if isinstance(payload, Mapping):
+        for key, value in payload.items():
+            child_prefix = f"{prefix}.{key}" if prefix else str(key)
+            extracted.update(collect_multidimensional_tensors(value, prefix=child_prefix))
+        return extracted
+
+    if hasattr(payload, "__dict__") and not isinstance(payload, type):
+        for key, value in vars(payload).items():
+            child_prefix = f"{prefix}.{key}" if prefix else str(key)
+            extracted.update(collect_multidimensional_tensors(value, prefix=child_prefix))
+        return extracted
+
+    if isinstance(payload, Sequence) and not isinstance(payload, (str, bytes, bytearray)):
+        for index, value in enumerate(payload):
+            child_prefix = f"{prefix}.{index}" if prefix else str(index)
+            extracted.update(collect_multidimensional_tensors(value, prefix=child_prefix))
+    return extracted
+
+
+def _zarr_chunk_key(shape: tuple[int, ...]) -> str:
+    dimensions = max(len(shape), 1)
+    return ".".join("0" for _ in range(dimensions))
+
+
+def _ensure_zarr_group(path: Path, *, attrs: Mapping[str, Any] | None = None) -> None:
+    path.mkdir(parents=True, exist_ok=True)
+    (path / ".zgroup").write_text(json.dumps({"zarr_format": 2}, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    if attrs is not None:
+        (path / ".zattrs").write_text(
+            json.dumps(dict(attrs), indent=2, sort_keys=True, default=_normalize_zarr_attr_value) + "\n",
+            encoding="utf-8",
+        )
+    elif not (path / ".zattrs").exists():
+        (path / ".zattrs").write_text("{}\n", encoding="utf-8")
+
+
+def _write_zarr_dataset(root_path: Path, dataset_name: str, value: Any) -> None:
+    array = np.ascontiguousarray(np.asarray(value))
+    if array.dtype.byteorder == ">" or (array.dtype.byteorder == "=" and not np.little_endian):
+        array = array.byteswap().newbyteorder("<")
+
+    components = tuple(_normalize_dataset_component(component) for component in dataset_name.split("."))
+    group_path = root_path
+    for component in components[:-1]:
+        group_path = group_path / component
+        _ensure_zarr_group(group_path)
+
+    dataset_path = group_path / components[-1]
+    dataset_path.mkdir(parents=True, exist_ok=True)
+    zarray_payload = {
+        "chunks": [int(length) for length in (array.shape or (1,))],
+        "compressor": None,
+        "dtype": array.dtype.str,
+        "fill_value": None,
+        "filters": None,
+        "order": "C",
+        "shape": [int(length) for length in array.shape],
+        "zarr_format": 2,
+    }
+    (dataset_path / ".zarray").write_text(json.dumps(zarray_payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    (dataset_path / ".zattrs").write_text("{}\n", encoding="utf-8")
+    (dataset_path / _zarr_chunk_key(array.shape)).write_bytes(array.tobytes(order="C"))
+
+
+def write_zarr_artifact(
+    output_path: Path,
+    tensors: Mapping[str, Any],
+    *,
+    attrs: Mapping[str, Any] | None = None,
+) -> Path:
+    resolved_output_path = Path(output_path)
+    if resolved_output_path.suffix != ".zarr":
+        resolved_output_path = resolved_output_path.with_suffix(".zarr")
+    if resolved_output_path.exists():
+        if resolved_output_path.is_dir():
+            shutil.rmtree(resolved_output_path)
+        else:
+            resolved_output_path.unlink()
+
+    normalized_tensors = {str(name): np.ascontiguousarray(np.asarray(value)) for name, value in tensors.items()}
+    root_attrs = {
+        "datasets": tuple(sorted(normalized_tensors)),
+        "tensor_format": "zarr",
+    }
+    if attrs is not None:
+        root_attrs.update(dict(attrs))
+
+    _ensure_zarr_group(resolved_output_path, attrs=root_attrs)
+    for dataset_name, value in normalized_tensors.items():
+        _write_zarr_dataset(resolved_output_path, dataset_name, value)
+    return resolved_output_path
+
+
+def read_zarr_artifact(output_path: Path) -> dict[str, np.ndarray]:
+    resolved_output_path = Path(output_path)
+    artifacts: dict[str, np.ndarray] = {}
+    for zarray_path in sorted(resolved_output_path.rglob(".zarray")):
+        metadata = json.loads(zarray_path.read_text(encoding="utf-8"))
+        dataset_path = zarray_path.parent
+        shape = tuple(int(length) for length in metadata.get("shape", ()))
+        dtype = np.dtype(metadata["dtype"])
+        raw = (dataset_path / _zarr_chunk_key(shape)).read_bytes()
+        array = np.frombuffer(raw, dtype=dtype)
+        if shape:
+            array = array.reshape(shape, order=metadata.get("order", "C"))
+        else:
+            array = array.reshape(())
+        dataset_key = ".".join(dataset_path.relative_to(resolved_output_path).parts)
+        artifacts[dataset_key] = array.copy()
+    return artifacts
+
+
+def write_tensor_artifact(
+    output_path: Path,
+    payload: Any,
+    *,
+    attrs: Mapping[str, Any] | None = None,
+) -> Path | None:
+    tensors = collect_multidimensional_tensors(payload)
+    if not tensors:
+        return None
+    return write_zarr_artifact(Path(output_path), tensors, attrs=attrs)
 
 
 def write_json_artifact(output_path: Path, payload: Any) -> Path:
@@ -113,13 +291,33 @@ def export_dm_fingerprint_figure(
 
 
 def export_transport_covariance_diagnostics(output_path: Path, transport_covariance: Any) -> Path:
-    return write_json_artifact(Path(output_path), transport_covariance)
+    resolved_output_path = Path(output_path)
+    tensor_artifact = write_tensor_artifact(
+        resolved_output_path.with_suffix(".zarr"),
+        transport_covariance,
+        attrs={"source_artifact": resolved_output_path.name},
+    )
+    if tensor_artifact is None:
+        return write_json_artifact(resolved_output_path, transport_covariance)
+
+    if is_dataclass(transport_covariance):
+        payload = asdict(transport_covariance)
+    elif isinstance(transport_covariance, Mapping):
+        payload = dict(transport_covariance)
+    else:
+        payload = {"payload": transport_covariance}
+    payload["tensor_artifact"] = tensor_artifact.as_posix()
+    return write_json_artifact(resolved_output_path, payload)
 
 
 __all__ = [
+    "collect_multidimensional_tensors",
     "export_dm_fingerprint_figure",
     "export_matrix_spectrum_csv",
     "export_transport_covariance_diagnostics",
+    "read_zarr_artifact",
+    "write_tensor_artifact",
     "write_csv_artifact",
     "write_json_artifact",
+    "write_zarr_artifact",
 ]
