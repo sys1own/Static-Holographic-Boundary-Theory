@@ -5,10 +5,12 @@ import importlib.util
 import io
 import runpy
 import sys
+from fractions import Fraction
 from pathlib import Path
 
 import pytest
 
+import shbt
 from shbt.core import derivation_api
 from shbt.core.derivation_api import DEFAULT_PRECISION, UniverseFactory
 
@@ -31,7 +33,22 @@ def test_universe_factory_generates_universe_ledger() -> None:
 
     assert ledger.startswith("Derivation Ledger")
     assert "Alpha Surface Inverse" in ledger
+    assert "Mu Audit" in ledger
     assert "Unity of Scale Identity" in ledger
+
+
+def test_calculate_physical_ledger_uses_benchmark_topological_vacuum() -> None:
+    physical_ledger = UniverseFactory.calculate_physical_ledger()
+
+    assert physical_ledger.vacuum.branch == (26, 8, 312)
+    assert physical_ledger.alpha_surface.alpha_inverse_fraction == Fraction(2340, 17)
+    assert physical_ledger.proton_ratio.relative_error <= physical_ledger.proton_ratio.tolerance
+    assert physical_ledger.mass_bridge.neutrino_floor_mev > 0
+
+
+def test_import_shbt_exposes_universe_factory() -> None:
+    assert shbt.UniverseFactory is UniverseFactory
+    assert shbt.DEFAULT_PRECISION == DEFAULT_PRECISION
 
 
 def test_universe_factory_generates_lambda_ledger() -> None:
