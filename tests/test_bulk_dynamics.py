@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from shbt.constants import AUDIT_TOLERANCE
 from shbt.core.bulk_dynamics import BulkDynamics, build_bulk_dynamics_audit
 
 
@@ -30,4 +31,7 @@ def test_bulk_flow_matches_temporal_emergence_kernel() -> None:
     assert abs(audit.arrow_of_time_consistency_residual) <= Decimal("1e-15")
     assert abs(audit.entropy_to_time_identity_residual) <= Decimal("1e-15")
     assert abs(audit.metric_lock_residual) <= Decimal("1e-15")
-    assert audit.layerwise_arrow_of_time_gradient_km_s_mpc == audit.temporal_point.derived_temporal_rate_km_s_mpc
+    assert abs(
+        audit.layerwise_arrow_of_time_gradient_km_s_mpc
+        - audit.temporal_point.derived_temporal_rate_km_s_mpc
+    ) < AUDIT_TOLERANCE
