@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
+import numpy as np
 import pandas as pd
 
 
@@ -49,6 +50,7 @@ class _StreamlitStub:
         self.subheaders: list[str] = []
         self.captions: list[str] = []
         self.dataframes: list[dict[str, object]] = []
+        self.plotly_charts: list[dict[str, object]] = []
         self.pyplots: list[dict[str, object]] = []
         self.json_payloads: list[dict[str, object]] = []
         self.status_messages: list[tuple[str, str]] = []
@@ -106,6 +108,14 @@ class _StreamlitStub:
             {
                 "figure": figure,
                 "clear_figure": clear_figure,
+                "use_container_width": use_container_width,
+            }
+        )
+
+    def plotly_chart(self, figure, *, use_container_width: bool) -> None:
+        self.plotly_charts.append(
+            {
+                "figure": figure,
                 "use_container_width": use_container_width,
             }
         )
@@ -203,6 +213,38 @@ def test_build_rigidity_scan_contains_benchmark_valley() -> None:
     assert scan.nearest_detuned_point.total_residue > 0.0
 
 
+def test_build_noether_bridge_symmetry_breaking_path_reaches_target() -> None:
+    module = _load_script_module()
+
+    path = module.build_noether_bridge_symmetry_breaking_path(28, 7, 313)
+
+    assert [snapshot.candidate_branch for snapshot in path] == [
+        module.BENCHMARK_BRANCH,
+        (27, 7, 313),
+        (28, 7, 313),
+    ]
+    assert path[0].benchmark_selected is True
+    assert path[-1].candidate_branch == (28, 7, 313)
+
+
+def test_build_noether_bridge_decoherence_figure_uses_framing_residue_on_z_axis() -> None:
+    module = _load_script_module()
+
+    scan = module.build_rigidity_scan(lepton_half_width=1, quark_half_width=1, parent_half_width=1)
+    detuning = module.build_detuning_snapshot(delta_lepton=1)
+    figure = module.build_noether_bridge_decoherence_figure(scan, detuning)
+    surface = np.asarray(figure.data[0].z, dtype=float)
+
+    benchmark_row = scan.lepton_levels.index(module.LEPTON_LEVEL)
+    benchmark_column = scan.quark_levels.index(module.QUARK_LEVEL)
+
+    assert figure.data[0].type == "surface"
+    assert figure.layout.scene.zaxis.title.text == "Framing anomaly residue 𝓔"
+    assert surface[benchmark_row, benchmark_column] == 0.0
+    assert float(surface.max()) > 0.0
+    assert len(figure.frames) == 2
+
+
 def test_build_residue_comparison_table_exposes_live_anchor_rows() -> None:
     module = _load_script_module()
 
@@ -275,6 +317,7 @@ def test_render_dashboard_exposes_branch_sliders_and_live_residue_table(monkeypa
     monkeypatch.setattr(module, "build_detuning_snapshot", lambda *args, **kwargs: detuning)
     monkeypatch.setattr(module, "build_derivation_snapshot", lambda *args, **kwargs: derivation)
     monkeypatch.setattr(module, "build_residue_comparison_table", lambda *args, **kwargs: residue_table)
+    monkeypatch.setattr(module, "build_noether_bridge_decoherence_figure", lambda *args, **kwargs: {"renderer": "decoherence"})
     monkeypatch.setattr(module, "build_rigidity_landscape_figure", lambda *args, **kwargs: module.plt.figure())
     monkeypatch.setattr(module, "build_detuning_breakdown_figure", lambda *args, **kwargs: module.plt.figure())
 
@@ -289,6 +332,7 @@ def test_render_dashboard_exposes_branch_sliders_and_live_residue_table(monkeypa
     assert slider_calls["Δk_l"] == {"label": "Δk_l", "min_value": -2, "max_value": 2, "value": 0}
     assert slider_calls["Δk_q"] == {"label": "Δk_q", "min_value": -3, "max_value": 3, "value": 0}
     assert slider_calls["ΔK"] == {"label": "ΔK", "min_value": -4, "max_value": 4, "value": 0}
+    assert "Noether Bridge Decoherence Renderer" in fake_st.subheaders
     assert "Live Residue vs Anchor Ledger" in fake_st.subheaders
     assert fake_st.status_messages[0][0] == "error"
     assert "Kernel Panic" in fake_st.status_messages[0][1]
@@ -298,6 +342,8 @@ def test_render_dashboard_exposes_branch_sliders_and_live_residue_table(monkeypa
     assert fake_st.dataframes[0]["dataframe"].to_dict("records") == residue_table
     assert fake_st.dataframes[0]["hide_index"] is True
     assert fake_st.dataframes[0]["use_container_width"] is True
+    assert fake_st.plotly_charts[0]["figure"] == {"renderer": "decoherence"}
+    assert fake_st.plotly_charts[0]["use_container_width"] is True
     assert fake_st.json_payloads[0]["kernel_state"] == {"label": "Kernel Panic", "panic": True}
     assert fake_st.json_payloads[0]["residues"] == {
         "LEPTON_LEVEL": float(module.LEPTON_LEVEL),
@@ -360,6 +406,7 @@ def test_render_dashboard_accepts_absolute_coordinate_aliases(monkeypatch) -> No
         residues={"k_l": module.LEPTON_LEVEL, "k_q": module.QUARK_LEVEL, "K": module.PARENT_LEVEL},
     ))
     monkeypatch.setattr(module, "build_residue_comparison_table", lambda *args, **kwargs: [])
+    monkeypatch.setattr(module, "build_noether_bridge_decoherence_figure", lambda *args, **kwargs: {"renderer": "decoherence"})
     monkeypatch.setattr(module, "build_rigidity_landscape_figure", lambda *args, **kwargs: module.plt.figure())
     monkeypatch.setattr(module, "build_detuning_breakdown_figure", lambda *args, **kwargs: module.plt.figure())
 
