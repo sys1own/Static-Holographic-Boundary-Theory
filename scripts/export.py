@@ -5,13 +5,20 @@ import csv
 import json
 import sys
 from pathlib import Path
-from typing import Iterable, Mapping, Sequence
+from typing import Any, Iterable, Mapping, Sequence
 
 if __package__ in (None, ""):
+    script_dir = Path(__file__).resolve().parent
+    if str(script_dir) not in sys.path:
+        sys.path.insert(0, str(script_dir))
     for parent in Path(__file__).resolve().parents:
         candidate = parent if parent.name == "src" else parent / "src"
-        if (candidate / "shbt").is_dir():
-            sys.path.insert(0, str(candidate))
+        shbt_package_dir = candidate / "shbt"
+        if shbt_package_dir.is_dir():
+            if str(candidate) not in sys.path:
+                sys.path.insert(0, str(candidate))
+            if str(shbt_package_dir) not in sys.path:
+                sys.path.insert(0, str(shbt_package_dir))
             break
 
 from audit_generator import (
@@ -20,14 +27,11 @@ from audit_generator import (
     export_support_overlap_table,
     export_supplementary_tolerance_table,
 )
+from evolutionary_engine import DEFAULT_PRECISION, UniverseFactory
 from plotting_runtime import managed_figure
-from shbt.constants import RESIDUALS_JSON_FILENAME
-from shbt.evolutionary_engine import EvolutionaryEngine
+from shbt.main import build_quantified_two_loop_residuals
 from shbt.paths import ProjectPaths
 from shbt.template_utils import render_latex_table
-
-
-DEFAULT_OUTPUT_PATH = ProjectPaths.RESULTS / RESIDUALS_JSON_FILENAME
 
 
 def write_json_artifact(output_path: Path, payload: Mapping[str, object]) -> None:
@@ -158,33 +162,83 @@ def export_dm_fingerprint_figure(
         fig.savefig(output_path, dpi=300)
 
 
-def export_residual_payload(*, output_path: Path = DEFAULT_OUTPUT_PATH) -> Path:
-    resolved_output_path = Path(output_path).expanduser().resolve()
+def _default_residuals_path() -> Path:
+    ProjectPaths.ensure_dirs()
+    return ProjectPaths.RESULTS / "residuals.json"
+
+
+def build_residual_export_payload(*, precision: int = DEFAULT_PRECISION) -> dict[str, object]:
+    resolved_precision = max(int(precision), int(DEFAULT_PRECISION))
+    physical_ledger = UniverseFactory.calculate_physical_ledger(precision=resolved_precision)
+    lambda_surface = UniverseFactory.derive_lambda_surface(precision=resolved_precision)
+
+    payload = dict(build_quantified_two_loop_residuals())
+    payload["derivation_residues"] = {
+        "precision": resolved_precision,
+        "benchmark_tuple": [
+            int(physical_ledger.vacuum.lepton_level),
+            int(physical_ledger.vacuum.quark_level),
+            int(physical_ledger.vacuum.parent_level),
+        ],
+        "alpha_inverse_decimal": float(physical_ledger.alpha_surface.alpha_inverse_decimal),
+        "codata_alpha_inverse": float(physical_ledger.alpha_surface.codata_alpha_inverse),
+        "m_nu_ev": float(physical_ledger.mass_bridge.neutrino_floor_ev),
+        "m_nu_mev": float(physical_ledger.mass_bridge.neutrino_floor_mev),
+        "lambda_holo_si_m2": float(lambda_surface.lambda_holo_si_m2),
+        "lambda_obs_si_m2": float(lambda_surface.anchor_lambda_si_m2),
+        "epsilon_lambda": float(physical_ledger.unity_of_scale.epsilon_lambda),
+        "decimal_tolerance": float(physical_ledger.unity_of_scale.decimal_tolerance),
+        "register_noise_floor": float(physical_ledger.unity_of_scale.register_noise_floor),
+    }
+    return payload
+
+
+def export_residual_payload(
+    output_path: Path | None = None,
+    *,
+    precision: int = DEFAULT_PRECISION,
+) -> Path:
+    resolved_output_path = _default_residuals_path() if output_path is None else Path(output_path)
     resolved_output_path.parent.mkdir(parents=True, exist_ok=True)
-    write_json_artifact(resolved_output_path, EvolutionaryEngine.generate_residual_payload())
+
+    payload = build_residual_export_payload(precision=precision)
+    with resolved_output_path.open("w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2, sort_keys=True)
+        handle.write("\n")
     return resolved_output_path
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Export the benchmark Quantified Two-Loop Residuals JSON ledger.")
-    parser.add_argument("--output-path", type=Path, default=DEFAULT_OUTPUT_PATH)
+    parser = argparse.ArgumentParser(description="Export the SHBT residual audit payload.")
+    parser.add_argument(
+        "--output-path",
+        type=Path,
+        default=None,
+        help="Override the residual audit output path (defaults to results/residuals.json).",
+    )
+    parser.add_argument(
+        "--precision",
+        type=int,
+        default=DEFAULT_PRECISION,
+        help="Decimal precision passed to UniverseFactory derivations.",
+    )
     return parser.parse_args(tuple(argv) if argv is not None else None)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
-    output_path = export_residual_payload(output_path=args.output_path)
-    print(f"Residual ledger exported      : {output_path}")
+    output_path = export_residual_payload(output_path=args.output_path, precision=args.precision)
+    print(f"Wrote residual audit payload to {output_path}")
     return 0
 
 
 __all__ = [
-    "DEFAULT_OUTPUT_PATH",
+    "build_residual_export_payload",
     "derive_ih_singular_value_spectrum",
+    "export_residual_payload",
     "export_dm_fingerprint_figure",
     "export_ih_singular_value_spectrum_figure",
     "export_matrix_spectrum_csv",
-    "export_residual_payload",
     "export_support_overlap_table",
     "export_supplementary_tolerance_table",
     "export_transport_covariance_diagnostics",
