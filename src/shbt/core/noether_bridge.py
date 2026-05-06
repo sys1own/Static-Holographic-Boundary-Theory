@@ -265,15 +265,27 @@ def branch_planck_mass_ev(
     parent_level: int = PARENT_LEVEL,
     simulate_boundary_decoherence: bool = False,
 ) -> Decimal:
-    _require_bulk_checksum(
+    resolved_branch = (int(lepton_level), int(quark_level), int(parent_level))
+    stabilizer = HolographicStabilizer(
         precision=DEFAULT_PRECISION,
-        lepton_level=lepton_level,
-        quark_level=quark_level,
-        parent_level=parent_level,
         simulate_boundary_decoherence=simulate_boundary_decoherence,
     )
+    verification = stabilizer.verify_bulk_checksum()
+    if not verification.passed:
+        raise DecoherenceError(
+            "Holographic stabilizer bulk checksum failed: "
+            f"{verification.detail}."
+        )
+    if resolved_branch != BENCHMARK_BRANCH:
+        raise DecoherenceError("Boundary instability detected: Physical scale emergence inhibited")
     with mpmath.workdps(DEFAULT_MPMATH_DPS):
         value = (_mp(HBAR_EV_SECONDS) * _mp(LIGHT_SPEED_M_PER_S)) / _mp(PLANCK_LENGTH_M)
+    verification = stabilizer.verify_bulk_checksum()
+    if not verification.passed:
+        raise DecoherenceError(
+            "Holographic stabilizer bulk checksum failed: "
+            f"{verification.detail}."
+        )
     return _mp_to_decimal(
         _crystallize_discrete_mass_scale(
             value,
