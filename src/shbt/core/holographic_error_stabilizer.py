@@ -18,8 +18,11 @@ lost.
 """
 
 import argparse
+from contextvars import ContextVar
 from dataclasses import dataclass
 from decimal import Decimal, localcontext
+from functools import wraps
+import inspect
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Sequence
 
@@ -41,6 +44,7 @@ if TYPE_CHECKING:
 DEFAULT_PRECISION = 200
 BenchmarkBranch = tuple[int, int, int]
 ChecksumLaw = Literal["charge", "parity", "time_reversal", "momentum"]
+_STABILIZER_DEPTH: ContextVar[int] = ContextVar("shbt_stabilizer_depth", default=0)
 
 BENCHMARK_BRANCH: BenchmarkBranch = (int(LEPTON_LEVEL), int(QUARK_LEVEL), int(PARENT_LEVEL))
 FAILED_BRANCHES: dict[ChecksumLaw, BenchmarkBranch] = {
@@ -49,6 +53,10 @@ FAILED_BRANCHES: dict[ChecksumLaw, BenchmarkBranch] = {
     "time_reversal": (int(LEPTON_LEVEL), int(QUARK_LEVEL), int(PARENT_LEVEL + 1)),
     "momentum": (int(LEPTON_LEVEL), int(QUARK_LEVEL), int(PARENT_LEVEL + 1)),
 }
+
+
+class BoundaryStabilizationError(RuntimeError):
+    pass
 
 
 def _decimal(value: Decimal | float | int | str) -> Decimal:
@@ -87,6 +95,66 @@ def _display_checksum_law(law: str) -> str:
     if resolved_law == "time_reversal":
         return "time-reversal"
     return resolved_law
+
+
+def _resolve_precision_argument(callable_object, *args: object, **kwargs: object) -> int:
+    try:
+        bound_arguments = inspect.signature(callable_object).bind_partial(*args, **kwargs)
+    except (TypeError, ValueError):
+        return DEFAULT_PRECISION
+    precision = bound_arguments.arguments.get("precision", DEFAULT_PRECISION)
+    try:
+        return max(int(precision), DEFAULT_PRECISION)
+    except (TypeError, ValueError):
+        return DEFAULT_PRECISION
+
+
+def _verify_boundary_lock(precision: int = DEFAULT_PRECISION) -> BulkChecksumVerification:
+    verification = HolographicStabilizer(precision=precision).verify_bulk_checksum()
+    if not verification.passed:
+        raise BoundaryStabilizationError(f"Boundary stabilization failed: {verification.detail}")
+    return verification
+
+
+def stabilize_boundary(callable_object):
+    if getattr(callable_object, "__boundary_stabilized__", False):
+        return callable_object
+
+    @wraps(callable_object)
+    def wrapped(*args, **kwargs):
+        current_depth = _STABILIZER_DEPTH.get()
+        resolved_precision = _resolve_precision_argument(callable_object, *args, **kwargs)
+        if current_depth == 0:
+            _verify_boundary_lock(resolved_precision)
+
+        token = _STABILIZER_DEPTH.set(current_depth + 1)
+        try:
+            result = callable_object(*args, **kwargs)
+        finally:
+            _STABILIZER_DEPTH.reset(token)
+
+        if current_depth == 0:
+            _verify_boundary_lock(resolved_precision)
+        return result
+
+    wrapped.__boundary_stabilized__ = True
+    return wrapped
+
+
+def stabilize_classmethods(class_object: type) -> type:
+    if getattr(class_object, "__boundary_stabilized_class__", False):
+        return class_object
+
+    for name, attribute in tuple(vars(class_object).items()):
+        if name.startswith("__"):
+            continue
+        if isinstance(attribute, classmethod):
+            setattr(class_object, name, classmethod(stabilize_boundary(attribute.__func__)))
+            continue
+        if isinstance(attribute, staticmethod):
+            setattr(class_object, name, staticmethod(stabilize_boundary(attribute.__func__)))
+    class_object.__boundary_stabilized_class__ = True
+    return class_object
 
 
 def _select_checksum(audit: "HolographicErrorStabilizerAudit", law: ChecksumLaw) -> "TopologicalChecksum":
@@ -699,6 +767,7 @@ def main(argv: Sequence[str] | None = None) -> None:
 
 __all__ = [
     "BENCHMARK_BRANCH",
+    "BoundaryStabilizationError",
     "BulkChecksumVerification",
     "FAILED_BRANCHES",
     "ChecksumFailureSimulation",
@@ -713,6 +782,8 @@ __all__ = [
     "render_report",
     "simulate_charge_bit_flip",
     "simulate_failed_checksum",
+    "stabilize_boundary",
+    "stabilize_classmethods",
 ]
 
 
