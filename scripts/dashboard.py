@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
+import pandas as pd
 
 if __package__ in (None, ""):
     for parent in Path(__file__).resolve().parents:
@@ -21,8 +22,8 @@ if __package__ in (None, ""):
             break
 
 from shbt.anomaly_detector import BENCHMARK_BRANCH, CandidateSpec, build_candidate_audit
-from shbt.constants import LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
-from shbt.core.derivation_api import DEFAULT_PRECISION, UniverseFactory
+from shbt.constants import G_SM, LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
+from shbt.core.derivation_api import DEFAULT_PRECISION, TopologicalVacuum, UniverseFactory, quarter_power_inverse
 from shbt.plotting_runtime import plt
 
 if TYPE_CHECKING:
@@ -51,6 +52,8 @@ class DerivationSnapshot:
     ledger_text: str
     alpha_surface_inverse: Decimal
     codata_alpha_inverse: Decimal
+    proton_electron_mass_ratio: Decimal
+    codata_proton_electron_mass_ratio: Decimal
     kappa_d5: Decimal
     neutrino_floor_mev: Decimal
     epsilon_lambda: Decimal
@@ -72,6 +75,15 @@ class DetuningSnapshot:
         return self.candidate_branch == self.benchmark_branch
 
 
+@dataclass(frozen=True)
+class ResidueComparisonRow:
+    observable: str
+    shbt_residue: Decimal
+    anchor_value: Decimal
+    anchor_label: str
+    delta_to_anchor: Decimal
+
+
 def _load_peer_script(module_name: str) -> Any:
     script_path = Path(__file__).resolve().with_name(f"{module_name}.py")
     spec = importlib.util.spec_from_file_location(module_name, script_path)
@@ -90,6 +102,15 @@ def _rigidity_module() -> Any:
 
 def _format_decimal(value: Decimal | float | int, *, digits: int = 6) -> str:
     return f"{float(value):.{digits}e}"
+
+
+def _format_residue_value(value: Decimal | float | int, *, digits: int = 6) -> str:
+    numeric_value = float(value)
+    if numeric_value == 0.0:
+        return "0"
+    if abs(numeric_value) >= 1.0e4 or abs(numeric_value) < 1.0e-3:
+        return f"{numeric_value:.{digits}e}"
+    return f"{numeric_value:.{digits}f}".rstrip("0").rstrip(".")
 
 
 def _format_fraction(value: Fraction) -> str:
@@ -121,16 +142,20 @@ def _candidate_label(snapshot: DetuningSnapshot) -> str:
 @lru_cache(maxsize=8)
 def build_derivation_snapshot(precision: int = DEFAULT_PRECISION) -> DerivationSnapshot:
     resolved_precision = max(int(precision), DEFAULT_PRECISION)
-    alpha = UniverseFactory.derive_alpha_surface(precision=resolved_precision)
-    kappa = UniverseFactory.derive_kappa_d5(precision=resolved_precision)
-    mass = UniverseFactory.derive_mass_bridge(precision=resolved_precision, kappa=kappa.kappa)
-    unity = UniverseFactory.derive_unity_of_scale(precision=resolved_precision, kappa=kappa.kappa, mass_bridge=mass)
+    physical_ledger = UniverseFactory.calculate_physical_ledger(precision=resolved_precision)
+    alpha = physical_ledger.alpha_surface
+    proton_ratio = physical_ledger.proton_ratio
+    kappa = physical_ledger.kappa
+    mass = physical_ledger.mass_bridge
+    unity = physical_ledger.unity_of_scale
     ledger_text = UniverseFactory.generate_ledger(kind="derivation", precision=resolved_precision)
     return DerivationSnapshot(
         precision=resolved_precision,
         ledger_text=ledger_text,
         alpha_surface_inverse=alpha.alpha_inverse_decimal,
         codata_alpha_inverse=alpha.codata_alpha_inverse,
+        proton_electron_mass_ratio=proton_ratio.mu_audit,
+        codata_proton_electron_mass_ratio=proton_ratio.codata_audit.mass_ratio,
         kappa_d5=kappa.kappa,
         neutrino_floor_mev=mass.neutrino_floor_mev,
         epsilon_lambda=unity.epsilon_lambda,
@@ -155,16 +180,16 @@ def build_rigidity_scan(
 
 
 @lru_cache(maxsize=128)
-def build_detuning_snapshot(
-    delta_lepton: int = 0,
-    delta_quark: int = 0,
-    delta_parent: int = 0,
+def build_detuning_snapshot_for_branch(
+    lepton_level: int = LEPTON_LEVEL,
+    quark_level: int = QUARK_LEVEL,
+    parent_level: int = PARENT_LEVEL,
     precision: int = DEFAULT_PRECISION,
 ) -> DetuningSnapshot:
     candidate_branch = (
-        int(LEPTON_LEVEL) + int(delta_lepton),
-        int(QUARK_LEVEL) + int(delta_quark),
-        int(PARENT_LEVEL) + int(delta_parent),
+        int(lepton_level),
+        int(quark_level),
+        int(parent_level),
     )
     if min(candidate_branch) <= 0:
         raise ValueError("Detuned coordinates must remain positive integers.")
@@ -175,10 +200,108 @@ def build_detuning_snapshot(
     return DetuningSnapshot(
         benchmark_branch=BENCHMARK_BRANCH,
         candidate_branch=candidate_branch,
-        shift=(int(delta_lepton), int(delta_quark), int(delta_parent)),
+        shift=(
+            candidate_branch[0] - int(LEPTON_LEVEL),
+            candidate_branch[1] - int(QUARK_LEVEL),
+            candidate_branch[2] - int(PARENT_LEVEL),
+        ),
         rigidity_point=rigidity_point,
         anomaly_audit=anomaly_audit,
     )
+
+
+@lru_cache(maxsize=128)
+def build_detuning_snapshot(
+    delta_lepton: int = 0,
+    delta_quark: int = 0,
+    delta_parent: int = 0,
+    precision: int = DEFAULT_PRECISION,
+) -> DetuningSnapshot:
+    return build_detuning_snapshot_for_branch(
+        lepton_level=int(LEPTON_LEVEL) + int(delta_lepton),
+        quark_level=int(QUARK_LEVEL) + int(delta_quark),
+        parent_level=int(PARENT_LEVEL) + int(delta_parent),
+        precision=precision,
+    )
+
+
+def _candidate_vacuum(candidate_branch: tuple[int, int, int]) -> TopologicalVacuum:
+    return TopologicalVacuum(
+        lepton_level=int(candidate_branch[0]),
+        quark_level=int(candidate_branch[1]),
+        parent_level=int(candidate_branch[2]),
+        generation_count=int(G_SM),
+    )
+
+
+@lru_cache(maxsize=128)
+def build_residue_comparison_rows(
+    lepton_level: int = LEPTON_LEVEL,
+    quark_level: int = QUARK_LEVEL,
+    parent_level: int = PARENT_LEVEL,
+    precision: int = DEFAULT_PRECISION,
+) -> tuple[ResidueComparisonRow, ...]:
+    resolved_precision = max(int(precision), DEFAULT_PRECISION)
+    candidate_branch = (int(lepton_level), int(quark_level), int(parent_level))
+    vacuum = _candidate_vacuum(candidate_branch)
+
+    alpha = UniverseFactory.derive_alpha_surface(precision=resolved_precision, vacuum=vacuum)
+    proton_ratio = UniverseFactory.derive_proton_ratio(precision=resolved_precision, vacuum=vacuum)
+    tuned_kappa = UniverseFactory.derive_kappa_d5(precision=resolved_precision, vacuum=vacuum)
+    benchmark_mass = UniverseFactory.derive_mass_bridge(precision=resolved_precision)
+    tuned_neutrino_floor_mev = (
+        tuned_kappa.kappa
+        * benchmark_mass.branch_planck_mass_ev
+        * quarter_power_inverse(benchmark_mass.holographic_bits, precision=resolved_precision)
+        * Decimal(1000)
+    )
+
+    return (
+        ResidueComparisonRow(
+            observable="α_surf^-1",
+            shbt_residue=alpha.alpha_inverse_decimal,
+            anchor_value=alpha.codata_alpha_inverse,
+            anchor_label="CODATA α^-1",
+            delta_to_anchor=alpha.alpha_inverse_decimal - alpha.codata_alpha_inverse,
+        ),
+        ResidueComparisonRow(
+            observable="μ = m_p/m_e",
+            shbt_residue=proton_ratio.mu_audit,
+            anchor_value=proton_ratio.codata_audit.mass_ratio,
+            anchor_label="CODATA m_p/m_e",
+            delta_to_anchor=proton_ratio.mu_audit - proton_ratio.codata_audit.mass_ratio,
+        ),
+        ResidueComparisonRow(
+            observable="m_ν [meV]",
+            shbt_residue=tuned_neutrino_floor_mev,
+            anchor_value=benchmark_mass.neutrino_floor_mev,
+            anchor_label="Theory-fixed benchmark",
+            delta_to_anchor=tuned_neutrino_floor_mev - benchmark_mass.neutrino_floor_mev,
+        ),
+    )
+
+
+def build_residue_comparison_table(
+    lepton_level: int = LEPTON_LEVEL,
+    quark_level: int = QUARK_LEVEL,
+    parent_level: int = PARENT_LEVEL,
+    precision: int = DEFAULT_PRECISION,
+) -> list[dict[str, str]]:
+    rows = build_residue_comparison_rows(
+        lepton_level=lepton_level,
+        quark_level=quark_level,
+        parent_level=parent_level,
+        precision=precision,
+    )
+    return [
+        {
+            "Observable": row.observable,
+            "SHBT residue": _format_residue_value(row.shbt_residue, digits=6),
+            "Anchor": f"{_format_residue_value(row.anchor_value, digits=6)} ({row.anchor_label})",
+            "Δ(anchor)": _format_residue_value(row.delta_to_anchor, digits=6),
+        }
+        for row in rows
+    ]
 
 
 def build_rigidity_landscape_figure(
@@ -347,11 +470,11 @@ def _render_detuning_status(st: Any, detuning: DetuningSnapshot) -> None:
 
 def render_dashboard() -> None:
     st = _require_streamlit()
-    st.set_page_config(page_title="SHBT Rigidity Dashboard", layout="wide")
+    st.set_page_config(page_title="SHBT Universe Tuner", layout="wide")
 
-    st.title("SHBT Rigidity Dashboard")
+    st.title("SHBT Universe Tuner")
     st.caption(
-        "Interactive moat visualization for the anomaly-free (26, 8, 312) branch, with live derivation output and detuning stress tests."
+        "Interactive Holographic Moat heatmap from `map_rigidity_landscape.py`, with integer coordinate tuning, real-time parity anomalies, and live residue-vs-anchor ledgers."
     )
 
     with st.sidebar:
@@ -367,15 +490,16 @@ def render_dashboard() -> None:
         )
         log_scale = st.toggle("Log color scale", value=True)
 
-        st.subheader("Detuning sliders")
-        delta_lepton = st.slider("Δk_l", min_value=-lepton_half_width, max_value=lepton_half_width, value=0)
-        delta_quark = st.slider("Δk_q", min_value=-quark_half_width, max_value=quark_half_width, value=0)
-        delta_parent = st.slider("ΔK", min_value=-parent_half_width, max_value=parent_half_width, value=0)
+        st.subheader("Coordinate tuner")
+        lepton_level = st.slider("k_l", min_value=max(1, int(LEPTON_LEVEL) - lepton_half_width), max_value=int(LEPTON_LEVEL) + lepton_half_width, value=int(LEPTON_LEVEL))
+        quark_level = st.slider("k_q", min_value=max(1, int(QUARK_LEVEL) - quark_half_width), max_value=int(QUARK_LEVEL) + quark_half_width, value=int(QUARK_LEVEL))
+        parent_level = st.slider("K", min_value=max(1, int(PARENT_LEVEL) - parent_half_width), max_value=int(PARENT_LEVEL) + parent_half_width, value=int(PARENT_LEVEL))
         precision = st.select_slider("Ledger precision", options=[DEFAULT_PRECISION, 240, 320], value=DEFAULT_PRECISION)
 
     scan = build_rigidity_scan(lepton_half_width, quark_half_width, parent_half_width)
-    detuning = build_detuning_snapshot(delta_lepton, delta_quark, delta_parent, precision=precision)
+    detuning = build_detuning_snapshot_for_branch(lepton_level, quark_level, parent_level, precision=precision)
     derivation = build_derivation_snapshot(precision=precision)
+    residue_table = build_residue_comparison_table(lepton_level, quark_level, parent_level, precision=precision)
 
     _render_detuning_status(st, detuning)
 
@@ -433,16 +557,19 @@ def render_dashboard() -> None:
         )
 
     st.divider()
-    st.subheader("Live Derivation Ledger")
-    summary_columns = st.columns(4)
+    st.subheader("Live Residue vs Anchor Ledger")
+    summary_columns = st.columns(5)
     summary_columns[0].metric("α_surf^-1", f"{float(derivation.alpha_surface_inverse):.9f}")
-    summary_columns[1].metric("κ_D5", f"{float(derivation.kappa_d5):.9f}")
-    summary_columns[2].metric("m_ν floor [meV]", f"{float(derivation.neutrino_floor_mev):.9f}")
-    summary_columns[3].metric("Decimal closure", "PASS" if derivation.decimal_passed else "FAIL")
+    summary_columns[1].metric("CODATA α^-1", f"{float(derivation.codata_alpha_inverse):.9f}")
+    summary_columns[2].metric("μ audit", f"{float(derivation.proton_electron_mass_ratio):.6f}")
+    summary_columns[3].metric("m_ν floor [meV]", f"{float(derivation.neutrino_floor_mev):.9f}")
+    summary_columns[4].metric("Decimal closure", "PASS" if derivation.decimal_passed else "FAIL")
     st.caption(
         f"ε_Λ = {_format_decimal(derivation.epsilon_lambda, digits=6)}; Decimal tolerance = {_format_decimal(derivation.decimal_tolerance, digits=6)}"
     )
-    st.code(derivation.ledger_text, language="text")
+    st.dataframe(pd.DataFrame(residue_table), hide_index=True, use_container_width=True)
+    with st.expander("Raw derivation ledger", expanded=False):
+        st.code(derivation.ledger_text, language="text")
 
 
 def main() -> None:
