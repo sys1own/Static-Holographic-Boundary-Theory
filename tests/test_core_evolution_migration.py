@@ -4,6 +4,7 @@ import importlib.util
 import sys
 from pathlib import Path
 
+from shbt.constants import LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
 from shbt.config_loader import ConfigLoader, DEFAULT_PHYSICS_PROFILE_RELATIVE_PATH
 from shbt.core import differential_geometry, numerics
 from shbt.core.evolutionary_engine import EvolutionaryEngine
@@ -40,6 +41,14 @@ def test_derive_universe_script_remains_cli_wrapper_over_engine() -> None:
 
     assert module.DEFAULT_PRECISION >= 50
     assert module.EvolutionaryEngine is EvolutionaryEngine
+
+
+def test_evolutionary_engine_residue_dictionary_exposes_branch_aliases() -> None:
+    residues = EvolutionaryEngine.build_residue_dictionary()
+
+    assert residues["k_l"] == LEPTON_LEVEL
+    assert residues["k_q"] == QUARK_LEVEL
+    assert residues["K"] == PARENT_LEVEL
 
 
 def test_config_loader_defaults_to_standard_model_profile() -> None:
