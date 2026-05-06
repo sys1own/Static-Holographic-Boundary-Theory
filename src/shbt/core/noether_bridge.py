@@ -22,7 +22,7 @@ if __package__ in (None, ""):
 
 from shbt.constants import HOLOGRAPHIC_BITS, LEPTON_LEVEL, LIGHT_SPEED_M_PER_S, PARENT_LEVEL, PLANCK2018_LAMBDA_SI_M2, PLANCK_LENGTH_M, QUARK_LEVEL
 from shbt.core import algebra
-from shbt.core.decoherence_engine import PointerStateDecoherenceError, PointerStateSelector, build_mass_pointer_state
+from shbt.core.correspondence_engine import PointerStateDecoherenceError, PointerStateSelector, build_mass_pointer_state
 from shbt.core.holographic_error_stabilizer import BENCHMARK_BRANCH, HolographicStabilizer
 from shbt.paths import resolve_resource_path
 
