@@ -1,0 +1,25 @@
+Solver Necessity Audit
+======================
+Scale interval [GeV]           : 2.000000e+16 -> 91.19000
+Holographic scale ratio        : 2.193223e+14
+log10(M_GUT / M_Z)             : 14.341083
+Verifier floor                 : rtol=1.0e-10, atol=1.0e-12
+
+Dual-Solver Runs
+----------------
+PMNS RK45   success=1  reached_target=1  finite=1  warnings=1  nfev=230  njev=0  kappa2(J)=6.949e+18  kappa2(J)*atol=6.949e+06  elapsed=1.004e-02s  repr=full nonlinear mass-matrix + SM couplings  msg=The solver successfully reached the end of the integration interval.  warning_text=Audit IntegrationWarning: PMNS RK45 transport is not mathematically certified at atol=1.0e-12 because kappa2(J)=6.948582e+18 exceeds atol^(-1)=1.000000e+12.
+PMNS Radau  success=1  reached_target=1  finite=1  warnings=0  nfev=1329  njev=5  kappa2(J)=6.949e+18  kappa2(J)*atol=6.949e+06  elapsed=9.674e-02s  repr=full nonlinear mass-matrix + SM couplings  msg=The solver successfully reached the end of the integration interval.  warning_text=none
+CKM  RK45   success=1  reached_target=1  finite=1  warnings=0  nfev=152  njev=0  kappa2(J)=1.203e+04  kappa2(J)*atol=1.203e-08  elapsed=2.359e-03s  repr=UV-Jacobian-frozen angle + SM couplings proxy  msg=The solver successfully reached the end of the integration interval.  warning_text=none
+CKM  Radau  success=1  reached_target=1  finite=1  warnings=0  nfev=547  njev=2  kappa2(J)=1.203e+04  kappa2(J)*atol=1.203e-08  elapsed=1.881e-02s  repr=UV-Jacobian-frozen angle + SM couplings proxy  msg=The solver successfully reached the end of the integration interval.  warning_text=none
+
+Radau Reproducibility
+---------------------
+PMNS duplicate-run drift [sigma]: 0.000000e+00
+CKM duplicate-run drift [sigma] : 0.000000e+00
+max duplicate-run drift [sigma] : 0.000000e+00
+
+Published Radau Cross-Check
+---------------------------
+supplementary_tolerance_table.tex : default (1e-10, 1e-12) vs. tight (1e-12, 1e-14) -> Delta chi2 = 6.988e-12, max sigma shift = 5.373e-12
+
+Solver Necessity Audit: PASS — Radau IIA is a mandatory mathematical requirement for stiff holographic transport. The PMNS transport Jacobian satisfies kappa2(J)=6.949e+18 > atol^(-1)=1.000e+12, so the audit raises an IntegrationWarning for explicit RK45 at the 10^-12 floor, while duplicate Radau runs remain reproducible below 10^-12 sigma.
