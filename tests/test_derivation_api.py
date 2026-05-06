@@ -11,7 +11,10 @@ from pathlib import Path
 import pytest
 
 import shbt
+import shbt.evolutionary_engine as evolutionary_engine
 from shbt.core import derivation_api
+from shbt.core import EvolutionaryEngine as core_package_evolutionary_engine
+from shbt.core import evolutionary_engine as core_evolutionary_engine
 from shbt.core.derivation_api import DEFAULT_PRECISION, TopologicalVacuum, UniverseFactory
 
 
@@ -49,6 +52,14 @@ def test_calculate_physical_ledger_uses_benchmark_topological_vacuum() -> None:
 def test_import_shbt_exposes_universe_factory() -> None:
     assert shbt.UniverseFactory is UniverseFactory
     assert shbt.DEFAULT_PRECISION == DEFAULT_PRECISION
+
+
+def test_evolutionary_engine_aliases_universe_factory() -> None:
+    assert shbt.EvolutionaryEngine is UniverseFactory
+    assert core_package_evolutionary_engine is UniverseFactory
+    assert evolutionary_engine.EvolutionaryEngine is UniverseFactory
+    assert evolutionary_engine.UniverseFactory is UniverseFactory
+    assert core_evolutionary_engine.EvolutionaryEngine is UniverseFactory
 
 
 def test_universe_factory_can_derive_proton_ratio_for_nonbenchmark_vacuum() -> None:
