@@ -9,6 +9,7 @@ contractions, and a simple Ricci-flow style manifold evolution step.
 """
 
 from dataclasses import dataclass, fields, is_dataclass
+import math
 from typing import Any, Iterable, TypeVar
 
 import numpy as np
@@ -149,6 +150,32 @@ class MetricTensor:
         positive, negative, zero = self.signature
         return positive == self.dimension and negative == 0 and zero == 0
 
+    def transform_coordinates(
+        self,
+        jacobian: npt.ArrayLike,
+        *,
+        label: str = "transformed_metric_tensor",
+    ) -> "MetricTensor":
+        return coordinate_transform(self, jacobian, label=label)
+
+    def project_to_bulk(
+        self,
+        block_to_bulk_projector: npt.ArrayLike,
+        *,
+        stabilizer: Any | None = None,
+        precision: int = 200,
+        simulate_boundary_decoherence: bool = False,
+        label: str = "projected_bulk_metric_tensor",
+    ) -> "StabilizedBulkMetricProjection":
+        return project_static_block_to_bulk(
+            self,
+            block_to_bulk_projector,
+            stabilizer=stabilizer,
+            precision=precision,
+            simulate_boundary_decoherence=simulate_boundary_decoherence,
+            label=label,
+        )
+
 
 @dataclass(frozen=True)
 class ManifoldState:
@@ -179,6 +206,50 @@ class RiemannianManifoldEvolution:
     @property
     def final_state(self) -> ManifoldState:
         return self.states[-1]
+
+
+@dataclass(frozen=True)
+class StabilizedBulkMetricProjection:
+    static_metric: MetricTensor
+    bulk_metric: MetricTensor
+    block_to_bulk_projector: npt.ArrayLike
+    benchmark_branch: tuple[int, int, int]
+    zero_energy_boundary_locked: bool
+    equivalence_principle_preserved: bool
+    torsion_projection_residual: float
+    stabilizer_detail: str
+
+    def __post_init__(self) -> None:
+        projector = require_real_array(self.block_to_bulk_projector, label="block_to_bulk_projector")
+        expected_shape = (self.bulk_metric.dimension, self.static_metric.dimension)
+        if projector.ndim != 2 or projector.shape != expected_shape:
+            raise ValueError(
+                "block_to_bulk_projector must have shape "
+                f"{expected_shape}, received {projector.shape}."
+            )
+        if np.linalg.matrix_rank(projector) != self.bulk_metric.dimension:
+            raise ValueError(
+                "block_to_bulk_projector must have full row rank for a valid bulk projection."
+            )
+        object.__setattr__(self, "block_to_bulk_projector", _freeze_array(projector))
+        object.__setattr__(self, "benchmark_branch", tuple(int(index) for index in self.benchmark_branch))
+        object.__setattr__(self, "torsion_projection_residual", float(self.torsion_projection_residual))
+
+    @property
+    def static_block_dimension(self) -> int:
+        return self.static_metric.dimension
+
+    @property
+    def projected_bulk_dimension(self) -> int:
+        return self.bulk_metric.dimension
+
+    @property
+    def stabilizer_passed(self) -> bool:
+        return bool(
+            self.zero_energy_boundary_locked
+            and self.equivalence_principle_preserved
+            and math.isclose(self.torsion_projection_residual, 0.0, rel_tol=0.0, abs_tol=SYMMETRY_ATOL)
+        )
 
 
 def build_metric_tensor(
@@ -226,6 +297,123 @@ def volume_element(metric: MetricTensor | npt.ArrayLike) -> float:
     if determinant == 0.0:
         return 0.0
     return float(np.sqrt(abs(determinant)))
+
+
+def coordinate_transform(
+    metric: MetricTensor | npt.ArrayLike,
+    jacobian: npt.ArrayLike,
+    *,
+    label: str = "transformed_metric_tensor",
+    symmetry_atol: float = SYMMETRY_ATOL,
+) -> MetricTensor:
+    resolved_metric = metric if isinstance(metric, MetricTensor) else build_metric_tensor(metric)
+    transformation = require_real_array(jacobian, label="coordinate_jacobian")
+    if transformation.ndim != 2 or transformation.shape[1] != resolved_metric.dimension:
+        raise ValueError(
+            "coordinate_jacobian must have shape (target_dimension, source_dimension), "
+            f"received {transformation.shape} for source dimension {resolved_metric.dimension}."
+        )
+    required_rank = min(transformation.shape)
+    if np.linalg.matrix_rank(transformation) != required_rank:
+        raise ValueError("coordinate_jacobian must have full row rank.")
+    transformed = transformation @ resolved_metric.components @ transformation.T
+    return build_metric_tensor(transformed, label=label, symmetry_atol=symmetry_atol)
+
+
+def _resolve_stabilizer_verification(
+    *,
+    stabilizer: Any | None,
+    precision: int,
+    simulate_boundary_decoherence: bool,
+) -> tuple[Any, tuple[int, int, int]]:
+    from shbt.core.holographic_error_stabilizer import BENCHMARK_BRANCH, HolographicStabilizer
+
+    resolved_stabilizer = (
+        HolographicStabilizer(
+            precision=max(int(precision), 1),
+            simulate_boundary_decoherence=simulate_boundary_decoherence,
+        )
+        if stabilizer is None
+        else stabilizer
+    )
+    if hasattr(resolved_stabilizer, "verify_bulk_integrity"):
+        verification = resolved_stabilizer.verify_bulk_integrity()
+    elif hasattr(resolved_stabilizer, "verify_bulk_checksum"):
+        verification = resolved_stabilizer.verify_bulk_checksum()
+    else:
+        raise TypeError(
+            "stabilizer must expose `verify_bulk_integrity()` or `verify_bulk_checksum()` for metric projection."
+        )
+
+    benchmark_branch = tuple(int(index) for index in getattr(verification, "benchmark_branch", BENCHMARK_BRANCH))
+    return verification, benchmark_branch
+
+
+def project_static_block_to_bulk(
+    metric: MetricTensor | npt.ArrayLike,
+    block_to_bulk_projector: npt.ArrayLike,
+    *,
+    stabilizer: Any | None = None,
+    precision: int = 200,
+    simulate_boundary_decoherence: bool = False,
+    label: str = "projected_bulk_metric_tensor",
+) -> StabilizedBulkMetricProjection:
+    resolved_metric = metric if isinstance(metric, MetricTensor) else build_metric_tensor(metric, label="static_block_metric")
+    if resolved_metric.dimension != 4:
+        raise ValueError("Static-to-bulk metric projection requires a 4D block metric tensor.")
+
+    projector = require_real_array(block_to_bulk_projector, label="block_to_bulk_projector")
+    expected_shape = (3, resolved_metric.dimension)
+    if projector.ndim != 2 or projector.shape != expected_shape:
+        raise ValueError(
+            f"block_to_bulk_projector must have shape {expected_shape}, received {projector.shape}."
+        )
+    if np.linalg.matrix_rank(projector) != 3:
+        raise ValueError("block_to_bulk_projector must have rank 3 to project the static 4D block into the bulk.")
+
+    verification, benchmark_branch = _resolve_stabilizer_verification(
+        stabilizer=stabilizer,
+        precision=precision,
+        simulate_boundary_decoherence=simulate_boundary_decoherence,
+    )
+    zero_energy_boundary_locked = bool(
+        getattr(verification, "zero_energy_boundary_locked", getattr(verification, "passed", False))
+    )
+    equivalence_principle_preserved = bool(
+        getattr(verification, "equivalence_principle_preserved", True)
+    )
+    torsion_projection_residual = float(getattr(verification, "torsion_projection_residual", 0.0))
+    stabilizer_detail = str(getattr(verification, "detail", "bulk integrity locked"))
+
+    if not (
+        bool(getattr(verification, "passed", False))
+        and zero_energy_boundary_locked
+        and equivalence_principle_preserved
+        and math.isclose(torsion_projection_residual, 0.0, rel_tol=0.0, abs_tol=SYMMETRY_ATOL)
+    ):
+        raise ValueError(
+            "HolographicStabilizer rejected bulk metric evolution: "
+            f"{stabilizer_detail}."
+        )
+
+    bulk_metric = coordinate_transform(
+        resolved_metric,
+        projector,
+        label=label,
+    )
+    if not bulk_metric.positive_definite:
+        raise ValueError("Projected bulk metric must remain positive-definite after holographic stabilization.")
+
+    return StabilizedBulkMetricProjection(
+        static_metric=resolved_metric,
+        bulk_metric=bulk_metric,
+        block_to_bulk_projector=projector,
+        benchmark_branch=benchmark_branch,
+        zero_energy_boundary_locked=zero_energy_boundary_locked,
+        equivalence_principle_preserved=equivalence_principle_preserved,
+        torsion_projection_residual=torsion_projection_residual,
+        stabilizer_detail=stabilizer_detail,
+    )
 
 
 def christoffel_symbols(
@@ -378,14 +566,17 @@ __all__ = [
     "MetricTensor",
     "RiemannianManifoldEvolution",
     "SYMMETRY_ATOL",
+    "StabilizedBulkMetricProjection",
     "build_manifold_state",
     "build_metric_tensor",
     "christoffel_symbols",
+    "coordinate_transform",
     "evolve_riemannian_manifold",
     "freeze_numpy_arrays",
     "line_element",
     "lower_index",
     "metric_inner_product",
+    "project_static_block_to_bulk",
     "raise_index",
     "require_real_array",
     "require_real_scalar",
