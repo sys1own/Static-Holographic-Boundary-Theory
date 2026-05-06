@@ -17,6 +17,8 @@ VALID_PARAMETER_CLASSIFICATIONS = frozenset(
     {"Topological Necessity", "Empirical Matching Ansatz", COUNTER_UNIVERSAL_CLASSIFICATION}
 )
 DEFAULT_BENCHMARK_CONFIG_PATH = resolve_resource_path("config", "benchmark_v1.yaml")
+DEFAULT_COMPUTE_CLUSTER_RELATIVE_PATH = Path("compute") / "hpc_cluster.yaml"
+DEFAULT_COMPUTE_CLUSTER_PATH = resolve_resource_path("config", str(DEFAULT_COMPUTE_CLUSTER_RELATIVE_PATH))
 DEFAULT_NUFIT_DATA_PATH = resolve_resource_path("data", "nufit_5_3.json")
 DEFAULT_PHYSICS_PROFILE_RELATIVE_PATH = Path("physics_profiles") / "standard_model.yaml"
 DEFAULT_PHYSICS_PROFILE_PATH = resolve_resource_path("config", str(DEFAULT_PHYSICS_PROFILE_RELATIVE_PATH))
@@ -111,6 +113,9 @@ class ConfigLoader:
     @lru_cache(maxsize=128)
     def _load_yaml(self, filename: str | Path) -> dict[str, Any]:
         path = self._resolve_config_path(filename)
+        return self._load_yaml_path(path)
+
+    def _load_yaml_path(self, path: Path) -> dict[str, Any]:
         if not path.is_file():
             raise FileNotFoundError(f"Expected configuration file at {path}")
         with path.open("r", encoding="utf-8") as handle:
@@ -147,13 +152,7 @@ class ConfigLoader:
     @lru_cache(maxsize=8)
     def _load_yaml_from_repo_or_config(self, filename: str | Path) -> dict[str, Any]:
         path = self._resolve_repo_or_config_path(filename)
-        if not path.is_file():
-            raise FileNotFoundError(f"Expected configuration file at {path}")
-        with path.open("r", encoding="utf-8") as handle:
-            data = yaml.safe_load(handle) or {}
-        if not isinstance(data, dict):
-            raise TypeError(f"Configuration file {path} must contain a top-level mapping")
-        return data
+        return self._load_yaml_path(path)
 
     def _normalize_parameter_tree(
         self,
@@ -338,6 +337,32 @@ class ConfigLoader:
         _, metadata = self._load_benchmark_bundle()
         return dict(metadata)
 
+    def load_compute_cluster_config(
+        self,
+        relative_path: str | Path = DEFAULT_COMPUTE_CLUSTER_RELATIVE_PATH,
+    ) -> dict[str, Any]:
+        requested_path = Path(relative_path)
+        if requested_path.is_absolute():
+            return self._load_yaml_path(requested_path)
+
+        candidate_paths = [
+            (self.config_dir / requested_path).resolve(),
+            (ProjectPaths.CONFIG / requested_path).resolve(),
+        ]
+        if requested_path == DEFAULT_COMPUTE_CLUSTER_RELATIVE_PATH:
+            candidate_paths.insert(0, DEFAULT_COMPUTE_CLUSTER_PATH.resolve())
+
+        unique_candidates: list[Path] = []
+        for candidate in candidate_paths:
+            if candidate not in unique_candidates:
+                unique_candidates.append(candidate)
+
+        for candidate in unique_candidates:
+            if candidate.is_file():
+                return self._load_yaml_path(candidate)
+
+        raise FileNotFoundError(f"Expected configuration file at {unique_candidates[0]}")
+
     @lru_cache(maxsize=4)
     def load_physics_constants(self) -> dict[str, Any]:
         benchmark_config = self.load_benchmark_config()
@@ -387,6 +412,8 @@ __all__ = [
     "COUNTER_UNIVERSAL_CLASSIFICATION",
     "ConfigLoader",
     "DEFAULT_BENCHMARK_CONFIG_PATH",
+    "DEFAULT_COMPUTE_CLUSTER_PATH",
+    "DEFAULT_COMPUTE_CLUSTER_RELATIVE_PATH",
     "DEFAULT_CONFIG_LOADER",
     "DEFAULT_NUFIT_DATA_PATH",
     "DEFAULT_PHYSICS_PROFILE_PATH",
