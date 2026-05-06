@@ -1,0 +1,46 @@
+cluster:
+  name: shbt-benchmark-hpc
+  default_backend: dask
+  failover_backend: mpi
+  parity_checks_enabled: true
+
+dask:
+  scheduler:
+    backend: distributed
+    address: tcp://scheduler:8786
+    dashboard_address: :8787
+  workers:
+    processes: 8
+    threads_per_worker: 2
+    memory_limit_gb: 8
+  adaptive:
+    enabled: true
+    minimum_workers: 4
+    maximum_workers: 64
+    target_duration_seconds: 5
+
+mpi:
+  launcher: mpirun
+  enabled: false
+  ranks: 32
+  bind_to: core
+  map_by: socket
+  transport: ucx
+
+workloads:
+  monte_carlo_uncertainty:
+    backend: dask
+    chunk_size: 256
+  entropy_maps:
+    backend: dask
+    chunk_shape:
+      - 64
+      - 64
+  topology_sweeps:
+    backend: mpi
+    ensemble_ranks: 32
+
+storage:
+  tensor_format: zarr
+  compression: none
+  chunk_cache_mb: 512
