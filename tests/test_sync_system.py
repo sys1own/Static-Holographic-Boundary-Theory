@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "scripts" / "sync_system.py"
@@ -20,9 +21,13 @@ def _load_script_module():
     return module
 
 
-def _sample_residual_payload() -> dict[str, object]:
+def _sample_residual_payload(
+    *,
+    benchmark_tuple: tuple[int, int, int] = (26, 8, 312),
+    topological_alpha_inverse: float = 137.6470588235,
+) -> dict[str, object]:
     return {
-        "benchmark_tuple": [26, 8, 312],
+        "benchmark_tuple": list(benchmark_tuple),
         "unity_of_scale_identity": {
             "epsilon_lambda": 1.0e-199,
             "exact_epsilon_lambda": 1.0e-199,
@@ -31,7 +36,7 @@ def _sample_residual_payload() -> dict[str, object]:
             "passed": True,
         },
         "gauge_residual_bookkeeping": {
-            "topological_alpha_inverse": 137.6470588235,
+            "topological_alpha_inverse": topological_alpha_inverse,
             "codata_alpha_inverse": 137.035999084,
             "two_loop_residual_fraction": 0.0044582737,
             "two_loop_residual_percent": 0.44582737,
@@ -47,6 +52,34 @@ def _sample_residual_payload() -> dict[str, object]:
             "delta_cp": -0.022169035713716676,
         },
         "mass_scale_two_loop_fraction": 0.0007007607443640616,
+    }
+
+
+def _sample_universal_constants() -> dict[str, object]:
+    return {
+        "tier_1": {
+            "lepton_level": {"value": 30, "classification": "Topological Necessity"},
+            "quark_level": {"value": 10, "classification": "Topological Necessity"},
+            "parent_level": {"value": 360, "classification": "Topological Necessity"},
+            "g_sm": {"value": 18, "classification": "Topological Necessity"},
+        },
+        "tier_2": {
+            "planck_mass_ev": {"value": 1.23e28, "classification": "Empirical Matching Ansatz"},
+            "planck_length_m": {"value": 1.616255e-35, "classification": "Empirical Matching Ansatz"},
+            "light_speed_m_per_s": {"value": 299792458.0, "classification": "Empirical Matching Ansatz"},
+            "mpc_in_meters": {"value": 3.085677581491367e22, "classification": "Empirical Matching Ansatz"},
+            "planck2018_h0_km_s_mpc": {"value": 70.0, "classification": "Empirical Matching Ansatz"},
+            "planck2018_h0_sigma_km_s_mpc": {"value": 0.4, "classification": "Empirical Matching Ansatz"},
+            "planck2018_omega_lambda": {"value": 0.7, "classification": "Empirical Matching Ansatz"},
+            "planck2018_omega_lambda_sigma": {"value": 0.006, "classification": "Empirical Matching Ansatz"},
+            "planck2018_lambda_si_m2": {"value": 9.99e-53, "classification": "Empirical Matching Ansatz"},
+            "planck2018_lambda_fractional_sigma": {"value": 0.0123, "classification": "Empirical Matching Ansatz"},
+            "planck2018_alpha_em_inv_mz": {"value": 128.1, "classification": "Empirical Matching Ansatz"},
+            "planck2018_sin2_theta_w_mz": {"value": 0.2315, "classification": "Empirical Matching Ansatz"},
+            "planck2018_alpha_s_mz": {"value": 0.1181, "classification": "Empirical Matching Ansatz"},
+            "codata_fine_structure_alpha_inverse": {"value": 140.0, "classification": "Empirical Matching Ansatz"},
+            "hbar_ev_seconds": {"value": 6.7e-16, "classification": "Empirical Matching Ansatz"},
+        },
     }
 
 
@@ -66,8 +99,20 @@ def test_synchronize_system_updates_readme_and_physics_constants_idempotently(tm
     residuals_path = tmp_path / "residuals.json"
     readme_path = tmp_path / "README.md"
     physics_constants_path = tmp_path / "physics_constants.tex"
+    universal_constants_path = tmp_path / "universal_constants.yaml"
+    benchmark_tuple = (30, 10, 360)
+    topological_alpha_inverse = 162.0
 
-    residuals_path.write_text(json.dumps(_sample_residual_payload()), encoding="utf-8")
+    residuals_path.write_text(
+        json.dumps(
+            _sample_residual_payload(
+                benchmark_tuple=benchmark_tuple,
+                topological_alpha_inverse=topological_alpha_inverse,
+            )
+        ),
+        encoding="utf-8",
+    )
+    universal_constants_path.write_text(yaml.safe_dump(_sample_universal_constants(), sort_keys=False), encoding="utf-8")
     readme_path.write_text(
         "\n".join(
             (
@@ -108,6 +153,7 @@ def test_synchronize_system_updates_readme_and_physics_constants_idempotently(tm
         residuals_path=residuals_path,
         readme_path=readme_path,
         physics_constants_path=physics_constants_path,
+        universal_constants_path=universal_constants_path,
     )
 
     assert updated_readme == readme_path
@@ -115,7 +161,16 @@ def test_synchronize_system_updates_readme_and_physics_constants_idempotently(tm
 
     readme_text = readme_path.read_text(encoding="utf-8")
     physics_text = physics_constants_path.read_text(encoding="utf-8")
-    snapshot = module.build_sync_snapshot(_sample_residual_payload())
+    universal_snapshot = module._build_universal_constants_snapshot(
+        module.ConfigLoader(universal_constants_path=universal_constants_path)
+    )
+    snapshot = module.build_sync_snapshot_with_universal_constants(
+        _sample_residual_payload(
+            benchmark_tuple=benchmark_tuple,
+            topological_alpha_inverse=topological_alpha_inverse,
+        ),
+        universal_snapshot=universal_snapshot,
+    )
 
     assert "### Machine-Synced Residual Ledger" in readme_text
     assert module.README_SYNC_START in readme_text
@@ -124,7 +179,13 @@ def test_synchronize_system_updates_readme_and_physics_constants_idempotently(tm
     assert "derive_transport_curvature_audit()" in readme_text
     assert readme_text.count("### Machine-Synced Residual Ledger") == 1
 
-    assert rf"\providecommand{{\alphaSurfBenchmarkDecimal}}{{{module._format_latex_float(snapshot.gauge_topological_alpha_inverse)}}}" in physics_text
+    assert rf"\providecommand{{\alphaSurfBenchmarkDecimal}}{{{module._format_latex_float(universal_snapshot.topological_alpha_inverse)}}}" in physics_text
+    assert rf"\providecommand{{\alphaSurfBenchmarkExact}}{{\dfrac{{{universal_snapshot.topological_alpha_inverse_numerator}}}{{{universal_snapshot.topological_alpha_inverse_denominator}}}}}" in physics_text
+    assert rf"\providecommand{{\benchmarkLeptonLevel}}{{{universal_snapshot.lepton_level}}}" in physics_text
+    assert rf"\providecommand{{\benchmarkQuarkLevel}}{{{universal_snapshot.quark_level}}}" in physics_text
+    assert rf"\providecommand{{\benchmarkParentLevel}}{{{universal_snapshot.parent_level}}}" in physics_text
+    assert rf"\providecommand{{\benchmarkVisibleBranch}}{{({universal_snapshot.lepton_level},{universal_snapshot.quark_level},{universal_snapshot.parent_level})}}" in physics_text
+    assert rf"\providecommand{{\benchmarkPlanckMassEv}}{{{module._format_latex_float(universal_snapshot.planck_mass_ev)}}}" in physics_text
     assert rf"\providecommand{{\leptonThetaTwelveBetaTwoLoop}}{{{module._format_latex_float(snapshot.lepton_theta12_two_loop_deg)}}}" in physics_text
     assert rf"\providecommand{{\quarkThetaThirteenBetaTwoLoop}}{{{module._format_latex_float(snapshot.quark_theta13_two_loop_deg)}}}" in physics_text
     assert module.PHYSICS_CONSTANTS_SYNC_START in physics_text
@@ -135,6 +196,7 @@ def test_synchronize_system_updates_readme_and_physics_constants_idempotently(tm
         residuals_path=residuals_path,
         readme_path=readme_path,
         physics_constants_path=physics_constants_path,
+        universal_constants_path=universal_constants_path,
     )
 
     readme_text_second_pass = readme_path.read_text(encoding="utf-8")
@@ -142,3 +204,18 @@ def test_synchronize_system_updates_readme_and_physics_constants_idempotently(tm
     assert readme_text_second_pass.count("### Machine-Synced Residual Ledger") == 1
     assert readme_text_second_pass.count(module.README_SYNC_START) == 1
     assert physics_text_second_pass.count(module.PHYSICS_CONSTANTS_SYNC_START) == 1
+
+
+def test_build_sync_snapshot_rejects_universal_constant_mismatch(tmp_path: Path) -> None:
+    module = _load_script_module()
+    universal_constants_path = tmp_path / "universal_constants.yaml"
+    universal_constants_path.write_text(yaml.safe_dump(_sample_universal_constants(), sort_keys=False), encoding="utf-8")
+    universal_snapshot = module._build_universal_constants_snapshot(
+        module.ConfigLoader(universal_constants_path=universal_constants_path)
+    )
+
+    with pytest.raises(ValueError, match=r"does not match the configured universal constants"):
+        module.build_sync_snapshot_with_universal_constants(
+            _sample_residual_payload(),
+            universal_snapshot=universal_snapshot,
+        )
