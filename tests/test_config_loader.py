@@ -165,3 +165,16 @@ def test_default_compute_cluster_profile_exposes_dask_mpi_and_zarr_defaults() ->
     assert compute_config["dask"]["workers"]["threads_per_worker"] >= 1
     assert compute_config["mpi"]["launcher"] == "mpirun"
     assert compute_config["storage"]["tensor_format"] == "zarr"
+
+
+def test_compute_cluster_profile_uses_project_paths_with_custom_config_dir(tmp_path: Path) -> None:
+    custom_config_dir = tmp_path / "isolated-config"
+    custom_config_dir.mkdir()
+
+    loader = ConfigLoader(config_dir=custom_config_dir)
+
+    compute_config = loader.load_compute_cluster_config()
+
+    assert compute_config["cluster"]["name"] == "shbt-benchmark-hpc"
+    assert compute_config["cluster"]["default_backend"] == "dask"
+    assert compute_config["mpi"]["ranks"] == 32
