@@ -216,15 +216,27 @@ def test_export_script_writes_residual_payload(tmp_path: Path, monkeypatch: pyte
 
     assert module.main(["--output-path", str(output_path), "--precision", "64"]) == 0
 
-    payload = json.loads(output_path.read_text(encoding="utf-8"))
+    actual_content = json.loads(output_path.read_text(encoding="utf-8"))
+    expected_payload = {
+        key: base_payload[key]
+        for key in (
+            "artifact",
+            "benchmark_tuple",
+            "unity_of_scale_identity",
+            "gauge_residual_bookkeeping",
+            "informational_costs",
+            "mixing_angle_drifts_deg",
+            "mass_scale_two_loop_fraction",
+        )
+    }
 
     assert derivation_calls == {"ledger_precision": 64, "lambda_precision": 64}
-    assert payload["benchmark_tuple"] == [26, 8, 312]
-    assert payload["unity_of_scale_identity"] == base_payload["unity_of_scale_identity"]
-    assert payload["derivation_residues"]["benchmark_tuple"] == [26, 8, 312]
-    assert payload["derivation_residues"]["alpha_inverse_decimal"] == pytest.approx(137.14285714285714)
-    assert payload["derivation_residues"]["m_nu_mev"] == pytest.approx(2.83)
-    assert payload["derivation_residues"]["lambda_holo_si_m2"] == pytest.approx(1.1056e-52)
+    for key, value in expected_payload.items():
+        assert actual_content.get(key) == value
+    assert actual_content["derivation_residues"]["benchmark_tuple"] == [26, 8, 312]
+    assert actual_content["derivation_residues"]["alpha_inverse_decimal"] == pytest.approx(137.14285714285714)
+    assert actual_content["derivation_residues"]["m_nu_mev"] == pytest.approx(2.83)
+    assert actual_content["derivation_residues"]["lambda_holo_si_m2"] == pytest.approx(1.1056e-52)
 
 
 def test_load_checked_in_benchmark_diagnostics_uses_project_root_and_prefers_final(
