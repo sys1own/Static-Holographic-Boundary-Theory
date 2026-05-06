@@ -2,7 +2,7 @@ from __future__ import annotations
 
 """Streamlit dashboard for exploring the SHBT rigidity landscape and live ledgers."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
 from fractions import Fraction
 from functools import lru_cache
@@ -44,6 +44,11 @@ METRIC_LABELS: dict[MetricKey, str] = {
     "c_dark_shift": "c_dark shift",
     "diophantine_gap": "Diophantine gap",
 }
+BRANCH_SLIDER_DEFAULTS = {
+    "k_l": int(LEPTON_LEVEL),
+    "k_q": int(QUARK_LEVEL),
+    "K": int(PARENT_LEVEL),
+}
 BENCHMARK_LOCKED_LABEL = "Benchmark Locked"
 KERNEL_PANIC_LABEL = "Kernel Panic"
 
@@ -62,6 +67,7 @@ class DerivationSnapshot:
     decimal_tolerance: Decimal
     register_noise_floor: Decimal
     decimal_passed: bool
+    residues: dict[str, int | Decimal | bool] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -150,6 +156,35 @@ def _kernel_state_label(snapshot: DetuningSnapshot) -> str:
     return BENCHMARK_LOCKED_LABEL if snapshot.benchmark_selected else KERNEL_PANIC_LABEL
 
 
+def _branch_aliases(
+    *,
+    lepton_level: int = LEPTON_LEVEL,
+    quark_level: int = QUARK_LEVEL,
+    parent_level: int = PARENT_LEVEL,
+) -> dict[str, int]:
+    resolved_levels = {
+        "k_l": int(lepton_level),
+        "k_q": int(quark_level),
+        "K": int(parent_level),
+    }
+    return {
+        **resolved_levels,
+        "LEPTON_LEVEL": resolved_levels["k_l"],
+        "QUARK_LEVEL": resolved_levels["k_q"],
+        "PARENT_LEVEL": resolved_levels["K"],
+    }
+
+
+def _resolve_selected_branch(
+    *,
+    absolute_branch: tuple[int, int, int],
+    delta_branch: tuple[int, int, int],
+) -> tuple[int, int, int]:
+    if absolute_branch != BENCHMARK_BRANCH:
+        return absolute_branch
+    return delta_branch
+
+
 @lru_cache(maxsize=8)
 def build_derivation_snapshot(precision: int = DEFAULT_PRECISION) -> DerivationSnapshot:
     resolved_precision = max(int(precision), DEFAULT_PRECISION)
@@ -160,6 +195,7 @@ def build_derivation_snapshot(precision: int = DEFAULT_PRECISION) -> DerivationS
     mass = physical_ledger.mass_bridge
     unity = physical_ledger.unity_of_scale
     ledger_text = UniverseFactory.generate_ledger(kind="derivation", precision=resolved_precision)
+    residues = UniverseFactory.build_residue_dictionary(precision=resolved_precision)
     return DerivationSnapshot(
         precision=resolved_precision,
         ledger_text=ledger_text,
@@ -173,6 +209,7 @@ def build_derivation_snapshot(precision: int = DEFAULT_PRECISION) -> DerivationS
         decimal_tolerance=unity.decimal_tolerance,
         register_noise_floor=unity.register_noise_floor,
         decimal_passed=unity.passed,
+        residues=residues,
     )
 
 
@@ -504,24 +541,55 @@ def render_dashboard() -> None:
         )
         log_scale = st.toggle("Log color scale", value=True)
 
+        st.subheader("Coordinate tuner")
+        lepton_level = st.slider(
+            "k_l",
+            min_value=max(1, BRANCH_SLIDER_DEFAULTS["k_l"] - lepton_half_width),
+            max_value=BRANCH_SLIDER_DEFAULTS["k_l"] + lepton_half_width,
+            value=BRANCH_SLIDER_DEFAULTS["k_l"],
+        )
+        quark_level = st.slider(
+            "k_q",
+            min_value=max(1, BRANCH_SLIDER_DEFAULTS["k_q"] - quark_half_width),
+            max_value=BRANCH_SLIDER_DEFAULTS["k_q"] + quark_half_width,
+            value=BRANCH_SLIDER_DEFAULTS["k_q"],
+        )
+        parent_level = st.slider(
+            "K",
+            min_value=max(1, BRANCH_SLIDER_DEFAULTS["K"] - parent_half_width),
+            max_value=BRANCH_SLIDER_DEFAULTS["K"] + parent_half_width,
+            value=BRANCH_SLIDER_DEFAULTS["K"],
+        )
+
         st.subheader("Integer nudge")
         delta_lepton = st.slider("Δk_l", min_value=-lepton_half_width, max_value=lepton_half_width, value=0)
         delta_quark = st.slider("Δk_q", min_value=-quark_half_width, max_value=quark_half_width, value=0)
         delta_parent = st.slider("ΔK", min_value=-parent_half_width, max_value=parent_half_width, value=0)
         precision = st.select_slider("Ledger precision", options=[DEFAULT_PRECISION, 240, 320], value=DEFAULT_PRECISION)
+
+        absolute_branch = (int(lepton_level), int(quark_level), int(parent_level))
+        delta_branch = (
+            BRANCH_SLIDER_DEFAULTS["k_l"] + int(delta_lepton),
+            BRANCH_SLIDER_DEFAULTS["k_q"] + int(delta_quark),
+            BRANCH_SLIDER_DEFAULTS["K"] + int(delta_parent),
+        )
+        selected_branch = _resolve_selected_branch(absolute_branch=absolute_branch, delta_branch=delta_branch)
         st.caption(
             "Candidate branch = "
-            f"({int(LEPTON_LEVEL) + delta_lepton}, {int(QUARK_LEVEL) + delta_quark}, {int(PARENT_LEVEL) + delta_parent}); "
+            f"{selected_branch}; "
             f"benchmark = {BENCHMARK_BRANCH}."
         )
 
     scan = build_rigidity_scan(lepton_half_width, quark_half_width, parent_half_width)
-    detuning = build_detuning_snapshot(
-        delta_lepton=delta_lepton,
-        delta_quark=delta_quark,
-        delta_parent=delta_parent,
-        precision=precision,
-    )
+    if absolute_branch != BENCHMARK_BRANCH:
+        detuning = build_detuning_snapshot_for_branch(*absolute_branch, precision=precision)
+    else:
+        detuning = build_detuning_snapshot(
+            delta_lepton=delta_lepton,
+            delta_quark=delta_quark,
+            delta_parent=delta_parent,
+            precision=precision,
+        )
     derivation = build_derivation_snapshot(precision=precision)
     residue_table = build_residue_comparison_table(*detuning.candidate_branch, precision=precision)
 
