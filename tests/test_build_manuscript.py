@@ -322,7 +322,7 @@ def test_build_manuscript_reports_missing_pdflatex_after_sync(
     )
 
     captured = capsys.readouterr()
-    assert "Mathematical proofs complete; LaTeX compiler not found for PDF generation" in captured.out
+    assert "Mathematical verification successful; PDF generation skipped due to missing LaTeX compiler." in captured.out
     assert result.latex_backend is None
     assert result.compiled_pdfs == ()
     assert result.final_pdf is None
@@ -331,4 +331,44 @@ def test_build_manuscript_reports_missing_pdflatex_after_sync(
         ("constants", module.DERIVATION_DEFAULT_PRECISION),
         ("sync", output_dir, manuscript_dir),
         ("resolve", "pdflatex"),
+    ]
+
+
+def test_compile_gravity_manuscript_invokes_pdflatex_subprocess(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_script_module()
+    manuscript_dir = tmp_path / "papers"
+    manuscript_dir.mkdir()
+    gravity_tex = manuscript_dir / "gravity.tex"
+    gravity_tex.write_text(
+        r"\documentclass{article}\begin{document}gravity\end{document}",
+        encoding="utf-8",
+    )
+
+    recorded_subprocess_calls: list[tuple[tuple[str, ...], Path, bool]] = []
+
+    def fake_run(command, *, cwd, check):
+        recorded_subprocess_calls.append((tuple(command), cwd, check))
+        (manuscript_dir / "gravity.pdf").write_text("pdf", encoding="utf-8")
+        return None
+
+    monkeypatch.setattr(module.subprocess, "run", fake_run)
+
+    compiled_pdf = module.compile_gravity_manuscript("pdflatex", gravity_tex, workdir=manuscript_dir)
+
+    assert compiled_pdf == manuscript_dir / "gravity.pdf"
+    assert recorded_subprocess_calls == [
+        (
+            (
+                "pdflatex",
+                "-interaction=nonstopmode",
+                "-halt-on-error",
+                "-file-line-error",
+                "gravity.tex",
+            ),
+            manuscript_dir,
+            True,
+        )
     ]
