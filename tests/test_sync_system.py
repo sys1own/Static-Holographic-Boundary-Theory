@@ -122,6 +122,10 @@ def test_synchronize_system_updates_readme_and_physics_constants_idempotently(tm
                 "",
                 "Ledger intro.",
                 "",
+                "| Observable | Derived From | Predicted Value | CODATA / anchor |",
+                "| :--- | :--- | :--- | :--- |",
+                "| stale | stale | stale | stale |",
+                "",
                 "### Tier Classification",
                 "",
                 "- tier text",
@@ -133,6 +137,8 @@ def test_synchronize_system_updates_readme_and_physics_constants_idempotently(tm
     physics_constants_path.write_text(
         "\n".join(
             (
+                r"\def\FineStructureInverse{0}",
+                r"\newcommand{\mZeroBenchmarkMeV}{0}",
                 r"\providecommand{\alphaSurfBenchmarkDecimal}{0}",
                 r"\providecommand{\alphaSurfBenchmarkRounded}{0}",
                 r"\providecommand{\leptonThetaTwelveBetaTwoLoop}{0}",
@@ -172,12 +178,19 @@ def test_synchronize_system_updates_readme_and_physics_constants_idempotently(tm
         universal_snapshot=universal_snapshot,
     )
 
+    assert module.README_LEDGER_TABLE_HEADER in readme_text
+    assert "| stale | stale | stale | stale |" not in readme_text
     assert "### Machine-Synced Residual Ledger" in readme_text
     assert module.README_SYNC_START in readme_text
     assert "unity_of_scale_identity.epsilon_lambda" in readme_text
     assert "informational_costs.delta_s_red_nat" in readme_text
     assert "derive_transport_curvature_audit()" in readme_text
+    assert readme_text.count(module.README_LEDGER_TABLE_HEADER) == 1
     assert readme_text.count("### Machine-Synced Residual Ledger") == 1
+    assert "| $\\alpha^{-1}$ | $18 \\times 360 / 40$ | $\\approx 162$ | $137.036$ (Two-Loop Residual) |" in readme_text
+    assert "c_q=80/13, c_{\\ell}=45/16, V_{\\rm px}=1/4" in readme_text
+    assert f"$\\approx {module._format_markdown_float(snapshot.proton_electron_mass_ratio, digits=2)}$" in readme_text
+    assert f"$\\approx {module._format_markdown_float(snapshot.neutrino_floor_mev, digits=2)}$ meV" in readme_text
 
     assert rf"\providecommand{{\alphaSurfBenchmarkDecimal}}{{{module._format_latex_float(universal_snapshot.topological_alpha_inverse)}}}" in physics_text
     assert rf"\providecommand{{\alphaSurfBenchmarkExact}}{{\dfrac{{{universal_snapshot.topological_alpha_inverse_numerator}}}{{{universal_snapshot.topological_alpha_inverse_denominator}}}}}" in physics_text
@@ -186,6 +199,8 @@ def test_synchronize_system_updates_readme_and_physics_constants_idempotently(tm
     assert rf"\providecommand{{\benchmarkParentLevel}}{{{universal_snapshot.parent_level}}}" in physics_text
     assert rf"\providecommand{{\benchmarkVisibleBranch}}{{({universal_snapshot.lepton_level},{universal_snapshot.quark_level},{universal_snapshot.parent_level})}}" in physics_text
     assert rf"\providecommand{{\benchmarkPlanckMassEv}}{{{module._format_latex_float(universal_snapshot.planck_mass_ev)}}}" in physics_text
+    assert rf"\newcommand{{\mZeroBenchmarkMeV}}{{{module._format_latex_float(snapshot.neutrino_floor_mev)}}}" in physics_text
+    assert rf"\def\FineStructureInverse{{{module._format_latex_float(universal_snapshot.topological_alpha_inverse)}}}" in physics_text
     assert rf"\providecommand{{\leptonThetaTwelveBetaTwoLoop}}{{{module._format_latex_float(snapshot.lepton_theta12_two_loop_deg)}}}" in physics_text
     assert rf"\providecommand{{\quarkThetaThirteenBetaTwoLoop}}{{{module._format_latex_float(snapshot.quark_theta13_two_loop_deg)}}}" in physics_text
     assert module.PHYSICS_CONSTANTS_SYNC_START in physics_text
@@ -201,9 +216,11 @@ def test_synchronize_system_updates_readme_and_physics_constants_idempotently(tm
 
     readme_text_second_pass = readme_path.read_text(encoding="utf-8")
     physics_text_second_pass = physics_constants_path.read_text(encoding="utf-8")
+    assert readme_text_second_pass.count(module.README_LEDGER_TABLE_HEADER) == 1
     assert readme_text_second_pass.count("### Machine-Synced Residual Ledger") == 1
     assert readme_text_second_pass.count(module.README_SYNC_START) == 1
     assert physics_text_second_pass.count(module.PHYSICS_CONSTANTS_SYNC_START) == 1
+
 
 
 def test_build_sync_snapshot_rejects_universal_constant_mismatch(tmp_path: Path) -> None:
