@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import sys
@@ -20,7 +21,13 @@ from audit_generator import (
     export_supplementary_tolerance_table,
 )
 from plotting_runtime import managed_figure
+from shbt.constants import RESIDUALS_JSON_FILENAME
+from shbt.evolutionary_engine import EvolutionaryEngine
+from shbt.paths import ProjectPaths
 from shbt.template_utils import render_latex_table
+
+
+DEFAULT_OUTPUT_PATH = ProjectPaths.RESULTS / RESIDUALS_JSON_FILENAME
 
 
 def write_json_artifact(output_path: Path, payload: Mapping[str, object]) -> None:
@@ -151,15 +158,43 @@ def export_dm_fingerprint_figure(
         fig.savefig(output_path, dpi=300)
 
 
+def export_residual_payload(*, output_path: Path = DEFAULT_OUTPUT_PATH) -> Path:
+    resolved_output_path = Path(output_path).expanduser().resolve()
+    resolved_output_path.parent.mkdir(parents=True, exist_ok=True)
+    write_json_artifact(resolved_output_path, EvolutionaryEngine.generate_residual_payload())
+    return resolved_output_path
+
+
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Export the benchmark Quantified Two-Loop Residuals JSON ledger.")
+    parser.add_argument("--output-path", type=Path, default=DEFAULT_OUTPUT_PATH)
+    return parser.parse_args(tuple(argv) if argv is not None else None)
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    args = parse_args(argv)
+    output_path = export_residual_payload(output_path=args.output_path)
+    print(f"Residual ledger exported      : {output_path}")
+    return 0
+
+
 __all__ = [
+    "DEFAULT_OUTPUT_PATH",
     "derive_ih_singular_value_spectrum",
     "export_dm_fingerprint_figure",
     "export_ih_singular_value_spectrum_figure",
     "export_matrix_spectrum_csv",
+    "export_residual_payload",
     "export_support_overlap_table",
     "export_supplementary_tolerance_table",
     "export_transport_covariance_diagnostics",
+    "main",
+    "parse_args",
     "write_csv_artifact",
     "write_json_artifact",
     "write_skeletal_latex_table",
 ]
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
