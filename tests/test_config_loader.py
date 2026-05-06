@@ -154,3 +154,14 @@ def test_injected_counter_universal_parameters_override_profile_values(tmp_path:
     assert physics_constants["physical_constants"]["codata_fine_structure_alpha_inverse"] == 141.5
     assert classifications["model.g_sm"] == COUNTER_UNIVERSAL_CLASSIFICATION
     assert classifications["physical_constants.codata_fine_structure_alpha_inverse"] == COUNTER_UNIVERSAL_CLASSIFICATION
+
+
+def test_default_compute_cluster_profile_exposes_dask_mpi_and_zarr_defaults() -> None:
+    loader = ConfigLoader()
+
+    compute_config = loader.load_compute_cluster_config()
+
+    assert compute_config["cluster"]["default_backend"] == "dask"
+    assert compute_config["dask"]["workers"]["threads_per_worker"] >= 1
+    assert compute_config["mpi"]["launcher"] == "mpirun"
+    assert compute_config["storage"]["tensor_format"] == "zarr"
