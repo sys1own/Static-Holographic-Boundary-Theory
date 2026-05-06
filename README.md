@@ -61,9 +61,9 @@ This repository treats that chain as a theorem to be audited, not as an ansatz t
 - `src/shbt/` — installable SHBT package containing the verifier, shared constants, and reporting stack.
 - `src/shbt/main.py` — primary CLI entrypoint for full benchmark regeneration via `PYTHONPATH=src python -m shbt.main`.
 - `src/shbt/constants.py` — strict benchmark tier catalog and shared branch-fixed constants.
-- `src/shbt/core/` — gravity, flavor, topology, transport, and uniqueness proof engines.
+- `src/shbt/core/` — gravity, flavor, topology, transport, uniqueness, and geometry/evolution proof engines, including `differential_geometry.py` for metric-tensor operations and `evolutionary_engine.py` for reusable universe-derivation APIs.
 - `src/shbt/audit/` — publication-facing audit modules and artifact generators.
-- `scripts/` — standalone derivation and utility scripts such as `derive_universe.py`, `derive_lambda.py`, `derive_proton_ratio.py`, `plot_local_moat.py`, `map_rigidity_landscape.py`, `sync_system.py`, and `build_manuscript.py` for one-command proof execution, rigidity visualization, and manuscript PDF compilation.
+- `scripts/` — standalone derivation and utility scripts such as `derive_universe.py` (a compatibility CLI over `src/shbt/core/evolutionary_engine.py`), `derive_lambda.py`, `derive_proton_ratio.py`, `plot_local_moat.py`, `map_rigidity_landscape.py`, `sync_system.py`, and `build_manuscript.py` for one-command proof execution, rigidity visualization, and manuscript PDF compilation.
 - `papers/` — manuscript sources and TeX-side exports, including `tn.tex`, `gravity.tex`, `supplementary.tex`, and `physics_constants.tex`.
 - `tests/` — integrity checks, moat stress tests, and formal anomaly regression tests.
 - `config/` — locked benchmark YAML configuration.
@@ -189,7 +189,7 @@ The benchmark now uses a split configuration model: `config/physics_profiles/sta
 - **Build backend:** `setuptools.build_meta`
 - **Python requirement:** `>=3.11`
 - **Pinned scientific stack:** `PyYAML==6.0.3`, `Jinja2==3.1.6`, `mpmath==1.3.0`, `numpy==1.26.4`, `scipy==1.12.0`, `matplotlib==3.8.3`, `sympy==1.12`
-- **Link Ledger:** `python scripts/derive_universe.py` prints the branch-fixed gauge-density residue `alpha_surf^-1 = 2340/17`; together with the `Derivation Ledger` above, this makes explicit that the benchmark's physical constants are derived residues disclosed against external comparators, not fit parameters reopened by hand.
+- **Link Ledger:** `src/shbt/core/evolutionary_engine.py` is the canonical reusable derivation API, while `python scripts/derive_universe.py` remains the compatibility CLI that prints the branch-fixed gauge-density residue `alpha_surf^-1 = 2340/17`; together with the `Derivation Ledger` above, this makes explicit that the benchmark's physical constants are derived residues disclosed against external comparators, not fit parameters reopened by hand.
 - **Paper Sync:** `PYTHONPATH=src python scripts/sync_system.py` refreshes the machine-managed derivation table and residual ledger in `README.md`, plus the synchronized audit macros in `papers/physics_constants.tex`, from `results/residuals.json` and `config/physics_profiles/standard_model.yaml`.
 
 ### Constant Tiers
