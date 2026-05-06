@@ -44,10 +44,16 @@ METRIC_LABELS: dict[MetricKey, str] = {
     "c_dark_shift": "c_dark shift",
     "diophantine_gap": "Diophantine gap",
 }
-BRANCH_SLIDER_DEFAULTS = {
-    "k_l": int(LEPTON_LEVEL),
-    "k_q": int(QUARK_LEVEL),
-    "K": int(PARENT_LEVEL),
+DISPLAY_TO_CONSTANT_LABEL = {
+    "k_l": "LEPTON_LEVEL",
+    "k_q": "QUARK_LEVEL",
+    "K": "PARENT_LEVEL",
+}
+CONSTANT_TO_DISPLAY_LABEL = {constant_name: display_label for display_label, constant_name in DISPLAY_TO_CONSTANT_LABEL.items()}
+BRANCH_LEVEL_DEFAULTS = {
+    "LEPTON_LEVEL": int(LEPTON_LEVEL),
+    "QUARK_LEVEL": int(QUARK_LEVEL),
+    "PARENT_LEVEL": int(PARENT_LEVEL),
 }
 BENCHMARK_LOCKED_LABEL = "Benchmark Locked"
 KERNEL_PANIC_LABEL = "Kernel Panic"
@@ -163,15 +169,15 @@ def _branch_aliases(
     parent_level: int = PARENT_LEVEL,
 ) -> dict[str, int]:
     resolved_levels = {
-        "k_l": int(lepton_level),
-        "k_q": int(quark_level),
-        "K": int(parent_level),
+        "LEPTON_LEVEL": int(lepton_level),
+        "QUARK_LEVEL": int(quark_level),
+        "PARENT_LEVEL": int(parent_level),
     }
     return {
         **resolved_levels,
-        "LEPTON_LEVEL": resolved_levels["k_l"],
-        "QUARK_LEVEL": resolved_levels["k_q"],
-        "PARENT_LEVEL": resolved_levels["K"],
+        "k_l": resolved_levels["LEPTON_LEVEL"],
+        "k_q": resolved_levels["QUARK_LEVEL"],
+        "K": resolved_levels["PARENT_LEVEL"],
     }
 
 
@@ -195,7 +201,15 @@ def build_derivation_snapshot(precision: int = DEFAULT_PRECISION) -> DerivationS
     mass = physical_ledger.mass_bridge
     unity = physical_ledger.unity_of_scale
     ledger_text = UniverseFactory.generate_ledger(kind="derivation", precision=resolved_precision)
-    residues = UniverseFactory.build_residue_dictionary(precision=resolved_precision)
+    residues = dict(getattr(physical_ledger, "residues", {}))
+    residues.update(UniverseFactory.build_residue_dictionary(precision=resolved_precision))
+    residues.update(
+        _branch_aliases(
+            lepton_level=physical_ledger.vacuum.lepton_level,
+            quark_level=physical_ledger.vacuum.quark_level,
+            parent_level=physical_ledger.vacuum.parent_level,
+        )
+    )
     return DerivationSnapshot(
         precision=resolved_precision,
         ledger_text=ledger_text,
@@ -542,24 +556,21 @@ def render_dashboard() -> None:
         log_scale = st.toggle("Log color scale", value=True)
 
         st.subheader("Coordinate tuner")
-        lepton_level = st.slider(
-            "k_l",
-            min_value=max(1, BRANCH_SLIDER_DEFAULTS["k_l"] - lepton_half_width),
-            max_value=BRANCH_SLIDER_DEFAULTS["k_l"] + lepton_half_width,
-            value=BRANCH_SLIDER_DEFAULTS["k_l"],
-        )
-        quark_level = st.slider(
-            "k_q",
-            min_value=max(1, BRANCH_SLIDER_DEFAULTS["k_q"] - quark_half_width),
-            max_value=BRANCH_SLIDER_DEFAULTS["k_q"] + quark_half_width,
-            value=BRANCH_SLIDER_DEFAULTS["k_q"],
-        )
-        parent_level = st.slider(
-            "K",
-            min_value=max(1, BRANCH_SLIDER_DEFAULTS["K"] - parent_half_width),
-            max_value=BRANCH_SLIDER_DEFAULTS["K"] + parent_half_width,
-            value=BRANCH_SLIDER_DEFAULTS["K"],
-        )
+        branch_half_widths = {
+            "LEPTON_LEVEL": lepton_half_width,
+            "QUARK_LEVEL": quark_half_width,
+            "PARENT_LEVEL": parent_half_width,
+        }
+        selected_levels: dict[str, int] = {}
+        for constant_name, default_value in BRANCH_LEVEL_DEFAULTS.items():
+            display_label = CONSTANT_TO_DISPLAY_LABEL[constant_name]
+            half_width = branch_half_widths[constant_name]
+            selected_levels[constant_name] = st.slider(
+                display_label,
+                min_value=max(1, default_value - half_width),
+                max_value=default_value + half_width,
+                value=default_value,
+            )
 
         st.subheader("Integer nudge")
         delta_lepton = st.slider("Δk_l", min_value=-lepton_half_width, max_value=lepton_half_width, value=0)
@@ -567,11 +578,15 @@ def render_dashboard() -> None:
         delta_parent = st.slider("ΔK", min_value=-parent_half_width, max_value=parent_half_width, value=0)
         precision = st.select_slider("Ledger precision", options=[DEFAULT_PRECISION, 240, 320], value=DEFAULT_PRECISION)
 
-        absolute_branch = (int(lepton_level), int(quark_level), int(parent_level))
+        absolute_branch = (
+            int(selected_levels["LEPTON_LEVEL"]),
+            int(selected_levels["QUARK_LEVEL"]),
+            int(selected_levels["PARENT_LEVEL"]),
+        )
         delta_branch = (
-            BRANCH_SLIDER_DEFAULTS["k_l"] + int(delta_lepton),
-            BRANCH_SLIDER_DEFAULTS["k_q"] + int(delta_quark),
-            BRANCH_SLIDER_DEFAULTS["K"] + int(delta_parent),
+            BRANCH_LEVEL_DEFAULTS["LEPTON_LEVEL"] + int(delta_lepton),
+            BRANCH_LEVEL_DEFAULTS["QUARK_LEVEL"] + int(delta_quark),
+            BRANCH_LEVEL_DEFAULTS["PARENT_LEVEL"] + int(delta_parent),
         )
         selected_branch = _resolve_selected_branch(absolute_branch=absolute_branch, delta_branch=delta_branch)
         st.caption(
