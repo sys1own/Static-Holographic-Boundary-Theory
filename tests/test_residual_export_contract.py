@@ -1,23 +1,37 @@
 from __future__ import annotations
 
 import importlib.util
+from decimal import Decimal
 import json
 import sys
 from pathlib import Path
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
 
 import shbt.main as tn
 from shbt.config_loader import ConfigLoader
+from shbt.export import export_transport_covariance_diagnostics, read_zarr_artifact
+from shbt.reporting_engine import write_report_tensor_sidecar
 
 
 ROOT = Path(__file__).resolve().parents[1]
+EXPORT_SCRIPT_PATH = ROOT / "scripts" / "export.py"
 SYNC_SYSTEM_SCRIPT_PATH = ROOT / "scripts" / "sync_system.py"
 
 
 def _load_sync_system_module():
     spec = importlib.util.spec_from_file_location("sync_system", SYNC_SYSTEM_SCRIPT_PATH)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _load_export_module():
+    spec = importlib.util.spec_from_file_location("export_script", EXPORT_SCRIPT_PATH)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
@@ -130,6 +144,88 @@ def test_quantified_two_loop_residuals_round_trip_into_sync_system(monkeypatch: 
     assert snapshot.gauge_two_loop_residual_fraction == pytest.approx(gauge_payload["two_loop_residual_fraction"])
 
 
+def test_export_script_writes_residual_payload(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    module = _load_export_module()
+
+    derivation_calls: dict[str, int] = {}
+    base_payload = {
+        "artifact": "Quantified Two-Loop Residuals",
+        "benchmark_tuple": [26, 8, 312],
+        "unity_of_scale_identity": {
+            "epsilon_lambda": 1.0e-199,
+            "exact_epsilon_lambda": 1.0e-199,
+            "numerical_residual": 1.0e-199,
+            "register_noise_floor": 3.0e-123,
+            "exact_register_noise_floor": 3.0e-123,
+            "passed": True,
+        },
+        "gauge_residual_bookkeeping": {
+            "topological_alpha_inverse": 137.14285714285714,
+            "codata_alpha_inverse": 137.035999084,
+            "two_loop_residual_fraction": 1.25e-4,
+            "two_loop_residual_percent": 1.25e-2,
+            "two_loop_residual_pull": 0.25,
+        },
+        "informational_costs": {"delta_s_red_nat": 0.5},
+        "mixing_angle_drifts_deg": {
+            "theta12": 0.1,
+            "theta13": 0.2,
+            "theta23": 0.3,
+            "delta_cp": 0.4,
+        },
+        "mass_scale_two_loop_fraction": 0.05,
+    }
+
+    fake_ledger = SimpleNamespace(
+        vacuum=SimpleNamespace(lepton_level=26, quark_level=8, parent_level=312),
+        alpha_surface=SimpleNamespace(
+            alpha_inverse_decimal=Decimal("137.14285714285714"),
+            codata_alpha_inverse=Decimal("137.035999084"),
+        ),
+        mass_bridge=SimpleNamespace(
+            neutrino_floor_ev=Decimal("0.00283"),
+            neutrino_floor_mev=Decimal("2.83"),
+        ),
+        unity_of_scale=SimpleNamespace(
+            epsilon_lambda=Decimal("1e-199"),
+            decimal_tolerance=Decimal("1e-180"),
+            register_noise_floor=Decimal("3e-123"),
+        ),
+    )
+    fake_lambda_surface = SimpleNamespace(
+        lambda_holo_si_m2=Decimal("1.1056e-52"),
+        anchor_lambda_si_m2=Decimal("1.1056e-52"),
+    )
+
+    class FakeUniverseFactory:
+        @classmethod
+        def calculate_physical_ledger(cls, *, precision: int):
+            derivation_calls["ledger_precision"] = precision
+            return fake_ledger
+
+        @classmethod
+        def derive_lambda_surface(cls, *, precision: int):
+            derivation_calls["lambda_precision"] = precision
+            return fake_lambda_surface
+
+    monkeypatch.setattr(module, "UniverseFactory", FakeUniverseFactory)
+    monkeypatch.setattr(module, "build_quantified_two_loop_residuals", lambda: dict(base_payload))
+
+    output_path = tmp_path / "results" / "residuals.json"
+
+    assert module.main(["--output-path", str(output_path), "--precision", "64"]) == 0
+
+    payload = json.loads(output_path.read_text(encoding="utf-8"))
+
+    assert derivation_calls == {"ledger_precision": 64, "lambda_precision": 64}
+    assert payload["benchmark_tuple"] == [26, 8, 312]
+    assert payload["unity_of_scale_identity"] == base_payload["unity_of_scale_identity"]
+    assert payload["derivation_residues"]["benchmark_tuple"] == [26, 8, 312]
+    assert payload["derivation_residues"]["alpha_inverse_decimal"] == pytest.approx(137.14285714285714)
+    assert payload["derivation_residues"]["m_nu_mev"] == pytest.approx(2.83)
+    assert payload["derivation_residues"]["lambda_holo_si_m2"] == pytest.approx(1.1056e-52)
+
+
 def test_load_checked_in_benchmark_diagnostics_uses_project_root_and_prefers_final(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -150,3 +246,43 @@ def test_load_checked_in_benchmark_diagnostics_uses_project_root_and_prefers_fin
     (final_dir / tn.BENCHMARK_DIAGNOSTICS_FILENAME).unlink()
 
     assert tn._load_checked_in_benchmark_diagnostics() == root_payload
+
+
+def test_transport_covariance_export_writes_zarr_sidecar_for_multidimensional_tensors(tmp_path: Path) -> None:
+    output_path = tmp_path / "transport_covariance.json"
+    payload = {
+        "entropy_map": (
+            (Decimal("0.10"), Decimal("0.20")),
+            (Decimal("0.30"), Decimal("0.40")),
+        ),
+        "residual_rank": 2,
+    }
+
+    artifact_path = export_transport_covariance_diagnostics(output_path, payload)
+    manifest = json.loads(output_path.read_text(encoding="utf-8"))
+    sidecar_path = output_path.with_suffix(".zarr")
+    tensors = read_zarr_artifact(sidecar_path)
+
+    assert artifact_path == output_path
+    assert manifest["tensor_artifact"] == sidecar_path.as_posix()
+    assert tensors["entropy_map"].shape == (2, 2)
+    assert tensors["entropy_map"][0, 0] == "0.10"
+    assert tensors["entropy_map"][1, 1] == "0.40"
+
+
+def test_reporting_engine_writes_zarr_sidecar_for_report_tensors(tmp_path: Path) -> None:
+    report_path = tmp_path / "audit_statement.txt"
+    report_path.write_text("Benchmark Consistency Statement\n", encoding="utf-8")
+
+    sidecar_path = write_report_tensor_sidecar(
+        report_path,
+        {
+            "entropy_map": np.asarray(((1.0, 2.0), (3.0, 4.0))),
+            "scalar_summary": 1.0,
+        },
+    )
+    tensors = read_zarr_artifact(report_path.with_suffix(".zarr"))
+
+    assert sidecar_path == report_path.with_suffix(".zarr")
+    assert tensors["entropy_map"].shape == (2, 2)
+    assert float(tensors["entropy_map"][1, 0]) == pytest.approx(3.0, rel=0.0, abs=1.0e-12)
