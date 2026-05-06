@@ -18,6 +18,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
+from scipy.constants import electron_mass, proton_mass
+
 from shbt.constants import (
     BENCHMARK_DIAGNOSTICS_FILENAME,
     CODATA_FINE_STRUCTURE_ALPHA_INVERSE,
@@ -30,12 +32,20 @@ from shbt.constants import (
     PLANCK_LENGTH_M,
     PLANCK_MASS_EV,
     QUARK_LEVEL,
+    RANK_DIFFERENCE,
+    SU2_DIMENSION,
+    SU2_DUAL_COXETER,
+    SU3_DIMENSION,
+    SU3_DUAL_COXETER,
 )
+from shbt.core import algebra
 from shbt.core.engine import (
+    quark_branching_index,
     surface_tension_gauge_alpha_inverse,
     topological_mass_coordinate_ev,
     topological_newton_coordinate_ev_minus2,
     topological_planck_mass_ev,
+    wzw_central_charge_fraction,
 )
 from shbt.main import (
     derive_cosmology_anchor,
@@ -45,12 +55,24 @@ from shbt.main import (
     verify_unity_of_scale,
 )
 from shbt.paths import ProjectPaths
+from shbt.physics_engine import quark_branching_pressure
 
 
 DEFAULT_PRECISION = 50
 _GUARD_DIGITS = 12
 D5_WEIGHT_SIMPLEX_HYPERAREA_FRACTION = Fraction(160, 1521)
 LIVE_BENCHMARK_AUDIT_SKIPPED_MESSAGE = "Benchmark artifacts not found; skipping live comparison audit"
+DEFAULT_RELATIVE_TOLERANCE = Decimal("1e-3")
+LEPTON_CENTRAL_CHARGE_FRACTION = Fraction(39, 14)
+QUARK_CENTRAL_CHARGE_FRACTION = Fraction(64, 11)
+BRANCH_PIXEL_VOLUME_FRACTION = Fraction(3, 13)
+BRANCH_PIXEL_VOLUME_INVERSE_FRACTION = Fraction(
+    BRANCH_PIXEL_VOLUME_FRACTION.denominator,
+    BRANCH_PIXEL_VOLUME_FRACTION.numerator,
+)
+BRANCH_STRUCTURAL_PREFRACTOR_FRACTION = (
+    QUARK_CENTRAL_CHARGE_FRACTION / LEPTON_CENTRAL_CHARGE_FRACTION
+) * BRANCH_PIXEL_VOLUME_INVERSE_FRACTION
 
 
 def _decimal(value: Decimal | Fraction | float | int | str) -> Decimal:
@@ -139,6 +161,23 @@ def quarter_power_inverse(value: Decimal, *, precision: int = DEFAULT_PRECISION)
         return +result
 
 
+def decimal_cuberoot(value: Decimal, *, precision: int = DEFAULT_PRECISION) -> Decimal:
+    if value <= 0:
+        raise ValueError("Cube root requires a positive Decimal.")
+    with localcontext() as context:
+        context.prec = precision + _GUARD_DIGITS
+        guess = Decimal(str(float(value) ** (1.0 / 3.0)))
+        if guess <= 0:
+            guess = Decimal(1)
+        threshold = Decimal(1).scaleb(-(precision + _GUARD_DIGITS // 2))
+        while True:
+            next_guess = (Decimal(2) * guess + value / (guess * guess)) / Decimal(3)
+            if abs(next_guess - guess) <= threshold:
+                context.prec = precision
+                return +next_guess
+            guess = next_guess
+
+
 @dataclass(frozen=True)
 class AlphaSurfaceDerivation:
     visible_support: int
@@ -220,6 +259,103 @@ class LambdaSurfaceDerivation:
 
 
 @dataclass(frozen=True)
+class TopologicalVacuum:
+    lepton_level: int
+    quark_level: int
+    parent_level: int
+    generation_count: int = G_SM
+
+    @property
+    def branch(self) -> tuple[int, int, int]:
+        return (self.lepton_level, self.quark_level, self.parent_level)
+
+    @property
+    def visible_support(self) -> int:
+        return int(self.lepton_level) + int(self.quark_level)
+
+
+@dataclass(frozen=True)
+class CentralChargeGeometry:
+    lepton_central_charge_fraction: Fraction
+    quark_central_charge_fraction: Fraction
+    central_charge_ratio_fraction: Fraction
+    central_charge_ratio_decimal: Decimal
+    quark_branching_index: int
+    branch_pixel_simplex_volume_fraction: Fraction
+    inverse_pixel_volume_fraction: Fraction
+    inverse_pixel_volume_decimal: Decimal
+
+    @property
+    def structural_prefactor_fraction(self) -> Fraction:
+        return self.central_charge_ratio_fraction * self.inverse_pixel_volume_fraction
+
+    @property
+    def structural_prefactor_decimal(self) -> Decimal:
+        return self.central_charge_ratio_decimal * self.inverse_pixel_volume_decimal
+
+
+@dataclass(frozen=True)
+class VacuumPressureDerivation:
+    visible_reference_entry_magnitude: Decimal
+    vacuum_pressure: Decimal
+
+
+@dataclass(frozen=True)
+class CodataMassRatioAudit:
+    proton_mass_kg: Decimal
+    electron_mass_kg: Decimal
+    mass_ratio: Decimal
+
+
+@dataclass(frozen=True)
+class ProtonRatioDerivation:
+    geometry: CentralChargeGeometry
+    vacuum_pressure: VacuumPressureDerivation
+    structural_prefactor: Decimal
+    kappa_d5: Decimal
+    kappa_d5_cuberoot: Decimal
+    geometric_friction_factor: Decimal
+    pressure_loading: Decimal
+    su3_branching_pressure_scale: Decimal
+    mu_audit: Decimal
+    codata_audit: CodataMassRatioAudit
+    absolute_delta: Decimal
+    relative_error: Decimal
+    tolerance: Decimal
+
+    @property
+    def structural_mu(self) -> Decimal:
+        return self.mu_audit
+
+    @property
+    def derived_mu(self) -> Decimal:
+        return self.mu_audit
+
+
+@dataclass(frozen=True)
+class PhysicalLedger:
+    vacuum: TopologicalVacuum
+    observational_boundary_conditions: ObservationalBoundaryConditionDerivation
+    alpha_surface: AlphaSurfaceDerivation
+    kappa: KappaDerivation
+    proton_ratio: ProtonRatioDerivation
+    mass_bridge: MassBridgeDerivation
+    unity_of_scale: UnityOfScaleDerivation
+
+    @property
+    def alpha_inverse_decimal(self) -> Decimal:
+        return self.alpha_surface.alpha_inverse_decimal
+
+    @property
+    def mu_residue(self) -> Decimal:
+        return self.proton_ratio.mu_audit
+
+    @property
+    def neutrino_floor_mev(self) -> Decimal:
+        return self.mass_bridge.neutrino_floor_mev
+
+
+@dataclass(frozen=True)
 class CheckedInUnityPayload:
     source_path: str
     epsilon_lambda: Decimal
@@ -245,22 +381,39 @@ class UniverseFactory:
     """Importable façade for the SHBT universe/lambda derivation ledgers."""
 
     @classmethod
+    def benchmark_vacuum(cls) -> TopologicalVacuum:
+        del cls
+        return TopologicalVacuum(
+            lepton_level=LEPTON_LEVEL,
+            quark_level=QUARK_LEVEL,
+            parent_level=PARENT_LEVEL,
+            generation_count=G_SM,
+        )
+
+    @classmethod
     def derive_observational_boundary_conditions(cls) -> ObservationalBoundaryConditionDerivation:
         del cls
         return ObservationalBoundaryConditionDerivation(hbar_ev_seconds=_decimal(HBAR_EV_SECONDS))
 
     @classmethod
-    def derive_alpha_surface(cls, *, precision: int = DEFAULT_PRECISION) -> AlphaSurfaceDerivation:
-        del cls, precision
-        visible_support = LEPTON_LEVEL + QUARK_LEVEL
-        level_density_ratio = Fraction(PARENT_LEVEL, visible_support)
-        alpha_inverse_fraction = Fraction(G_SM, 1) * level_density_ratio
+    def derive_alpha_surface(
+        cls,
+        *,
+        precision: int = DEFAULT_PRECISION,
+        vacuum: TopologicalVacuum | None = None,
+    ) -> AlphaSurfaceDerivation:
+        del precision
+        resolved_vacuum = cls.benchmark_vacuum() if vacuum is None else vacuum
+        visible_support = resolved_vacuum.visible_support
+        level_density_ratio = Fraction(resolved_vacuum.parent_level, visible_support)
+        alpha_inverse_fraction = Fraction(resolved_vacuum.generation_count, 1) * level_density_ratio
         alpha_inverse_decimal = _fraction_to_decimal(alpha_inverse_fraction)
         live_alpha_inverse = _decimal(
             surface_tension_gauge_alpha_inverse(
-                parent_level=PARENT_LEVEL,
-                lepton_level=LEPTON_LEVEL,
-                quark_level=QUARK_LEVEL,
+                parent_level=resolved_vacuum.parent_level,
+                lepton_level=resolved_vacuum.lepton_level,
+                quark_level=resolved_vacuum.quark_level,
+                generation_count=resolved_vacuum.generation_count,
             )
         )
         codata_alpha_inverse = _decimal(CODATA_FINE_STRUCTURE_ALPHA_INVERSE)
@@ -274,14 +427,19 @@ class UniverseFactory:
         )
 
     @classmethod
-    def derive_kappa_d5(cls, *, precision: int = DEFAULT_PRECISION) -> KappaDerivation:
-        del cls
+    def derive_kappa_d5(
+        cls,
+        *,
+        precision: int = DEFAULT_PRECISION,
+        vacuum: TopologicalVacuum | None = None,
+    ) -> KappaDerivation:
+        resolved_vacuum = cls.benchmark_vacuum() if vacuum is None else vacuum
         with localcontext() as context:
             context.prec = precision + _GUARD_DIGITS
             simplex_fraction = D5_WEIGHT_SIMPLEX_HYPERAREA_FRACTION
             sqrt_ten = Decimal(10).sqrt()
             weight_simplex_hyperarea = _fraction_to_decimal(simplex_fraction) * sqrt_ten
-            total_quantum_dimension = su2_total_quantum_dimension_decimal(LEPTON_LEVEL, precision=context.prec)
+            total_quantum_dimension = su2_total_quantum_dimension_decimal(resolved_vacuum.lepton_level, precision=context.prec)
             beta = total_quantum_dimension.ln() / Decimal(2)
             eta_spin = (_decimal(Fraction(347, 1)) - _decimal(Fraction(8, 1)) * beta * beta) / _decimal(Fraction(351, 1))
             kappa = (_decimal(Fraction(16, 5)) * weight_simplex_hyperarea * eta_spin).sqrt()
@@ -296,6 +454,134 @@ class UniverseFactory:
                 kappa=+kappa,
                 live_kappa=_decimal(KAPPA_D5),
             )
+
+    @classmethod
+    def derive_central_charge_geometry(
+        cls,
+        *,
+        vacuum: TopologicalVacuum | None = None,
+    ) -> CentralChargeGeometry:
+        resolved_vacuum = cls.benchmark_vacuum() if vacuum is None else vacuum
+        lepton_central_charge_fraction = wzw_central_charge_fraction(
+            resolved_vacuum.lepton_level,
+            SU2_DIMENSION,
+            SU2_DUAL_COXETER,
+        )
+        quark_central_charge_fraction = wzw_central_charge_fraction(
+            resolved_vacuum.quark_level,
+            SU3_DIMENSION,
+            SU3_DUAL_COXETER,
+        )
+        central_charge_ratio_fraction = quark_central_charge_fraction / lepton_central_charge_fraction
+        central_charge_ratio_decimal = _fraction_to_decimal(central_charge_ratio_fraction)
+        resolved_quark_branching_index = quark_branching_index(
+            resolved_vacuum.parent_level,
+            resolved_vacuum.quark_level,
+        )
+        branch_pixel_simplex_volume_fraction = Fraction(SU3_DUAL_COXETER, resolved_quark_branching_index)
+        inverse_pixel_volume_fraction = Fraction(
+            branch_pixel_simplex_volume_fraction.denominator,
+            branch_pixel_simplex_volume_fraction.numerator,
+        )
+        inverse_pixel_volume_decimal = _fraction_to_decimal(inverse_pixel_volume_fraction)
+
+        assert lepton_central_charge_fraction == LEPTON_CENTRAL_CHARGE_FRACTION
+        assert quark_central_charge_fraction == QUARK_CENTRAL_CHARGE_FRACTION
+        assert central_charge_ratio_fraction == QUARK_CENTRAL_CHARGE_FRACTION / LEPTON_CENTRAL_CHARGE_FRACTION
+        assert branch_pixel_simplex_volume_fraction == BRANCH_PIXEL_VOLUME_FRACTION
+        assert inverse_pixel_volume_fraction == BRANCH_PIXEL_VOLUME_INVERSE_FRACTION
+
+        return CentralChargeGeometry(
+            lepton_central_charge_fraction=lepton_central_charge_fraction,
+            quark_central_charge_fraction=quark_central_charge_fraction,
+            central_charge_ratio_fraction=central_charge_ratio_fraction,
+            central_charge_ratio_decimal=central_charge_ratio_decimal,
+            quark_branching_index=resolved_quark_branching_index,
+            branch_pixel_simplex_volume_fraction=branch_pixel_simplex_volume_fraction,
+            inverse_pixel_volume_fraction=inverse_pixel_volume_fraction,
+            inverse_pixel_volume_decimal=inverse_pixel_volume_decimal,
+        )
+
+    @classmethod
+    def derive_vacuum_pressure(
+        cls,
+        *,
+        vacuum: TopologicalVacuum | None = None,
+    ) -> VacuumPressureDerivation:
+        resolved_vacuum = cls.benchmark_vacuum() if vacuum is None else vacuum
+        visible_block = algebra.su3_low_weight_block(resolved_vacuum.quark_level)
+        reference_entry_magnitude = abs(complex(visible_block[0, 0]))
+        vacuum_pressure = quark_branching_pressure(visible_block, RANK_DIFFERENCE)
+        return VacuumPressureDerivation(
+            visible_reference_entry_magnitude=_decimal(reference_entry_magnitude),
+            vacuum_pressure=_decimal(vacuum_pressure),
+        )
+
+    @classmethod
+    def derive_codata_mass_ratio(cls) -> CodataMassRatioAudit:
+        del cls
+        proton_mass_kg = _decimal(proton_mass)
+        electron_mass_kg = _decimal(electron_mass)
+        mass_ratio = proton_mass_kg / electron_mass_kg
+        return CodataMassRatioAudit(
+            proton_mass_kg=proton_mass_kg,
+            electron_mass_kg=electron_mass_kg,
+            mass_ratio=mass_ratio,
+        )
+
+    @classmethod
+    def derive_proton_ratio(
+        cls,
+        *,
+        precision: int = DEFAULT_PRECISION,
+        kappa: Decimal | None = None,
+        tolerance: Decimal = DEFAULT_RELATIVE_TOLERANCE,
+        vacuum: TopologicalVacuum | None = None,
+    ) -> ProtonRatioDerivation:
+        resolved_vacuum = cls.benchmark_vacuum() if vacuum is None else vacuum
+        geometry = cls.derive_central_charge_geometry(vacuum=resolved_vacuum)
+        vacuum_pressure = cls.derive_vacuum_pressure(vacuum=resolved_vacuum)
+        codata_audit = cls.derive_codata_mass_ratio()
+
+        with localcontext() as context:
+            context.prec = precision + _GUARD_DIGITS
+            central_charge_ratio = geometry.central_charge_ratio_decimal
+            inverse_pixel_volume = geometry.inverse_pixel_volume_decimal
+            structural_prefactor = central_charge_ratio * inverse_pixel_volume
+            resolved_kappa = cls.derive_kappa_d5(precision=context.prec, vacuum=resolved_vacuum).kappa if kappa is None else _decimal(kappa)
+            kappa_d5_cuberoot = decimal_cuberoot(resolved_kappa, precision=context.prec)
+            geometric_friction_factor = (Decimal(1) - resolved_kappa) * kappa_d5_cuberoot
+            pressure_loading = (vacuum_pressure.vacuum_pressure * vacuum_pressure.vacuum_pressure) / geometric_friction_factor
+            su3_branching_pressure_scale = inverse_pixel_volume * pressure_loading
+            mu_audit = structural_prefactor * pressure_loading
+            absolute_delta = abs(mu_audit - codata_audit.mass_ratio)
+            relative_error = absolute_delta / codata_audit.mass_ratio
+            context.prec = precision
+
+        assert geometry.structural_prefactor_fraction == BRANCH_STRUCTURAL_PREFRACTOR_FRACTION, (
+            "SO(10)_312 structural prefactor drift: the branch-fixed proton/electron ratio no longer closes to the expected "
+            f"(c_q/c_l) * V_px^(-1) factor {BRANCH_STRUCTURAL_PREFRACTOR_FRACTION}."
+        )
+        assert relative_error <= tolerance, (
+            "Branch proton/electron residue no longer matches the CODATA value within the one-copy dictionary tolerance: "
+            f"predicted {mu_audit}, CODATA {codata_audit.mass_ratio}, relative error {relative_error}."
+        )
+
+        return ProtonRatioDerivation(
+            geometry=geometry,
+            vacuum_pressure=vacuum_pressure,
+            structural_prefactor=+structural_prefactor,
+            kappa_d5=+resolved_kappa,
+            kappa_d5_cuberoot=+kappa_d5_cuberoot,
+            geometric_friction_factor=+geometric_friction_factor,
+            pressure_loading=+pressure_loading,
+            su3_branching_pressure_scale=+su3_branching_pressure_scale,
+            mu_audit=+mu_audit,
+            codata_audit=codata_audit,
+            absolute_delta=+absolute_delta,
+            relative_error=+relative_error,
+            tolerance=+tolerance,
+        )
 
     @classmethod
     def derive_mass_bridge(
@@ -502,22 +788,58 @@ class UniverseFactory:
         return payloads
 
     @classmethod
+    def calculate_physical_ledger(cls, *, precision: int = DEFAULT_PRECISION) -> PhysicalLedger:
+        resolved_precision = max(int(precision), DEFAULT_PRECISION)
+        vacuum = TopologicalVacuum(
+            lepton_level=LEPTON_LEVEL,
+            quark_level=QUARK_LEVEL,
+            parent_level=PARENT_LEVEL,
+            generation_count=G_SM,
+        )
+        observational_boundary_conditions = cls.derive_observational_boundary_conditions()
+        alpha_surface = cls.derive_alpha_surface(precision=resolved_precision, vacuum=vacuum)
+        kappa = cls.derive_kappa_d5(precision=resolved_precision, vacuum=vacuum)
+        proton_ratio = cls.derive_proton_ratio(
+            precision=resolved_precision,
+            kappa=kappa.kappa,
+            vacuum=vacuum,
+        )
+        mass_bridge = cls.derive_mass_bridge(precision=resolved_precision, kappa=kappa.kappa)
+        unity_of_scale = cls.derive_unity_of_scale(
+            precision=resolved_precision,
+            kappa=kappa.kappa,
+            mass_bridge=mass_bridge,
+        )
+        return PhysicalLedger(
+            vacuum=vacuum,
+            observational_boundary_conditions=observational_boundary_conditions,
+            alpha_surface=alpha_surface,
+            kappa=kappa,
+            proton_ratio=proton_ratio,
+            mass_bridge=mass_bridge,
+            unity_of_scale=unity_of_scale,
+        )
+
+    @classmethod
     def build_derivation_ledger(cls, *, precision: int = DEFAULT_PRECISION) -> str:
-        obc = cls.derive_observational_boundary_conditions()
-        alpha = cls.derive_alpha_surface(precision=precision)
-        kappa = cls.derive_kappa_d5(precision=precision)
-        mass = cls.derive_mass_bridge(precision=precision, kappa=kappa.kappa)
-        unity = cls.derive_unity_of_scale(precision=precision, kappa=kappa.kappa, mass_bridge=mass)
+        physical_ledger = cls.calculate_physical_ledger(precision=precision)
+        vacuum = physical_ledger.vacuum
+        obc = physical_ledger.observational_boundary_conditions
+        alpha = physical_ledger.alpha_surface
+        kappa = physical_ledger.kappa
+        proton_ratio = physical_ledger.proton_ratio
+        mass = physical_ledger.mass_bridge
+        unity = physical_ledger.unity_of_scale
 
         lines = [
             "Derivation Ledger",
             "=================",
             "",
             "Branch Integers",
-            f"- k_l = {LEPTON_LEVEL}",
-            f"- k_q = {QUARK_LEVEL}",
-            f"- K = {PARENT_LEVEL}",
-            f"- G_SM = {G_SM}",
+            f"- k_l = {vacuum.lepton_level}",
+            f"- k_q = {vacuum.quark_level}",
+            f"- K = {vacuum.parent_level}",
+            f"- G_SM = {vacuum.generation_count}",
             "",
             "Observational Boundary Conditions",
             f"- hbar [OBC] = {_format_decimal(obc.hbar_ev_seconds, places=24)} eV s",
@@ -535,12 +857,23 @@ class UniverseFactory:
             f"- simplex hyperarea prefactor = {kappa.simplex_fraction.numerator}/{kappa.simplex_fraction.denominator}",
             f"- sqrt(10) = {_format_decimal(kappa.sqrt_ten, places=24)}",
             f"- R_01^(par/vis) = 160*sqrt(10)/1521 = {_format_decimal(kappa.weight_simplex_hyperarea, places=24)}",
-            f"- D_SU(2)({LEPTON_LEVEL}) = sqrt((k_l+2)/2)/sin(pi/(k_l+2)) = {_format_decimal(kappa.su2_total_quantum_dimension, places=24)}",
+            f"- D_SU(2)({vacuum.lepton_level}) = sqrt((k_l+2)/2)/sin(pi/(k_l+2)) = {_format_decimal(kappa.su2_total_quantum_dimension, places=24)}",
             f"- beta = 1/2 ln D_SU(2) = {_format_decimal(kappa.beta, places=24)}",
             f"- eta_spin = (347 - 8 beta^2)/351 = {_format_decimal(kappa.eta_spin, places=24)}",
             f"- kappa_D5 = sqrt((16/5) * R_01^(par/vis) * eta_spin) = {_format_decimal(kappa.kappa, places=24)}",
             f"- tn.py benchmark kappa = {_format_decimal(kappa.live_kappa, places=24)}",
             f"- derivation drift = {_format_decimal(kappa.kappa - kappa.live_kappa, places=24)}",
+            "",
+            "Mu Audit",
+            f"- c_l = 3*k_l/(k_l + 2) = {proton_ratio.geometry.lepton_central_charge_fraction.numerator}/{proton_ratio.geometry.lepton_central_charge_fraction.denominator}",
+            f"- c_q = 8*k_q/(k_q + 3) = {proton_ratio.geometry.quark_central_charge_fraction.numerator}/{proton_ratio.geometry.quark_central_charge_fraction.denominator}",
+            f"- c_q/c_l = {proton_ratio.geometry.central_charge_ratio_fraction.numerator}/{proton_ratio.geometry.central_charge_ratio_fraction.denominator}",
+            f"- V_px = h^vee_SU(3)/I_Q = {proton_ratio.geometry.branch_pixel_simplex_volume_fraction.numerator}/{proton_ratio.geometry.branch_pixel_simplex_volume_fraction.denominator}",
+            f"- V_px^(-1) = {proton_ratio.geometry.inverse_pixel_volume_fraction.numerator}/{proton_ratio.geometry.inverse_pixel_volume_fraction.denominator}",
+            f"- Pi_vac = -(Delta r/8) * log|S_00^(low)| = {_format_decimal(proton_ratio.vacuum_pressure.vacuum_pressure, places=24)}",
+            f"- mu_struct = (c_q/c_l) * V_px^(-1) * Pi_vac^2 / [(1-kappa_D5) * kappa_D5^(1/3)] = {_format_decimal(proton_ratio.mu_audit, places=24)}",
+            f"- CODATA m_p/m_e = {_format_decimal(proton_ratio.codata_audit.mass_ratio, places=12)}",
+            f"- relative error = {_format_decimal(proton_ratio.relative_error, places=24)}",
             "",
             "Finite-Capacity Mass Bridge",
             f"- topological_planck_mass_ev() = {_format_decimal(mass.branch_planck_mass_ev, places=18)} eV",
@@ -708,16 +1041,24 @@ def build_lambda_ledger(*, precision: int = DEFAULT_PRECISION) -> str:
 
 __all__ = [
     "AlphaSurfaceDerivation",
+    "CentralChargeGeometry",
     "CheckedInUnityPayload",
+    "CodataMassRatioAudit",
     "DEFAULT_PRECISION",
+    "DEFAULT_RELATIVE_TOLERANCE",
     "KappaDerivation",
     "LambdaSurfaceDerivation",
     "MassBridgeDerivation",
     "ObservationalBoundaryConditionDerivation",
+    "PhysicalLedger",
+    "ProtonRatioDerivation",
+    "TopologicalVacuum",
     "UnityOfScaleDerivation",
+    "VacuumPressureDerivation",
     "UniverseFactory",
     "build_derivation_ledger",
     "build_lambda_ledger",
+    "decimal_cuberoot",
     "decimal_pi",
     "decimal_sin",
     "quarter_power_inverse",
