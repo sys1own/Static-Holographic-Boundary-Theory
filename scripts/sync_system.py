@@ -23,18 +23,16 @@ if __package__ in (None, ""):
             break
 
 from shbt.config_loader import ConfigLoader
-from shbt.constants import RANK_DIFFERENCE, SU2_DIMENSION, SU2_DUAL_COXETER, SU3_DIMENSION, SU3_DUAL_COXETER
-from shbt.core import algebra
+from shbt.constants import SU2_DIMENSION, SU2_DUAL_COXETER, SU3_DIMENSION, SU3_DUAL_COXETER
 from shbt.core.derivation_api import (
     DEFAULT_PRECISION as DERIVATION_DEFAULT_PRECISION,
-    D5_WEIGHT_SIMPLEX_HYPERAREA_FRACTION,
+    TopologicalVacuum,
+    UniverseFactory,
     decimal_pi,
-    su2_total_quantum_dimension_decimal,
 )
 from shbt.core.engine import quark_branching_index, wzw_central_charge_fraction
 from shbt.main import derive_transport_curvature_audit
 from shbt.paths import ProjectPaths
-from shbt.physics_engine import quark_branching_pressure
 
 
 DEFAULT_RESIDUALS_PATH = ProjectPaths.RESULTS / "residuals.json"
@@ -121,6 +119,15 @@ def _format_fraction(value: Fraction) -> str:
     return f"{value.numerator}/{value.denominator}"
 
 
+def _build_topological_vacuum(universal_snapshot: UniversalConstantsSnapshot) -> TopologicalVacuum:
+    return TopologicalVacuum(
+        lepton_level=universal_snapshot.lepton_level,
+        quark_level=universal_snapshot.quark_level,
+        parent_level=universal_snapshot.parent_level,
+        generation_count=universal_snapshot.g_sm,
+    )
+
+
 def _build_universal_constants_snapshot(config_loader: ConfigLoader) -> UniversalConstantsSnapshot:
     universal_constants = config_loader.load_universal_constants()
     tier_1 = _require_mapping(universal_constants, "tier_1")
@@ -186,37 +193,15 @@ def _load_residual_payload(path: Path) -> dict[str, Any]:
     return payload
 
 
-def _decimal_cuberoot(value: Decimal, *, precision: int = DEFAULT_PRECISION) -> Decimal:
-    if value <= 0:
-        raise ValueError("Cube root requires a positive Decimal.")
-    with localcontext() as context:
-        context.prec = precision + _GUARD_DIGITS
-        guess = Decimal(str(float(value) ** (1.0 / 3.0)))
-        if guess <= 0:
-            guess = Decimal(1)
-        threshold = Decimal(1).scaleb(-(precision + _GUARD_DIGITS // 2))
-        while True:
-            next_guess = (Decimal(2) * guess + value / (guess * guess)) / Decimal(3)
-            if abs(next_guess - guess) <= threshold:
-                context.prec = precision
-                return +next_guess
-            guess = next_guess
-
-
-def _derive_kappa_d5(lepton_level: int, *, precision: int = DEFAULT_PRECISION) -> Decimal:
-    with localcontext() as context:
-        context.prec = precision + _GUARD_DIGITS
-        simplex_fraction = D5_WEIGHT_SIMPLEX_HYPERAREA_FRACTION
-        sqrt_ten = Decimal(10).sqrt()
-        weight_simplex_hyperarea = _fraction_to_decimal(simplex_fraction) * sqrt_ten
-        total_quantum_dimension = su2_total_quantum_dimension_decimal(int(lepton_level), precision=context.prec)
-        beta = total_quantum_dimension.ln() / Decimal(2)
-        eta_spin = (
-            _fraction_to_decimal(Fraction(347, 1)) - _fraction_to_decimal(Fraction(8, 1)) * beta * beta
-        ) / _fraction_to_decimal(Fraction(351, 1))
-        kappa = (_fraction_to_decimal(Fraction(16, 5)) * weight_simplex_hyperarea * eta_spin).sqrt()
-        context.prec = precision
-        return +kappa
+def _derive_kappa_d5(
+    universal_snapshot: UniversalConstantsSnapshot,
+    *,
+    precision: int = DEFAULT_PRECISION,
+) -> Decimal:
+    return UniverseFactory.derive_kappa_d5(
+        precision=precision,
+        vacuum=_build_topological_vacuum(universal_snapshot),
+    ).kappa
 
 
 def _derive_holographic_bits(
@@ -241,7 +226,7 @@ def _derive_neutrino_floor_mev(
 ) -> Decimal:
     with localcontext() as context:
         context.prec = precision + _GUARD_DIGITS
-        kappa = _derive_kappa_d5(universal_snapshot.lepton_level, precision=context.prec)
+        kappa = _derive_kappa_d5(universal_snapshot, precision=context.prec)
         holographic_bits = _derive_holographic_bits(universal_snapshot, precision=context.prec)
         planck_mass_ev = _decimal(universal_snapshot.planck_mass_ev)
         neutrino_floor_ev = kappa * planck_mass_ev / holographic_bits.sqrt().sqrt()
@@ -259,31 +244,11 @@ def _derive_proton_electron_mass_ratio(
     *,
     precision: int = DEFAULT_PRECISION,
 ) -> Decimal:
-    with localcontext() as context:
-        context.prec = precision + _GUARD_DIGITS
-        lepton_central_charge = wzw_central_charge_fraction(
-            universal_snapshot.lepton_level,
-            SU2_DIMENSION,
-            SU2_DUAL_COXETER,
-        )
-        quark_central_charge = wzw_central_charge_fraction(
-            universal_snapshot.quark_level,
-            SU3_DIMENSION,
-            SU3_DUAL_COXETER,
-        )
-        branch_pixel_volume = _branch_pixel_volume_fraction(universal_snapshot)
-        inverse_pixel_volume = Fraction(branch_pixel_volume.denominator, branch_pixel_volume.numerator)
-        visible_block = algebra.su3_low_weight_block(universal_snapshot.quark_level)
-        vacuum_pressure = _decimal(quark_branching_pressure(visible_block, RANK_DIFFERENCE))
-        structural_prefactor = _fraction_to_decimal(quark_central_charge / lepton_central_charge) * _fraction_to_decimal(
-            inverse_pixel_volume
-        )
-        kappa = _derive_kappa_d5(universal_snapshot.lepton_level, precision=context.prec)
-        geometric_friction_factor = (Decimal(1) - kappa) * _decimal_cuberoot(kappa, precision=context.prec)
-        pressure_loading = (vacuum_pressure * vacuum_pressure) / geometric_friction_factor
-        mu_audit = structural_prefactor * pressure_loading
-        context.prec = precision
-        return +mu_audit
+    derivation = UniverseFactory.derive_proton_ratio(
+        precision=precision,
+        vacuum=_build_topological_vacuum(universal_snapshot),
+    )
+    return _decimal(derivation.mu_audit)
 
 
 def _codata_proton_electron_mass_ratio() -> Decimal:
@@ -644,6 +609,9 @@ def sync_physics_constants(
         "leptonThetaTwentyThreeBetaTwoLoop": _format_latex_float(snapshot.lepton_theta23_two_loop_deg),
         "leptonDeltaBetaTwoLoop": _format_latex_float(snapshot.lepton_delta_two_loop_deg),
         "mZeroBenchmarkMeV": _format_latex_float(snapshot.neutrino_floor_mev),
+        "PredictedAlphaInverse": _format_latex_float(universal_snapshot.topological_alpha_inverse),
+        "PredictedMassRatio": _format_latex_float(snapshot.proton_electron_mass_ratio),
+        "PredictedNeutrinoFloorMeV": _format_latex_float(snapshot.neutrino_floor_mev),
         "quarkThetaTwelveBetaTwoLoop": _format_latex_float(snapshot.quark_theta12_two_loop_deg),
         "quarkThetaThirteenBetaTwoLoop": _format_latex_float(snapshot.quark_theta13_two_loop_deg),
         "quarkThetaTwentyThreeBetaTwoLoop": _format_latex_float(snapshot.quark_theta23_two_loop_deg),
