@@ -4,6 +4,7 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import shbt.main as tn
 from shbt.constants import LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
 from shbt.config_loader import ConfigLoader, DEFAULT_PHYSICS_PROFILE_RELATIVE_PATH
 from shbt.core import differential_geometry, numerics
@@ -34,6 +35,20 @@ def test_evolutionary_engine_exposes_programmatic_derivation_api() -> None:
 
     assert "Derivation Ledger" in ledger
     assert "alpha_surf^-1 = G_SM * K/(k_l + k_q) = 2340/17" in ledger
+
+
+def test_evolutionary_engine_exposes_quantified_residual_payload(monkeypatch) -> None:
+    expected_payload = {"artifact": "Quantified Two-Loop Residuals"}
+    captured: dict[str, object] = {}
+
+    def _fake_build_quantified_two_loop_residuals(*, model=None):
+        captured["model"] = model
+        return expected_payload
+
+    monkeypatch.setattr(tn, "build_quantified_two_loop_residuals", _fake_build_quantified_two_loop_residuals)
+
+    assert EvolutionaryEngine.generate_residual_payload() == expected_payload
+    assert captured["model"] == EvolutionaryEngine.benchmark_vacuum()
 
 
 def test_derive_universe_script_remains_cli_wrapper_over_engine() -> None:
