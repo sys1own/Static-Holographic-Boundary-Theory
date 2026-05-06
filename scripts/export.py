@@ -22,32 +22,14 @@ for parent in Path(__file__).resolve().parents:
             sys.path.insert(0, str(shbt_package_dir))
         break
 
-try:
-    from audit_generator import (
-        derive_ih_singular_value_spectrum,
-        export_ih_singular_value_spectrum_figure,
-        export_support_overlap_table,
-        export_supplementary_tolerance_table,
-    )
-except ImportError:
-    from .audit_generator import (
-        derive_ih_singular_value_spectrum,
-        export_ih_singular_value_spectrum_figure,
-        export_support_overlap_table,
-        export_supplementary_tolerance_table,
-    )
-
-try:
-    from evolutionary_engine import DEFAULT_PRECISION
-except ImportError:
-    from shbt.evolutionary_engine import DEFAULT_PRECISION
-
-try:
-    from plotting_runtime import managed_figure
-except ImportError:
-    from .plotting_runtime import managed_figure
-
-from shbt.core.evolutionary_engine import UniverseFactory
+from audit_generator import (
+    derive_ih_singular_value_spectrum,
+    export_ih_singular_value_spectrum_figure,
+    export_support_overlap_table,
+    export_supplementary_tolerance_table,
+)
+from plotting_runtime import managed_figure
+from shbt.core.evolutionary_engine import DEFAULT_PRECISION, UniverseFactory
 from shbt.main import build_quantified_two_loop_residuals
 from shbt.paths import ProjectPaths
 from shbt.template_utils import render_latex_table
