@@ -27,6 +27,7 @@ from shbt.constants import (
     SU2_DUAL_COXETER,
 )
 from shbt.core import algebra
+from shbt.core.qcd_kernel import build_qcd_residue_audit
 
 PI = Decimal("3.14159265358979323846264338327950288419716939937510")
 DEFAULT_PRECISION = 120
@@ -138,14 +139,24 @@ def derive_kappa_d5(*, lepton_level: int = LEPTON_LEVEL, precision: int = DEFAUL
         return ((Decimal(16) / Decimal(5)) * area_ratio * spinor_retention).sqrt()
 
 
-def derive_sakharov_alignment() -> SakharovAlignmentAudit:
+def derive_sakharov_alignment(
+    *,
+    parent_level: int = PARENT_LEVEL,
+    lepton_level: int = LEPTON_LEVEL,
+    quark_level: int = QUARK_LEVEL,
+) -> SakharovAlignmentAudit:
+    qcd_audit = build_qcd_residue_audit(
+        parent_level=parent_level,
+        lepton_level=lepton_level,
+        quark_level=quark_level,
+    )
     sphaleron_fraction = Fraction(28, 79)
     return SakharovAlignmentAudit(
         sphaleron_coefficient_fraction=sphaleron_fraction,
         sphaleron_coefficient=_decimal(sphaleron_fraction),
-        baryon_violation_channel=r"\overline{\mathbf{126}}_H",
-        cp_violation_locked=True,
-        out_of_equilibrium_locked=True,
+        baryon_violation_channel=qcd_audit.baryon_violation_channel,
+        cp_violation_locked=qcd_audit.baryon_asymmetry_channel_locked,
+        out_of_equilibrium_locked=qcd_audit.baryon_asymmetry_channel_locked,
     )
 
 
@@ -227,7 +238,11 @@ def build_topological_baryogenesis_audit(
     quark_level: int = QUARK_LEVEL,
     precision: int = DEFAULT_PRECISION,
 ) -> TopologicalBaryogenesisAudit:
-    sakharov = derive_sakharov_alignment()
+    sakharov = derive_sakharov_alignment(
+        parent_level=parent_level,
+        lepton_level=lepton_level,
+        quark_level=quark_level,
+    )
     holonomy = derive_topological_holonomy(
         parent_level=parent_level,
         lepton_level=lepton_level,
