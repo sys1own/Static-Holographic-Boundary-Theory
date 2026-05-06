@@ -14,26 +14,31 @@ def test_branch_planck_mass_ev_requires_coherent_bulk_checksum() -> None:
 
 
 def test_branch_planck_mass_ev_calls_holographic_stabilizer(monkeypatch: pytest.MonkeyPatch) -> None:
-    calls = {"count": 0}
+    calls = {"init": [], "verify": 0}
 
-    def _verified_checksum(self: HolographicStabilizer) -> BulkChecksumVerification:
-        calls["count"] += 1
-        return BulkChecksumVerification(
-            benchmark_branch=(26, 8, 312),
-            charge_residual=noether_bridge.Decimal("0"),
-            momentum_residual=noether_bridge.Decimal("0"),
-            parity_residual=noether_bridge.Decimal("0"),
-            charge_checksum_passed=True,
-            momentum_checksum_passed=True,
-            parity_checksum_passed=True,
-            simulated_boundary_decoherence=False,
-            detail="bulk checksum locked",
-        )
+    class TrackingStabilizer:
+        def __init__(self, *, precision: int, simulate_boundary_decoherence: bool) -> None:
+            calls["init"].append((precision, simulate_boundary_decoherence))
 
-    monkeypatch.setattr(HolographicStabilizer, "verify_bulk_checksum", _verified_checksum)
+        def verify_bulk_checksum(self) -> BulkChecksumVerification:
+            calls["verify"] += 1
+            return BulkChecksumVerification(
+                benchmark_branch=(26, 8, 312),
+                charge_residual=noether_bridge.Decimal("0"),
+                momentum_residual=noether_bridge.Decimal("0"),
+                parity_residual=noether_bridge.Decimal("0"),
+                charge_checksum_passed=True,
+                momentum_checksum_passed=True,
+                parity_checksum_passed=True,
+                simulated_boundary_decoherence=False,
+                detail="bulk checksum locked",
+            )
+
+    monkeypatch.setattr(noether_bridge, "HolographicStabilizer", TrackingStabilizer)
 
     assert noether_bridge.branch_planck_mass_ev() > 0
-    assert calls["count"] == 1
+    assert calls["init"] == [(noether_bridge.DEFAULT_PRECISION, False)]
+    assert calls["verify"] == 2
 
 
 def test_branch_planck_mass_ev_raises_on_simulated_boundary_decoherence() -> None:
@@ -62,7 +67,10 @@ def test_branch_planck_mass_ev_raises_on_off_shell_coordinates_after_checksum(
 
     monkeypatch.setattr(HolographicStabilizer, "verify_bulk_checksum", _verified_checksum)
 
-    with pytest.raises(noether_bridge.DecoherenceError, match=r"off-shell branch coordinates"):
+    with pytest.raises(
+        noether_bridge.DecoherenceError,
+        match=r"Boundary instability detected: Physical scale emergence inhibited",
+    ):
         noether_bridge.branch_planck_mass_ev(lepton_level=27)
 
     assert calls["count"] == 1
