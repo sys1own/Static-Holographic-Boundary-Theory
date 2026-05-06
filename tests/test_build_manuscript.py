@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+from types import SimpleNamespace
 from pathlib import Path
 
 import pytest
@@ -80,6 +81,77 @@ def test_run_entire_proof_invokes_all_sector_audits_before_full_audit(
         common_args,
     ]
     assert (output_dir / "final").is_dir()
+
+
+def test_generate_topological_constants_uses_evolutionary_engine_surface(monkeypatch: pytest.MonkeyPatch) -> None:
+    module = _load_script_module()
+    recorded_calls: list[tuple[object, ...]] = []
+
+    monkeypatch.setattr(
+        module.EvolutionaryEngine,
+        "derive_alpha_surface",
+        classmethod(
+            lambda cls, *, precision: recorded_calls.append(("alpha", precision))
+            or SimpleNamespace(alpha_inverse_decimal=137.6470588235)
+        ),
+    )
+    monkeypatch.setattr(
+        module.EvolutionaryEngine,
+        "derive_kappa_d5",
+        classmethod(
+            lambda cls, *, precision: recorded_calls.append(("kappa", precision)) or SimpleNamespace(kappa=0.123456789)
+        ),
+    )
+    monkeypatch.setattr(
+        module.EvolutionaryEngine,
+        "derive_mass_bridge",
+        classmethod(
+            lambda cls, *, precision, kappa: recorded_calls.append(("mass", precision, kappa))
+            or SimpleNamespace(neutrino_floor_mev=2.83)
+        ),
+    )
+    monkeypatch.setattr(
+        module.EvolutionaryEngine,
+        "derive_unity_of_scale",
+        classmethod(
+            lambda cls, *, precision, kappa, mass_bridge: recorded_calls.append(
+                ("unity", precision, kappa, mass_bridge.neutrino_floor_mev)
+            )
+            or SimpleNamespace(epsilon_lambda=1.0e-199)
+        ),
+    )
+    monkeypatch.setattr(
+        module.EvolutionaryEngine,
+        "derive_lambda_surface",
+        classmethod(
+            lambda cls, *, precision: recorded_calls.append(("lambda", precision))
+            or SimpleNamespace(lambda_holo_si_m2=1.0e-52)
+        ),
+    )
+    monkeypatch.setattr(
+        module.EvolutionaryEngine,
+        "generate_ledger",
+        classmethod(
+            lambda cls, *, kind, precision: recorded_calls.append(("ledger", kind, precision)) or "universe-ledger"
+        ),
+    )
+
+    result = module.generate_topological_constants(precision=60)
+
+    assert result.derivation_ledger == "universe-ledger"
+    assert result.alpha_surface_inverse == 137.6470588235
+    assert result.kappa_d5 == 0.123456789
+    assert result.neutrino_floor_mev == 2.83
+    assert result.epsilon_lambda == 1.0e-199
+    assert result.lambda_holo_si_m2 == 1.0e-52
+    assert recorded_calls == [
+        ("alpha", 60),
+        ("kappa", 60),
+        ("mass", 60, 0.123456789),
+        ("unity", 60, 0.123456789, 2.83),
+        ("lambda", 60),
+        ("ledger", "universe", 60),
+    ]
 
 
 def test_synchronize_manuscript_sources_uses_current_sync_system_api(
