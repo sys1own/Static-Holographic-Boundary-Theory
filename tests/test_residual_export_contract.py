@@ -146,6 +146,7 @@ def test_quantified_two_loop_residuals_round_trip_into_sync_system(monkeypatch: 
 
 def test_export_script_writes_residual_payload(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     module = _load_export_module()
+    assert module.EvolutionaryEngine is module.UniverseFactory
 
     derivation_calls: dict[str, int] = {}
     base_payload = {
@@ -208,7 +209,7 @@ def test_export_script_writes_residual_payload(tmp_path: Path, monkeypatch: pyte
             derivation_calls["lambda_precision"] = precision
             return fake_lambda_surface
 
-    monkeypatch.setattr(module, "UniverseFactory", FakeUniverseFactory)
+    monkeypatch.setattr(module, "EvolutionaryEngine", FakeUniverseFactory)
     monkeypatch.setattr(module, "build_quantified_two_loop_residuals", lambda: dict(base_payload))
 
     output_path = tmp_path / "results" / "residuals.json"
