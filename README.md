@@ -189,7 +189,7 @@ The benchmark now uses a split configuration model: `data/universal_constants.ya
 - **Python requirement:** `>=3.11`
 - **Pinned scientific stack:** `PyYAML==6.0.3`, `Jinja2==3.1.6`, `mpmath==1.3.0`, `numpy==1.26.4`, `scipy==1.12.0`, `matplotlib==3.8.3`, `sympy==1.12`
 - **Link Ledger:** `python scripts/derive_universe.py` prints the branch-fixed gauge-density residue `alpha_surf^-1 = 2340/17`; together with the `Derivation Ledger` above, this makes explicit that the benchmark's physical constants are derived residues disclosed against external comparators, not fit parameters reopened by hand.
-- **Paper Sync:** `PYTHONPATH=src python scripts/sync_system.py` refreshes the machine-managed residual ledger in `README.md` and the synchronized audit macros in `papers/physics_constants.tex` from `results/residuals.json` and `data/universal_constants.yaml`.
+- **Paper Sync:** `PYTHONPATH=src python scripts/sync_system.py` refreshes the machine-managed derivation table and residual ledger in `README.md`, plus the synchronized audit macros in `papers/physics_constants.tex`, from `results/residuals.json` and `data/universal_constants.yaml`.
 
 ### Constant Tiers
 
