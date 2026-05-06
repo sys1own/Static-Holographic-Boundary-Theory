@@ -227,7 +227,7 @@ def build_manuscript(
     try:
         latex_installation = resolve_latex_installation("pdflatex" if latex_backend == "auto" else latex_backend)
     except RuntimeError:
-        print("Mathematical proofs complete; LaTeX compiler not found for PDF generation")
+        print("Mathematical verification successful; PDF generation skipped due to missing LaTeX compiler.")
         return BuildResult(
             proof_output_dir=resolved_output_dir,
             latex_artifact_dir=latex_artifact_dir,
