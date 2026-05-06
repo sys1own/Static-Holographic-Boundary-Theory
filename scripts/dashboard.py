@@ -73,7 +73,7 @@ class DerivationSnapshot:
     decimal_tolerance: Decimal
     register_noise_floor: Decimal
     decimal_passed: bool
-    residues: dict[str, int | Decimal | bool] = field(default_factory=dict)
+    residues: dict[str, int | float | Decimal | bool] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -181,6 +181,17 @@ def _branch_aliases(
     }
 
 
+def _ui_constant_aliases() -> dict[str, float]:
+    return {
+        "k_l": float(LEPTON_LEVEL),
+        "k_q": float(QUARK_LEVEL),
+        "K": float(PARENT_LEVEL),
+        "LEPTON_LEVEL": float(LEPTON_LEVEL),
+        "QUARK_LEVEL": float(QUARK_LEVEL),
+        "PARENT_LEVEL": float(PARENT_LEVEL),
+    }
+
+
 def _resolve_selected_branch(
     *,
     absolute_branch: tuple[int, int, int],
@@ -210,6 +221,7 @@ def build_derivation_snapshot(precision: int = DEFAULT_PRECISION) -> DerivationS
             parent_level=physical_ledger.vacuum.parent_level,
         )
     )
+    residues.update(_ui_constant_aliases())
     return DerivationSnapshot(
         precision=resolved_precision,
         ledger_text=ledger_text,
@@ -368,16 +380,7 @@ def build_residue_comparison_table(
 
 def _build_ui_residue_payload(derivation: DerivationSnapshot) -> dict[str, object]:
     residues = dict(getattr(derivation, "residues", {}))
-    residues.update(
-        {
-            "k_l": float(LEPTON_LEVEL),
-            "k_q": float(QUARK_LEVEL),
-            "K": float(PARENT_LEVEL),
-            "LEPTON_LEVEL": float(LEPTON_LEVEL),
-            "QUARK_LEVEL": float(QUARK_LEVEL),
-            "PARENT_LEVEL": float(PARENT_LEVEL),
-        }
-    )
+    residues.update(_ui_constant_aliases())
     return residues
 
 
