@@ -1,0 +1,45 @@
+Gravity-Side Rigidity Report
+===========================
+Benchmark branch                : (26,8,312)
+Detuned stress test             : (27,8,312)
+c_dark completion               : 1197103/362670 = 3.300805139659
+kappa_D5                        : 0.988771051266
+
+Newton Constant Lock
+--------------------
+8π G_eff = 12/(c_dark M_P^2)
+G_eff [eV^-2]                   : 9.704391792439E-58
+G_top = M_P^-2 [eV^-2]          : 6.708830544511E-57
+G_top / G_eff                   : 6.913190118455E+0
+Gravity exists on the branch specifically to carry the positive c_dark completion residue.
+
+Unity of Scale Identity
+-----------------------
+Lambda_obs [m^-2]               : 1.089138833701E-52
+N = 3π/(L_P^2 Lambda_obs)       : 3.312593316731E+122
+1/N register floor              : 3.018782882128E-123
+m_nu = kappa_D5 M_P N^(-1/4)    : 2.829634235768E+0 meV
+Lambda_holo(lhs) [eV^2]         : 4.240881952088E-66
+Lambda_holo(rhs, top) [eV^2]    : 4.240881952088E-66
+Lambda_holo(rhs, bridge) [eV^2] : 4.240881952088E-66
+epsilon_lambda(top)             : 1.745876872325E-251
+epsilon_lambda(bridge)          : 3.491753744650E-251
+Unity closure                   : PASS
+
+Reviewer Trap
+-------------
+Delta_fr benchmark              : 0
+Delta_fr detuned                : 2/9 = 0.222222222222
+Q_iso = sigma_holo [eV^4]       : 1.738793476655E-10
+E_mu_nu benchmark               : diag(0.000000E+00, 0.000000E+00, 0.000000E+00, 0.000000E+00) [eV^4]
+E_mu_nu detuned                 : diag(-3.863986E-11, 3.863986E-11, 3.863986E-11, 3.863986E-11) [eV^4]
+J_mu_nu^(a) [eV^2]              : diag(-9.424182E-67, 9.424182E-67, 9.424182E-67, 9.424182E-67) [eV^2]
+J_mu_nu^(a) [m^-2]              : diag(-2.420309E-53, 2.420309E-53, 2.420309E-53, 2.420309E-53) [m^-2]
+Bulk closure equivalence        : VERIFIED
+Equivalence Principle           : DESTROYED
+
+Saturation Audit
+----------------
+Configured HOLOGRAPHIC_BITS     : 3.312593316731E+122
+Relative mismatch               : 1.222063798526E-16
+N is reconstructed from the observed cosmological constant, so it enters as an Observational Boundary Condition rather than a fit parameter.
