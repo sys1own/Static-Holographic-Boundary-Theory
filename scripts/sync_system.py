@@ -22,7 +22,7 @@ if __package__ in (None, ""):
             sys.path.insert(0, str(candidate))
             break
 
-from shbt.config_loader import ConfigLoader
+from shbt.config_loader import ConfigLoader, DEFAULT_PHYSICS_PROFILE_PATH as CONFIG_LOADER_DEFAULT_PHYSICS_PROFILE_PATH
 from shbt.constants import SU2_DIMENSION, SU2_DUAL_COXETER, SU3_DIMENSION, SU3_DUAL_COXETER
 from shbt.core.derivation_api import (
     DEFAULT_PRECISION as DERIVATION_DEFAULT_PRECISION,
@@ -38,7 +38,8 @@ from shbt.paths import ProjectPaths
 DEFAULT_RESIDUALS_PATH = ProjectPaths.RESULTS / "residuals.json"
 DEFAULT_README_PATH = ProjectPaths.ROOT / "README.md"
 DEFAULT_PHYSICS_CONSTANTS_PATH = ProjectPaths.PAPERS / "physics_constants.tex"
-DEFAULT_UNIVERSAL_CONSTANTS_PATH = ProjectPaths.DATA / "universal_constants.yaml"
+DEFAULT_PHYSICS_PROFILE_PATH = CONFIG_LOADER_DEFAULT_PHYSICS_PROFILE_PATH
+DEFAULT_UNIVERSAL_CONSTANTS_PATH = DEFAULT_PHYSICS_PROFILE_PATH
 DEFAULT_PRECISION = max(int(DERIVATION_DEFAULT_PRECISION), 50)
 _GUARD_DIGITS = 12
 
@@ -644,11 +645,17 @@ def synchronize_system(
     residuals_path: Path = DEFAULT_RESIDUALS_PATH,
     readme_path: Path = DEFAULT_README_PATH,
     physics_constants_path: Path = DEFAULT_PHYSICS_CONSTANTS_PATH,
+    physics_profile_path: Path | None = None,
     universal_constants_path: Path = DEFAULT_UNIVERSAL_CONSTANTS_PATH,
 ) -> tuple[Path, Path]:
     payload = _load_residual_payload(Path(residuals_path))
+    resolved_physics_profile_path = (
+        Path(physics_profile_path)
+        if physics_profile_path is not None
+        else Path(universal_constants_path)
+    )
     universal_snapshot = _build_universal_constants_snapshot(
-        ConfigLoader(universal_constants_path=universal_constants_path)
+        ConfigLoader(physics_profile_path=resolved_physics_profile_path)
     )
     snapshot = build_sync_snapshot_with_universal_constants(
         payload,
@@ -672,7 +679,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--residuals-path", type=Path, default=DEFAULT_RESIDUALS_PATH)
     parser.add_argument("--readme-path", type=Path, default=DEFAULT_README_PATH)
     parser.add_argument("--physics-constants-path", type=Path, default=DEFAULT_PHYSICS_CONSTANTS_PATH)
-    parser.add_argument("--universal-constants-path", type=Path, default=DEFAULT_UNIVERSAL_CONSTANTS_PATH)
+    parser.add_argument("--physics-profile-path", type=Path, default=DEFAULT_PHYSICS_PROFILE_PATH)
+    parser.add_argument("--universal-constants-path", dest="legacy_universal_constants_path", type=Path, default=None)
     return parser.parse_args(list(argv) if argv is not None else None)
 
 
@@ -682,7 +690,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         residuals_path=args.residuals_path,
         readme_path=args.readme_path,
         physics_constants_path=args.physics_constants_path,
-        universal_constants_path=args.universal_constants_path,
+        physics_profile_path=args.legacy_universal_constants_path or args.physics_profile_path,
     )
     print(f"README synced                 : {updated_readme}")
     print(f"physics_constants synced      : {updated_physics_constants}")
@@ -691,6 +699,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 __all__ = [
     "DEFAULT_PHYSICS_CONSTANTS_PATH",
+    "DEFAULT_PHYSICS_PROFILE_PATH",
     "DEFAULT_README_PATH",
     "DEFAULT_RESIDUALS_PATH",
     "DEFAULT_UNIVERSAL_CONSTANTS_PATH",
