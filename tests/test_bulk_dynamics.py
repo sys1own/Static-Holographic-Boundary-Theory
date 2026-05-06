@@ -24,6 +24,8 @@ def test_calculate_bulk_flow_builds_monotonic_entropy_hierarchy() -> None:
 
 def test_bulk_flow_matches_temporal_emergence_kernel() -> None:
     audit = build_bulk_dynamics_audit(redshift=Decimal("0.5"))
+    val_a = audit.layerwise_arrow_of_time_gradient_km_s_mpc
+    val_b = audit.temporal_point.derived_temporal_rate_km_s_mpc
 
     assert audit.arrow_of_time_positive
     assert audit.consistent_with_temporal_emergence_kernel
@@ -31,7 +33,4 @@ def test_bulk_flow_matches_temporal_emergence_kernel() -> None:
     assert abs(audit.arrow_of_time_consistency_residual) <= Decimal("1e-15")
     assert abs(audit.entropy_to_time_identity_residual) <= Decimal("1e-15")
     assert abs(audit.metric_lock_residual) <= Decimal("1e-15")
-    assert abs(
-        audit.layerwise_arrow_of_time_gradient_km_s_mpc
-        - audit.temporal_point.derived_temporal_rate_km_s_mpc
-    ) < AUDIT_TOLERANCE
+    assert abs(val_a - val_b) < AUDIT_TOLERANCE
