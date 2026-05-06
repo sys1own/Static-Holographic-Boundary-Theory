@@ -23,7 +23,7 @@ if __package__ in (None, ""):
 
 from shbt.anomaly_detector import BENCHMARK_BRANCH, CandidateSpec, build_candidate_audit
 from shbt.constants import G_SM, LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
-from shbt.core.derivation_api import DEFAULT_PRECISION, TopologicalVacuum, UniverseFactory, quarter_power_inverse
+from shbt.core.evolutionary_engine import DEFAULT_PRECISION, TopologicalVacuum, UniverseFactory, quarter_power_inverse
 from shbt.plotting_runtime import plt
 
 if TYPE_CHECKING:
@@ -44,6 +44,8 @@ METRIC_LABELS: dict[MetricKey, str] = {
     "c_dark_shift": "c_dark shift",
     "diophantine_gap": "Diophantine gap",
 }
+BENCHMARK_LOCKED_LABEL = "Benchmark Locked"
+KERNEL_PANIC_LABEL = "Kernel Panic"
 
 
 @dataclass(frozen=True)
@@ -137,6 +139,15 @@ def _metric_floor(values: np.ndarray) -> float:
 def _candidate_label(snapshot: DetuningSnapshot) -> str:
     k_l, k_q, parent_level = snapshot.candidate_branch
     return f"({k_l}, {k_q}, {parent_level})"
+
+
+def _shift_label(snapshot: DetuningSnapshot) -> str:
+    delta_k_l, delta_k_q, delta_parent = snapshot.shift
+    return f"({delta_k_l:+d}, {delta_k_q:+d}, {delta_parent:+d})"
+
+
+def _kernel_state_label(snapshot: DetuningSnapshot) -> str:
+    return BENCHMARK_LOCKED_LABEL if snapshot.benchmark_selected else KERNEL_PANIC_LABEL
 
 
 @lru_cache(maxsize=8)
@@ -355,7 +366,7 @@ def build_rigidity_landscape_figure(
             float(QUARK_LEVEL) + 0.2,
             float(LEPTON_LEVEL) + 0.2,
             float(PARENT_LEVEL) + 0.4,
-            "benchmark",
+            "benchmark\nlocked",
             fontsize=9,
             color="#111827",
             bbox={"facecolor": "white", "edgecolor": "#6b7280", "alpha": 0.9, "boxstyle": "round,pad=0.25"},
@@ -376,12 +387,13 @@ def build_rigidity_landscape_figure(
             candidate_quark + 0.2,
             candidate_lepton + 0.2,
             candidate_parent + 0.4,
-            "detuned\n"
+            f"{_kernel_state_label(detuning)}\n"
             f"{_candidate_label(detuning)}\n"
+            f"Δ={_shift_label(detuning)}\n"
             f"R={detuning.rigidity_point.total_residue:.2e}",
             fontsize=8.5,
-            color="#111827",
-            bbox={"facecolor": "white", "edgecolor": "#111827", "alpha": 0.92, "boxstyle": "round,pad=0.25"},
+            color="#7f1d1d",
+            bbox={"facecolor": "#fef2f2", "edgecolor": "#dc2626", "alpha": 0.96, "boxstyle": "round,pad=0.25"},
         )
 
     ax.set_xlabel(r"$k_q$")
@@ -432,9 +444,13 @@ def build_detuning_breakdown_figure(detuning: DetuningSnapshot) -> "Figure":
             axes[0].text(index, value + max(max(rigidity_values, default=0.0) * 0.03, 1.0e-12), f"{value:.2e}", ha="center", va="bottom", fontsize=8)
 
         anomaly_floor = _metric_floor(np.asarray(anomaly_values, dtype=float))
-        axes[1].bar(anomaly_labels, [max(value, anomaly_floor) for value in anomaly_values], color=["#dc2626", "#111827"])
+        axes[1].bar(
+            anomaly_labels,
+            [max(value, anomaly_floor) for value in anomaly_values],
+            color=["#16a34a", "#065f46"] if detuning.benchmark_selected else ["#dc2626", "#111827"],
+        )
         axes[1].set_yscale("log")
-        axes[1].set_title("Gravity-side anomaly spike")
+        axes[1].set_title("Gravity-side anomaly floor" if detuning.benchmark_selected else "Kernel Panic anomaly spike")
         axes[1].set_ylabel("Magnitude (log scale)")
         axes[1].grid(True, axis="y", which="both", linestyle=":", linewidth=0.7, alpha=0.45)
         for index, value in enumerate(anomaly_values):
@@ -456,16 +472,14 @@ def _require_streamlit() -> Any:
 
 
 def _render_detuning_status(st: Any, detuning: DetuningSnapshot) -> None:
-    anomaly = detuning.anomaly_audit
     if detuning.benchmark_selected:
-        st.success("Benchmark branch selected: the closure tensor and anomalous source stay exactly zero.")
-        return
-    if anomaly.framing.delta_fr != 0:
-        st.error(
-            "Detuning reopens the reviewer trap: Δ_fr becomes non-zero, the closure tensor activates, and the anomalous source spikes."
+        st.success(
+            f"{BENCHMARK_LOCKED_LABEL}: benchmark branch {BENCHMARK_BRANCH} keeps Δ_fr closed and both anomaly residues pinned to zero."
         )
         return
-    st.warning("This detuning keeps Δ_fr closed in the local audit, but it still exits the published benchmark branch.")
+    st.error(
+        f"{KERNEL_PANIC_LABEL}: any integer nudge away from {BENCHMARK_BRANCH} exits the anomaly-free shell, reopens Δ_fr, and spikes the closure tensor and anomalous source."
+    )
 
 
 def render_dashboard() -> None:
@@ -474,7 +488,7 @@ def render_dashboard() -> None:
 
     st.title("SHBT Universe Tuner")
     st.caption(
-        "Interactive Holographic Moat heatmap from `map_rigidity_landscape.py`, with integer coordinate tuning, real-time parity anomalies, and live residue-vs-anchor ledgers."
+        "Interactive Holographic Moat heatmap from `map_rigidity_landscape.py`: nudge the benchmark integers and watch the anomaly residues jump into Kernel Panic as soon as the branch leaves (26, 8, 312)."
     )
 
     with st.sidebar:
@@ -490,30 +504,42 @@ def render_dashboard() -> None:
         )
         log_scale = st.toggle("Log color scale", value=True)
 
-        st.subheader("Coordinate tuner")
-        lepton_level = st.slider("k_l", min_value=max(1, int(LEPTON_LEVEL) - lepton_half_width), max_value=int(LEPTON_LEVEL) + lepton_half_width, value=int(LEPTON_LEVEL))
-        quark_level = st.slider("k_q", min_value=max(1, int(QUARK_LEVEL) - quark_half_width), max_value=int(QUARK_LEVEL) + quark_half_width, value=int(QUARK_LEVEL))
-        parent_level = st.slider("K", min_value=max(1, int(PARENT_LEVEL) - parent_half_width), max_value=int(PARENT_LEVEL) + parent_half_width, value=int(PARENT_LEVEL))
+        st.subheader("Integer nudge")
+        delta_lepton = st.slider("Δk_l", min_value=-lepton_half_width, max_value=lepton_half_width, value=0)
+        delta_quark = st.slider("Δk_q", min_value=-quark_half_width, max_value=quark_half_width, value=0)
+        delta_parent = st.slider("ΔK", min_value=-parent_half_width, max_value=parent_half_width, value=0)
         precision = st.select_slider("Ledger precision", options=[DEFAULT_PRECISION, 240, 320], value=DEFAULT_PRECISION)
+        st.caption(
+            "Candidate branch = "
+            f"({int(LEPTON_LEVEL) + delta_lepton}, {int(QUARK_LEVEL) + delta_quark}, {int(PARENT_LEVEL) + delta_parent}); "
+            f"benchmark = {BENCHMARK_BRANCH}."
+        )
 
     scan = build_rigidity_scan(lepton_half_width, quark_half_width, parent_half_width)
-    detuning = build_detuning_snapshot_for_branch(lepton_level, quark_level, parent_level, precision=precision)
+    detuning = build_detuning_snapshot(
+        delta_lepton=delta_lepton,
+        delta_quark=delta_quark,
+        delta_parent=delta_parent,
+        precision=precision,
+    )
     derivation = build_derivation_snapshot(precision=precision)
-    residue_table = build_residue_comparison_table(lepton_level, quark_level, parent_level, precision=precision)
+    residue_table = build_residue_comparison_table(*detuning.candidate_branch, precision=precision)
 
     _render_detuning_status(st, detuning)
 
-    metric_columns = st.columns(4)
-    metric_columns[0].metric("Benchmark", f"{BENCHMARK_BRANCH}")
-    metric_columns[1].metric("Candidate", _candidate_label(detuning))
-    metric_columns[2].metric("Rigidity residue", _format_decimal(detuning.rigidity_point.total_residue, digits=3))
-    metric_columns[3].metric("Δ_fr", _format_fraction(detuning.anomaly_audit.framing.delta_fr))
+    metric_columns = st.columns(5)
+    metric_columns[0].metric("Kernel state", _kernel_state_label(detuning))
+    metric_columns[1].metric("Benchmark", f"{BENCHMARK_BRANCH}")
+    metric_columns[2].metric("Candidate", _candidate_label(detuning))
+    metric_columns[3].metric("Nudge", _shift_label(detuning))
+    metric_columns[4].metric("Rigidity residue", _format_decimal(detuning.rigidity_point.total_residue, digits=3))
 
-    anomaly_columns = st.columns(4)
-    anomaly_columns[0].metric("Closure tensor |E|", _format_decimal(abs(detuning.anomaly_audit.closure_tensor.amplitude), digits=3))
-    anomaly_columns[1].metric("Anomalous source |J|", _format_decimal(abs(detuning.anomaly_audit.anomalous_source_si_m2.amplitude), digits=3))
-    anomaly_columns[2].metric("WEP status", detuning.anomaly_audit.wep_status)
-    anomaly_columns[3].metric("Verdict", detuning.anomaly_audit.verdict)
+    anomaly_columns = st.columns(5)
+    anomaly_columns[0].metric("Δ_fr", _format_fraction(detuning.anomaly_audit.framing.delta_fr))
+    anomaly_columns[1].metric("Closure tensor |E|", _format_decimal(abs(detuning.anomaly_audit.closure_tensor.amplitude), digits=3))
+    anomaly_columns[2].metric("Anomalous source |J|", _format_decimal(abs(detuning.anomaly_audit.anomalous_source_si_m2.amplitude), digits=3))
+    anomaly_columns[3].metric("WEP status", detuning.anomaly_audit.wep_status)
+    anomaly_columns[4].metric("Verdict", detuning.anomaly_audit.verdict)
 
     plot_column, detail_column = st.columns((1.5, 1.0), gap="large")
     with plot_column:
@@ -533,6 +559,10 @@ def render_dashboard() -> None:
         st.markdown("**Current detuning audit**")
         st.json(
             {
+                "kernel_state": {
+                    "label": _kernel_state_label(detuning),
+                    "panic": not detuning.benchmark_selected,
+                },
                 "candidate_branch": list(detuning.candidate_branch),
                 "shift": {
                     "delta_k_l": detuning.shift[0],
