@@ -12,7 +12,7 @@ import pytest
 
 import shbt
 from shbt.core import derivation_api
-from shbt.core.derivation_api import DEFAULT_PRECISION, UniverseFactory
+from shbt.core.derivation_api import DEFAULT_PRECISION, TopologicalVacuum, UniverseFactory
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -49,6 +49,14 @@ def test_calculate_physical_ledger_uses_benchmark_topological_vacuum() -> None:
 def test_import_shbt_exposes_universe_factory() -> None:
     assert shbt.UniverseFactory is UniverseFactory
     assert shbt.DEFAULT_PRECISION == DEFAULT_PRECISION
+
+
+def test_universe_factory_can_derive_proton_ratio_for_nonbenchmark_vacuum() -> None:
+    derivation = UniverseFactory.derive_proton_ratio(
+        vacuum=TopologicalVacuum(lepton_level=30, quark_level=10, parent_level=360, generation_count=18)
+    )
+
+    assert derivation.mu_audit > 0
 
 
 def test_universe_factory_generates_lambda_ledger() -> None:
