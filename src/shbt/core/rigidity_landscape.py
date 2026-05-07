@@ -42,7 +42,13 @@ from shbt.constants import (
     SU3_DUAL_COXETER,
 )
 from shbt.core.noether_bridge import framing_defect
-from shbt.math_engine import guard_fraction, guard_sum, is_guard_zero
+from shbt.math_engine import (
+    FIXED_POINT_DENOMINATOR,
+    PRECISION_GUARD,
+    guard_fraction,
+    guard_sum,
+    is_guard_zero,
+)
 
 
 EXPECTED_BENCHMARK: Final[tuple[int, int, int]] = (26, 8, 312)
@@ -615,7 +621,9 @@ __all__ = [
     "DEFAULT_PARENT_HALF_WIDTH",
     "DEFAULT_QUARK_HALF_WIDTH",
     "EXPECTED_BENCHMARK",
+    "FIXED_POINT_DENOMINATOR",
     "MIN_COLOR_CEILING",
+    "PRECISION_GUARD",
     "RigidityLandscapeScan",
     "RigidityPoint",
     "SymmetrySearchAudit",
