@@ -17,13 +17,13 @@ from typing import TypeAlias
 
 
 PRECISION_GUARD = 128
-FIXED_POINT_DENOMINATOR = 2**128
-_MICROSCOPIC_THRESHOLD = Fraction(1, FIXED_POINT_DENOMINATOR)
+FIXED_POINT_DENOMINATOR = 2**PRECISION_GUARD
+_MICROSCOPIC_THRESHOLD = Fraction(1, 10**PRECISION_GUARD)
 
 GuardScalar: TypeAlias = Fraction | Decimal | int | float | str
 
 
-def _coerce_fraction(value: GuardScalar) -> Fraction:
+def to_rational(value: GuardScalar) -> Fraction:
     if isinstance(value, Fraction):
         return value
     if isinstance(value, Decimal):
@@ -33,8 +33,15 @@ def _coerce_fraction(value: GuardScalar) -> Fraction:
     if isinstance(value, int):
         return Fraction(value, 1)
     if isinstance(value, float):
-        return Fraction.from_float(value)
-    return Fraction(value)
+        return Fraction(Decimal(str(value)))
+    try:
+        return Fraction(value)
+    except ValueError:
+        return Fraction(Decimal(str(value)))
+
+
+def _coerce_fraction(value: GuardScalar) -> Fraction:
+    return to_rational(value)
 
 
 def guard_fraction(numerator: GuardScalar, denominator: GuardScalar = 1) -> Fraction:
@@ -62,4 +69,5 @@ __all__ = [
     "guard_fraction",
     "guard_sum",
     "is_guard_zero",
+    "to_rational",
 ]
