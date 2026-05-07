@@ -9,7 +9,7 @@ around every public derivation entrypoint.
 """
 
 from shbt.core import derivation_api as _derivation_api
-from shbt.core.holographic_error_stabilizer import stabilize_boundary, stabilize_classmethods
+from shbt.core.rigidity_kernel import stabilize_boundary, stabilize_classmethods
 
 
 EvolutionaryEngine = stabilize_classmethods(_derivation_api.UniverseFactory)
