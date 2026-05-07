@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from shbt.config_loader import DEFAULT_CONFIG_LOADER
-from shbt.core.bootstrap import apply_runtime_constants_patch, build_zero_anchor_bootstrap
+from shbt.core.bootstrap import apply_runtime_constants_patch, build_zero_anchor_bootstrap, discover_stable_kernel_from_vacuum
 
 
 @dataclass(frozen=True)
@@ -153,10 +153,25 @@ _BOOTSTRAP_QUARK_FIXED_POINT_INDEX = _coerce_int(_MODEL_CONFIG, "quark_fixed_poi
 _BOOTSTRAP_LEPTON_LEVEL = _BOOTSTRAP_PARENT_LEVEL // (2 * _BOOTSTRAP_LEPTON_FIXED_POINT_INDEX)
 _BOOTSTRAP_QUARK_LEVEL = _BOOTSTRAP_PARENT_LEVEL // (3 * _BOOTSTRAP_QUARK_FIXED_POINT_INDEX)
 _BOOTSTRAP_GENERATION_COUNT = _coerce_int(_MODEL_CONFIG, "g_sm") if "g_sm" in _MODEL_CONFIG else 15
+ZERO_ANCHOR_STABLE_KERNEL = discover_stable_kernel_from_vacuum(
+    gauge_level=_BOOTSTRAP_QUARK_LEVEL,
+    generation_count=_BOOTSTRAP_GENERATION_COUNT,
+)
+if ZERO_ANCHOR_STABLE_KERNEL.branch != (
+    _BOOTSTRAP_LEPTON_LEVEL,
+    _BOOTSTRAP_QUARK_LEVEL,
+    _BOOTSTRAP_PARENT_LEVEL,
+):
+    raise RuntimeError(
+        "Configuration benchmark branch no longer matches the geometry-discovered stable kernel: "
+        f"expected {(_BOOTSTRAP_LEPTON_LEVEL, _BOOTSTRAP_QUARK_LEVEL, _BOOTSTRAP_PARENT_LEVEL)}, "
+        f"received {ZERO_ANCHOR_STABLE_KERNEL.branch}."
+    )
+BOOTSTRAP_STABLE_KERNEL = ZERO_ANCHOR_STABLE_KERNEL
 ZERO_ANCHOR_BOOTSTRAP = build_zero_anchor_bootstrap(
-    lepton_level=_BOOTSTRAP_LEPTON_LEVEL,
-    quark_level=_BOOTSTRAP_QUARK_LEVEL,
-    parent_level=_BOOTSTRAP_PARENT_LEVEL,
+    lepton_level=ZERO_ANCHOR_STABLE_KERNEL.branch[0],
+    quark_level=ZERO_ANCHOR_STABLE_KERNEL.branch[1],
+    parent_level=ZERO_ANCHOR_STABLE_KERNEL.branch[2],
     generation_count=_BOOTSTRAP_GENERATION_COUNT,
 )
 BOOTSTRAP_EIGENVALUE_SEARCH = ZERO_ANCHOR_BOOTSTRAP.search
@@ -655,7 +670,6 @@ KAPPA_STABILITY_SWEEP_FILENAME = "kappa_stability_sweep.tex"
 SVD_STABILITY_AUDIT_TABLE_FILENAME = "svd_stability_audit.tex"
 PHYSICS_CONSTANTS_FILENAME = "physics_constants.tex"
 BENCHMARK_DIAGNOSTICS_FILENAME = "benchmark_diagnostics.json"
-BENCHMARK_MANIFEST_FILENAME = "benchmark_manifest.json"
 TRANSPORT_COVARIANCE_DIAGNOSTICS_FILENAME = "transport_covariance_diagnostics.json"
 SUPPLEMENTARY_IH_SINGULAR_VALUE_SPECTRUM_DATA_FILENAME = "supplementary_ih_singular_value_spectrum.csv"
 AUDIT_STATEMENT_FILENAME = "audit_statement.txt"
