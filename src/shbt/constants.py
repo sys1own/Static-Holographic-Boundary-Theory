@@ -523,10 +523,10 @@ def _validate_benchmark_tier_metadata(
             # strict benchmark tier may be exported either as a geometric
             # emergence residue or as a topological extraction from the same
             # branch-fixed closure.
-            tier_relaxations = ("Geometric Emergence", "Topological Extraction")
+            allowed_ansatz = ("Geometric Emergence", "Topological Extraction")
             for metadata_path in constant.legacy_metadata_paths:
                 allowed_legacy_classifications = tuple(
-                    dict.fromkeys((*constant.allowed_legacy_classifications, *tier_relaxations))
+                    dict.fromkeys((*constant.allowed_legacy_classifications, *allowed_ansatz))
                 )
                 classification = legacy_classifications.get(metadata_path)
                 if classification is None:
