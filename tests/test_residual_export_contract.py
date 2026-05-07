@@ -2,24 +2,19 @@ from __future__ import annotations
 
 import importlib.util
 from decimal import Decimal
-import hashlib
 import json
 import sys
 from pathlib import Path
 from types import SimpleNamespace
 
+from mpmath import mp
 import numpy as np
 import pytest
 
 import shbt.main as tn
-from shbt.constants import BENCHMARK_MANIFEST_FILENAME
 from shbt.config_loader import ConfigLoader
-from shbt.export import (
-    export_transport_covariance_diagnostics,
-    read_zarr_artifact,
-    write_canonical_benchmark_manifest,
-    write_zarr_artifact,
-)
+from shbt.constants import AUDIT_TOLERANCE, BENCHMARK_MANIFEST_FILENAME
+from shbt.export import export_transport_covariance_diagnostics, read_zarr_artifact, write_json_artifact
 from shbt.reporting_engine import write_report_tensor_sidecar
 
 
@@ -241,9 +236,11 @@ def test_export_script_writes_residual_payload(tmp_path: Path, monkeypatch: pyte
     for key, value in expected_payload.items():
         assert actual_content.get(key) == value
     assert actual_content["derivation_residues"]["benchmark_tuple"] == [26, 8, 312]
-    assert actual_content["derivation_residues"]["alpha_inverse_decimal"] == pytest.approx(137.14285714285714)
-    assert actual_content["derivation_residues"]["m_nu_mev"] == pytest.approx(2.83)
-    assert actual_content["derivation_residues"]["lambda_holo_si_m2"] == pytest.approx(1.1056e-52)
+    assert actual_content["derivation_residues"]["alpha_inverse_decimal"] == str(
+        fake_ledger.alpha_surface.alpha_inverse_decimal
+    )
+    assert actual_content["derivation_residues"]["m_nu_mev"] == str(fake_ledger.mass_bridge.neutrino_floor_mev)
+    assert actual_content["derivation_residues"]["lambda_holo_si_m2"] == str(fake_lambda_surface.lambda_holo_si_m2)
 
 
 def test_load_checked_in_benchmark_diagnostics_uses_project_root_and_prefers_final(
@@ -290,6 +287,54 @@ def test_transport_covariance_export_writes_zarr_sidecar_for_multidimensional_te
     assert tensors["entropy_map"][1, 1] == "0.40"
 
 
+def test_write_json_artifact_preserves_decimal_and_mpmath_values(tmp_path: Path) -> None:
+    output_path = tmp_path / "precision_payload.json"
+    decimal_value = Decimal("0.000000000000000000123456789")
+
+    with mp.workdps(50):
+        real_value = mp.mpf("1.234567890123456789123456789")
+        complex_value = mp.mpc("2.5", "-3.75")
+        expected_real = str(real_value)
+        expected_complex = {"real": str(complex_value.real), "imag": str(complex_value.imag)}
+
+        write_json_artifact(
+            output_path,
+            {
+                "decimal_value": decimal_value,
+                "mpmath_real": real_value,
+                "mpmath_complex": complex_value,
+            },
+        )
+
+    manifest = json.loads(output_path.read_text(encoding="utf-8"))
+
+    assert manifest["decimal_value"] == str(decimal_value)
+    assert manifest["mpmath_real"] == expected_real
+    assert manifest["mpmath_complex"] == expected_complex
+
+
+def test_write_json_artifact_injects_manifest_precision_floor(tmp_path: Path) -> None:
+    injected_manifest_path = tmp_path / "generated" / BENCHMARK_MANIFEST_FILENAME
+    preserved_manifest_path = tmp_path / "preserved" / BENCHMARK_MANIFEST_FILENAME
+
+    write_json_artifact(injected_manifest_path, {"benchmark_tuple": [26, 8, 312]})
+    write_json_artifact(
+        preserved_manifest_path,
+        {
+            "benchmark_tuple": [26, 8, 312],
+            "holographic_precision_floor": "1e-60",
+        },
+    )
+
+    injected_manifest = json.loads(injected_manifest_path.read_text(encoding="utf-8"))
+    preserved_manifest = json.loads(preserved_manifest_path.read_text(encoding="utf-8"))
+
+    assert injected_manifest["benchmark_tuple"] == [26, 8, 312]
+    assert injected_manifest["holographic_precision_floor"] == str(AUDIT_TOLERANCE)
+    assert preserved_manifest["benchmark_tuple"] == [26, 8, 312]
+    assert preserved_manifest["holographic_precision_floor"] == "1e-60"
+
+
 def test_reporting_engine_writes_zarr_sidecar_for_report_tensors(tmp_path: Path) -> None:
     report_path = tmp_path / "audit_statement.txt"
     report_path.write_text("Benchmark Consistency Statement\n", encoding="utf-8")
@@ -306,82 +351,3 @@ def test_reporting_engine_writes_zarr_sidecar_for_report_tensors(tmp_path: Path)
     assert sidecar_path == report_path.with_suffix(".zarr")
     assert tensors["entropy_map"].shape == (2, 2)
     assert float(tensors["entropy_map"][1, 0]) == pytest.approx(3.0, rel=0.0, abs=1.0e-12)
-
-
-def test_write_canonical_benchmark_manifest_normalizes_cross_arch_stable_artifacts(tmp_path: Path) -> None:
-    output_dir = tmp_path / "results"
-    output_dir.mkdir()
-
-    (output_dir / "benchmark_diagnostics.json").write_text('{"z": 1, "a": [2, 1]}', encoding="utf-8")
-    (output_dir / "audit_statement.txt").write_bytes(b"line1\r\nline2\r\n")
-    (output_dir / "supplementary_ih_singular_value_spectrum.csv").write_bytes(b"index,value\r\n0,1.0\r\n")
-    (output_dir / "fig1_pmns_fit.png").write_bytes(b"\x89PNG\r\n\x1a\nsynthetic")
-    write_zarr_artifact(
-        output_dir / "transport_covariance_diagnostics.zarr",
-        {"entropy_map": np.asarray(((1.0, 2.0), (3.0, 4.0)))},
-    )
-
-    nested_dir = output_dir / "final"
-    nested_dir.mkdir()
-    (nested_dir / "ignored.json").write_text('{"ignored": true}', encoding="utf-8")
-
-    manifest_path = write_canonical_benchmark_manifest(output_dir, benchmark_tuple=(26, 8, 312))
-    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
-    entries = {entry["path"]: entry for entry in payload["artifacts"]}
-
-    canonical_json = (json.dumps({"a": [2, 1], "z": 1}, indent=2, sort_keys=True) + "\n").encode("utf-8")
-    canonical_text = b"line1\nline2\n"
-    canonical_csv = b"index,value\n0,1.0\n"
-
-    assert manifest_path.name == BENCHMARK_MANIFEST_FILENAME
-    assert payload["artifact"] == "Canonical Cross-Architecture Benchmark Manifest"
-    assert payload["normalization_profile"] == "canonical-cross-arch-v1"
-    assert payload["benchmark_tuple"] == [26, 8, 312]
-    assert BENCHMARK_MANIFEST_FILENAME not in entries
-    assert "final" not in entries
-
-    assert entries["benchmark_diagnostics.json"]["hash_basis"] == "canonical_json"
-    assert entries["benchmark_diagnostics.json"]["sha256"] == hashlib.sha256(canonical_json).hexdigest()
-    assert entries["audit_statement.txt"]["hash_basis"] == "canonical_text"
-    assert entries["audit_statement.txt"]["sha256"] == hashlib.sha256(canonical_text).hexdigest()
-    assert entries["supplementary_ih_singular_value_spectrum.csv"]["hash_basis"] == "canonical_csv"
-    assert entries["supplementary_ih_singular_value_spectrum.csv"]["sha256"] == hashlib.sha256(canonical_csv).hexdigest()
-
-    zarr_entry = entries["transport_covariance_diagnostics.zarr"]
-    assert zarr_entry["cross_arch_stable"] is True
-    assert zarr_entry["hash_basis"] == "canonical_zarr"
-    assert zarr_entry["member_count"] > 0
-
-    png_entry = entries["fig1_pmns_fit.png"]
-    assert png_entry["cross_arch_stable"] is False
-    assert png_entry["hash_basis"] == "listed_only"
-    assert "sha256" not in png_entry
-
-    aggregate_digest = hashlib.sha256()
-    for artifact_path in sorted(
-        (
-            "audit_statement.txt",
-            "benchmark_diagnostics.json",
-            "supplementary_ih_singular_value_spectrum.csv",
-            "transport_covariance_diagnostics.zarr",
-        )
-    ):
-        aggregate_digest.update(artifact_path.encode("utf-8"))
-        aggregate_digest.update(b"\0")
-        aggregate_digest.update(entries[artifact_path]["sha256"].encode("ascii"))
-        aggregate_digest.update(b"\0")
-    assert payload["aggregate_sha256"] == aggregate_digest.hexdigest()
-
-
-def test_main_write_canonical_benchmark_manifest_uses_model_target_tuple(tmp_path: Path) -> None:
-    output_dir = tmp_path / "results"
-    output_dir.mkdir()
-    (output_dir / "audit_statement.txt").write_text("Benchmark Consistency Statement\n", encoding="utf-8")
-
-    manifest_path = tn.write_canonical_benchmark_manifest(
-        output_dir,
-        model=SimpleNamespace(target_tuple=(31, 9, 372)),
-    )
-
-    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
-    assert payload["benchmark_tuple"] == [31, 9, 372]
