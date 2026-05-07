@@ -96,7 +96,7 @@ class _SolverStiffnessTimeout(TimeoutError):
 
 
 SHBT_UNIVERSAL_AUDIT_BANNER = "Static Holographic Boundary Theory: Universal Source Code v1.0"
-TARGET_AUDIT_SECTORS: tuple[str, ...] = ("gravity", "cosmology", "flavor", "rigidity")
+TARGET_AUDIT_SECTORS: tuple[str, ...] = ("gravity", "cosmology", "flavor", "rigidity", "complexity")
 SECTOR_AUDIT_MODULES: dict[str, tuple[str, ...]] = {
     "gravity": (
         "shbt.core.noether_bridge",
@@ -114,6 +114,9 @@ SECTOR_AUDIT_MODULES: dict[str, tuple[str, ...]] = {
     "rigidity": (
         "shbt.core.uniqueness_theorem",
         "shbt.core.minimality_proof",
+    ),
+    "complexity": (
+        "shbt.sectors.complexity_sector",
     ),
 }
 
