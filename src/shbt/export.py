@@ -3,6 +3,8 @@ from __future__ import annotations
 import csv
 from dataclasses import asdict, is_dataclass
 from decimal import Decimal
+import hashlib
+import io
 import json
 from pathlib import Path
 import shutil
@@ -10,6 +12,176 @@ from typing import Any, Iterable, Mapping, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
+
+from shbt.constants import BENCHMARK_MANIFEST_FILENAME
+
+
+_CANONICAL_JSON_FILENAMES = frozenset({".zarray", ".zattrs", ".zgroup"})
+_CANONICAL_TEXT_SUFFIXES = frozenset({".md", ".tex", ".txt", ".yaml", ".yml"})
+
+
+def _sha256_hexdigest(payload: bytes) -> str:
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _normalize_text_bytes(payload: bytes) -> bytes:
+    return payload.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+
+
+def _canonical_json_bytes(payload: bytes) -> bytes:
+    normalized_payload = json.loads(_normalize_text_bytes(payload).decode("utf-8"))
+    return (json.dumps(normalized_payload, indent=2, sort_keys=True, default=_normalize_json_value) + "\n").encode(
+        "utf-8"
+    )
+
+
+def _canonical_csv_bytes(payload: bytes) -> bytes:
+    normalized_text = _normalize_text_bytes(payload).decode("utf-8")
+    source = io.StringIO(normalized_text)
+    destination = io.StringIO()
+    writer = csv.writer(destination, lineterminator="\n")
+    for row in csv.reader(source):
+        writer.writerow(row)
+    return destination.getvalue().encode("utf-8")
+
+
+def _canonical_zarr_bytes(output_path: Path) -> tuple[bytes, int, int]:
+    manifest_bytes = bytearray()
+    member_count = 0
+    size_bytes = 0
+
+    for child in sorted(output_path.rglob("*"), key=lambda path: path.relative_to(output_path).as_posix()):
+        if child.is_dir():
+            continue
+        member_count += 1
+        raw_bytes = child.read_bytes()
+        size_bytes += len(raw_bytes)
+        if child.name in _CANONICAL_JSON_FILENAMES:
+            canonical_bytes = _canonical_json_bytes(raw_bytes)
+        else:
+            canonical_bytes = raw_bytes
+        relative_path = child.relative_to(output_path).as_posix().encode("utf-8")
+        manifest_bytes.extend(relative_path)
+        manifest_bytes.extend(b"\0")
+        manifest_bytes.extend(str(len(canonical_bytes)).encode("ascii"))
+        manifest_bytes.extend(b"\0")
+        manifest_bytes.extend(canonical_bytes)
+        manifest_bytes.extend(b"\0")
+
+    return bytes(manifest_bytes), member_count, size_bytes
+
+
+def _build_canonical_manifest_entry(output_path: Path, *, root_dir: Path) -> dict[str, Any]:
+    relative_path = output_path.relative_to(root_dir).as_posix()
+    if output_path.is_dir():
+        if output_path.suffix != ".zarr":
+            raise ValueError(f"Unsupported manifest directory artifact: {output_path}")
+        canonical_bytes, member_count, size_bytes = _canonical_zarr_bytes(output_path)
+        return {
+            "path": relative_path,
+            "kind": "zarr",
+            "cross_arch_stable": True,
+            "hash_basis": "canonical_zarr",
+            "canonical_size_bytes": int(len(canonical_bytes)),
+            "member_count": int(member_count),
+            "size_bytes": int(size_bytes),
+            "sha256": _sha256_hexdigest(canonical_bytes),
+        }
+
+    suffix = output_path.suffix.lower()
+    raw_bytes = output_path.read_bytes()
+    if suffix == ".json":
+        canonical_bytes = _canonical_json_bytes(raw_bytes)
+        return {
+            "path": relative_path,
+            "kind": "json",
+            "cross_arch_stable": True,
+            "hash_basis": "canonical_json",
+            "canonical_size_bytes": int(len(canonical_bytes)),
+            "sha256": _sha256_hexdigest(canonical_bytes),
+        }
+    if suffix == ".csv":
+        canonical_bytes = _canonical_csv_bytes(raw_bytes)
+        return {
+            "path": relative_path,
+            "kind": "csv",
+            "cross_arch_stable": True,
+            "hash_basis": "canonical_csv",
+            "canonical_size_bytes": int(len(canonical_bytes)),
+            "sha256": _sha256_hexdigest(canonical_bytes),
+        }
+    if suffix in _CANONICAL_TEXT_SUFFIXES:
+        canonical_bytes = _normalize_text_bytes(raw_bytes)
+        return {
+            "path": relative_path,
+            "kind": "text",
+            "cross_arch_stable": True,
+            "hash_basis": "canonical_text",
+            "canonical_size_bytes": int(len(canonical_bytes)),
+            "sha256": _sha256_hexdigest(canonical_bytes),
+        }
+    return {
+        "path": relative_path,
+        "kind": "binary" if suffix else "artifact",
+        "cross_arch_stable": False,
+        "hash_basis": "listed_only",
+    }
+
+
+def build_canonical_benchmark_manifest(
+    output_dir: Path,
+    *,
+    benchmark_tuple: Sequence[int] | None = None,
+    exclude_names: Iterable[str] = (),
+) -> dict[str, Any]:
+    resolved_output_dir = Path(output_dir)
+    if not resolved_output_dir.is_dir():
+        raise FileNotFoundError(f"Benchmark output directory not found: {resolved_output_dir}")
+
+    excluded = {BENCHMARK_MANIFEST_FILENAME, *(str(name) for name in exclude_names)}
+    artifact_entries = [
+        _build_canonical_manifest_entry(candidate, root_dir=resolved_output_dir)
+        for candidate in sorted(resolved_output_dir.iterdir(), key=lambda path: path.name)
+        if candidate.name not in excluded and (candidate.is_file() or candidate.suffix == ".zarr")
+    ]
+
+    stable_entries = [entry for entry in artifact_entries if entry["cross_arch_stable"]]
+    aggregate_digest = hashlib.sha256()
+    for entry in stable_entries:
+        aggregate_digest.update(entry["path"].encode("utf-8"))
+        aggregate_digest.update(b"\0")
+        aggregate_digest.update(str(entry["sha256"]).encode("ascii"))
+        aggregate_digest.update(b"\0")
+
+    payload: dict[str, Any] = {
+        "artifact": "Canonical Cross-Architecture Benchmark Manifest",
+        "manifest_version": 1,
+        "normalization_profile": "canonical-cross-arch-v1",
+        "artifact_count": int(len(artifact_entries)),
+        "cross_arch_artifact_count": int(len(stable_entries)),
+        "aggregate_sha256": aggregate_digest.hexdigest(),
+        "artifacts": artifact_entries,
+    }
+    if benchmark_tuple is not None:
+        payload["benchmark_tuple"] = [int(value) for value in benchmark_tuple]
+    return payload
+
+
+def write_canonical_benchmark_manifest(
+    output_dir: Path,
+    *,
+    benchmark_tuple: Sequence[int] | None = None,
+    filename: str = BENCHMARK_MANIFEST_FILENAME,
+    exclude_names: Iterable[str] = (),
+) -> Path:
+    resolved_output_dir = Path(output_dir)
+    resolved_output_dir.mkdir(parents=True, exist_ok=True)
+    payload = build_canonical_benchmark_manifest(
+        resolved_output_dir,
+        benchmark_tuple=benchmark_tuple,
+        exclude_names={filename, *exclude_names},
+    )
+    return write_json_artifact(resolved_output_dir / filename, payload)
 
 
 def _normalize_json_value(value: Any) -> Any:
@@ -311,11 +483,13 @@ def export_transport_covariance_diagnostics(output_path: Path, transport_covaria
 
 
 __all__ = [
+    "build_canonical_benchmark_manifest",
     "collect_multidimensional_tensors",
     "export_dm_fingerprint_figure",
     "export_matrix_spectrum_csv",
     "export_transport_covariance_diagnostics",
     "read_zarr_artifact",
+    "write_canonical_benchmark_manifest",
     "write_tensor_artifact",
     "write_csv_artifact",
     "write_json_artifact",
