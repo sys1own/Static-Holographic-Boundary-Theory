@@ -25,6 +25,7 @@ from shbt.core.rigidity_landscape import (
     DEFAULT_QUARK_HALF_WIDTH,
     EXPECTED_BENCHMARK,
     MIN_COLOR_CEILING,
+    PRECISION_GUARD,
     RigidityLandscapeScan,
     RigidityPoint,
     SymmetrySearcher,
@@ -40,6 +41,10 @@ DEFAULT_OUTPUT_DIR = Path("results")
 DEFAULT_FIGURE_FILENAME = "rigidity_moat.png"
 DEFAULT_DATA_FILENAME = "rigidity_moat.json"
 DEFAULT_DPI = 220
+
+
+def _float_grid(grid: np.ndarray) -> list[object]:
+    return np.asarray(grid, dtype=float).tolist()
 
 
 def _benchmark_plane(scan: RigidityLandscapeScan) -> np.ndarray:
@@ -202,6 +207,8 @@ def write_rigidity_landscape_json(scan: RigidityLandscapeScan, output_path: Path
         "lepton_levels": list(scan.lepton_levels),
         "quark_levels": list(scan.quark_levels),
         "parent_levels": list(scan.parent_levels),
+        "precision_guard_bits": PRECISION_GUARD,
+        "residue_representation": "fractions.Fraction quantized to fixed-point lattice",
         "framing_residue_definition": {
             "mathcal_E": "max(|K/(2 k_l) - Z|, |K/(3 k_q) - Z|)",
             "reported_plane": "benchmark parent plane K=312",
@@ -210,13 +217,13 @@ def write_rigidity_landscape_json(scan: RigidityLandscapeScan, output_path: Path
         "benchmark_point": _point_payload(scan.benchmark_point),
         "nearest_detuned_point": _point_payload(scan.nearest_detuned_point),
         "maximum_residue_point": _point_payload(scan.maximum_residue_point),
-        "delta_fr_grid": scan.delta_fr_grid.tolist(),
+        "delta_fr_grid": _float_grid(scan.delta_fr_grid),
         "topological_closure_score_grid": scan.topological_closure_score_grid.tolist(),
         "topological_closure_survivors": [list(point.coordinates) for point in scan.stable_fixed_points],
         "delta_fr_grid_at_benchmark_parent": _benchmark_plane(scan).tolist(),
         "points": [_point_payload(point) for point in scan.points],
     }
-    resolved_output_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    resolved_output_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
     return resolved_output_path
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
