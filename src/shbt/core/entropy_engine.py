@@ -1,142 +1,98 @@
 from __future__ import annotations
 
-"""Entropy engine for bulk-to-boundary feedback time evolution.
+r"""Dynamic entropy engine for computational time emergence.
 
-This module packages three linked SHBT statements into a single deterministic
-engine:
+The SHBT benchmark branch fixes a static boundary configuration, but the visible
+Arrow of Time is taken here to be the ordered computational overhead required to
+resolve that boundary into its effective bulk image. The engine therefore turns
+static loading data into an iterative solver with explicit bulk-to-boundary
+feedback.
 
-- Markov collars factorize the observer from the external boundary by routing
-  correlations through an ordered collar sequence on the holographic lattice.
-- Entanglement entropy grows as that lattice is resolved cell by cell under a
-  bulk-to-boundary feedback rule.
-- The arrow of time is not treated as a primitive coordinate; it is the
-  sequential delta-update index of the holographic transport resolution.
+Let ``\sigma = (c_1, \ldots, c_n)`` be the dominant holographic loading order on
+the benchmark manifold slice. If ``\rho_B`` and ``\rho_E`` are the normalized
+boundary-loading and entanglement densities, define the cumulative bulk state
+before iteration ``n`` by
+
+    \Omega_{n-1}(i,j) = \sum_{m < n} \delta_{c_m,(i,j)} \frac{\Delta S_m}{N}.
+
+For a candidate coordinate ``c`` in the unresolved set, the bulk-to-boundary
+feedback signal is
+
+    F_{n-1}(c) = \sum_{i,j} \frac{\Omega_{n-1}(i,j)}{1 + |i-c_i| + |j-c_j|}.
+
+The next resolution step uses the feedback-dressed weights
+
+    w_B(c) = \rho_B(c) [1 + \lambda F_{n-1}(c)],
+    w_E(c) = \rho_E(c) [1 + \lambda F_{n-1}(c)],
+
+with non-negative feedback coupling ``\lambda``. If ``R_B`` and ``R_E`` denote
+remaining unresolved boundary and bulk entropy budgets, then the generated
+bit-residues are
+
+    \Delta B_n = R_B \frac{w_B(c_n)}{\sum_{c \in U_n} w_B(c)},
+    \Delta S_n = R_E \frac{w_E(c_n)}{\sum_{c \in U_n} w_E(c)}.
+
+Time is not inserted as an external coordinate. It is the entropic overhead
+required by self-resolution:
+
+    \Delta T_n = \frac{\Delta S_n}{N}.
+
+To tie this directly to the benchmark ``26D \to 4D`` collapse, define the
+sequential projection state
+
+    D_n = 26 - (26 - 4) \sum_{m \le n} \Delta T_m,
+
+so every positive update obeys
+
+    \Delta D_n = D_{n-1} - D_n = 22 \Delta T_n > 0.
+
+The Arrow of Time is therefore the ordered sequence of positive projection
+updates, while the feedback functional closes a causal loop from the emergent
+bulk entropy state back into the next boundary-resolution step.
 """
 
 from dataclasses import dataclass
 from decimal import Decimal, localcontext
 from fractions import Fraction
-import math
-from typing import Final
+from pathlib import Path
+from typing import Final, Sequence
 
-from shbt.constants import HOLOGRAPHIC_BITS, LEPTON_LEVEL, QUARK_LEVEL
+if __package__ in (None, ""):
+    import sys
+
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent if parent.name == "src" else parent / "src"
+        if (candidate / "shbt").is_dir():
+            sys.path.insert(0, str(candidate))
+            break
+
+from shbt.constants import HOLOGRAPHIC_BITS, LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
 from shbt.core.temporal_emergence_kernel import (
     DEFAULT_PRECISION as TEMPORAL_DEFAULT_PRECISION,
     ManifoldSliceLoadingMap,
+    derive_temporal_increment,
     map_manifold_slice_bit_loading_density,
 )
+from shbt.core.topological_kernel import sequence_bit_loading
 
 
-DEFAULT_PRECISION = max(int(TEMPORAL_DEFAULT_PRECISION), 64)
-_GUARD_DIGITS: Final[int] = 16
-_RESIDUAL_TOLERANCE: Final[Decimal] = Decimal("1e-30")
-_TIME_STATEMENT: Final[str] = "Time is the sequential delta update index of holographic transport resolution."
-
-DecimalVector = tuple[Decimal, ...]
+Coordinate = tuple[int, int]
+Branch = tuple[int, int, int]
 DecimalMatrix = tuple[tuple[Decimal, ...], ...]
-BoundaryBasis = tuple[tuple[int, int], ...]
-CollarCoordinate = tuple[int, int]
 
-
-@dataclass(frozen=True)
-class MarkovCollar:
-    manifold_slice: ManifoldSliceLoadingMap
-    collar_sequence: tuple[CollarCoordinate, ...]
-    collar_weights: DecimalVector
-    observer_marginal: DecimalVector
-    boundary_marginal: DecimalVector
-    observer_conditionals: tuple[DecimalVector, ...]
-    boundary_conditionals: tuple[DecimalVector, ...]
-    factorized_joint_state: DecimalMatrix
-    factorization_residual: Decimal
-    observer_boundary_mutual_information_bits: Decimal
-    conditional_mutual_information_bits: Decimal
-
-    @property
-    def observer_basis(self) -> tuple[int, ...]:
-        return self.manifold_slice.lepton_charge_labels
-
-    @property
-    def boundary_basis(self) -> BoundaryBasis:
-        return self.manifold_slice.quark_weight_labels
-
-    @property
-    def loading_density(self) -> DecimalMatrix:
-        return self.manifold_slice.loading_density
-
-    @property
-    def entanglement_density(self) -> DecimalMatrix:
-        return self.manifold_slice.entanglement_density
-
-    @property
-    def factorization_verified(self) -> bool:
-        return self.factorization_residual <= _RESIDUAL_TOLERANCE and self.conditional_mutual_information_bits == 0
-
-
-@dataclass(frozen=True)
-class EntanglementEntropyStep:
-    update_index: int
-    arrow_of_time_index: Decimal
-    collar_coordinate: CollarCoordinate
-    observer_state: int
-    boundary_state: tuple[int, int]
-    base_loading_weight: Decimal
-    base_entropy_weight: Decimal
-    resolved_boundary_fraction_before: Decimal
-    resolved_boundary_fraction_after: Decimal
-    feedback_multiplier: Decimal
-    feedback_weight: Decimal
-    entropy_delta_fraction: Decimal
-    cumulative_entanglement_fraction: Decimal
-    entanglement_entropy_bits: Decimal
-
-
-@dataclass(frozen=True)
-class EntropyFeedbackAudit:
-    markov_collar: MarkovCollar
-    entropy_budget_bits: Decimal
-    feedback_weight_profile: DecimalVector
-    steps: tuple[EntanglementEntropyStep, ...]
-
-    @property
-    def final_entanglement_entropy_bits(self) -> Decimal:
-        if not self.steps:
-            return Decimal("0")
-        return self.steps[-1].entanglement_entropy_bits
-
-    @property
-    def monotonic_entanglement_growth(self) -> bool:
-        if not self.steps:
-            return False
-        return bool(
-            self.steps[-1].cumulative_entanglement_fraction == Decimal("1")
-            and all(step.entropy_delta_fraction > 0 for step in self.steps)
-            and all(
-                self.steps[index].cumulative_entanglement_fraction
-                >= self.steps[index - 1].cumulative_entanglement_fraction
-                for index in range(1, len(self.steps))
-            )
-        )
-
-    @property
-    def arrow_of_time_reframed(self) -> bool:
-        return bool(
-            self.steps
-            and all(step.arrow_of_time_index == Decimal(step.update_index) for step in self.steps)
-        )
-
-    @property
-    def transport_resolution_closed(self) -> bool:
-        return bool(
-            self.steps
-            and self.steps[-1].resolved_boundary_fraction_after == Decimal("1")
-            and self.steps[-1].cumulative_entanglement_fraction == Decimal("1")
-            and self.markov_collar.factorization_verified
-        )
-
-    @property
-    def statement(self) -> str:
-        return _TIME_STATEMENT
+DEFAULT_PRECISION: Final[int] = max(int(TEMPORAL_DEFAULT_PRECISION), 64)
+DEFAULT_FEEDBACK_COUPLING: Final[Decimal] = Decimal("1")
+SOURCE_PROJECTION_DIMENSION: Final[int] = 26
+TARGET_PROJECTION_DIMENSION: Final[int] = 4
+_PROJECTION_GAP: Final[Decimal] = Decimal(str(SOURCE_PROJECTION_DIMENSION - TARGET_PROJECTION_DIMENSION))
+_GUARD_DIGITS: Final[int] = 16
+_RESOLUTION_TOLERANCE: Final[Decimal] = Decimal("1e-30")
+_IDENTITY_TOLERANCE: Final[Decimal] = Decimal("1e-27")
+BENCHMARK_BRANCH: Final[Branch] = (
+    int(LEPTON_LEVEL),
+    int(QUARK_LEVEL),
+    int(PARENT_LEVEL),
+)
 
 
 def _decimal(value: Decimal | Fraction | float | int | str) -> Decimal:
@@ -147,324 +103,428 @@ def _decimal(value: Decimal | Fraction | float | int | str) -> Decimal:
     return Decimal(str(value))
 
 
-def _decimal_ln(value: Decimal) -> Decimal:
-    try:
-        return value.ln()
-    except AttributeError:
-        return Decimal(str(math.log(float(value))))
+def _zero_matrix(shape: tuple[int, int]) -> DecimalMatrix:
+    rows, columns = shape
+    return tuple(tuple(Decimal("0") for _ in range(columns)) for _ in range(rows))
 
 
-def _decimal_log2(value: Decimal) -> Decimal:
-    if value <= 0:
-        raise ValueError("Logarithms require positive input.")
-    return _decimal_ln(value) / _decimal_ln(Decimal("2"))
+def _matrix_shape(matrix: DecimalMatrix) -> tuple[int, int]:
+    return (len(matrix), 0 if not matrix else len(matrix[0]))
 
 
-def _vector_total(vector: DecimalVector) -> Decimal:
-    with localcontext() as context:
-        context.prec = DEFAULT_PRECISION + _GUARD_DIGITS
-        return sum(vector, Decimal("0"))
+def _matrix_update(matrix: DecimalMatrix, coordinate: Coordinate, delta: Decimal) -> DecimalMatrix:
+    row_index, column_index = coordinate
+    updated_rows: list[tuple[Decimal, ...]] = []
+    for current_row_index, row in enumerate(matrix):
+        if current_row_index != row_index:
+            updated_rows.append(row)
+            continue
+        updated_row = list(row)
+        updated_row[column_index] += delta
+        updated_rows.append(tuple(updated_row))
+    return tuple(updated_rows)
 
 
-def _matrix_total(matrix: DecimalMatrix) -> Decimal:
-    with localcontext() as context:
-        context.prec = DEFAULT_PRECISION + _GUARD_DIGITS
-        return sum((sum(row, Decimal("0")) for row in matrix), Decimal("0"))
+def _manhattan_distance(left: Coordinate, right: Coordinate) -> int:
+    return abs(int(left[0]) - int(right[0])) + abs(int(left[1]) - int(right[1]))
 
 
-def _normalize_vector(vector: DecimalVector, *, precision: int = DEFAULT_PRECISION) -> DecimalVector:
-    total = _vector_total(vector)
-    if total <= 0:
-        raise ValueError("Vector total must be positive for normalization.")
-    with localcontext() as context:
-        context.prec = max(int(precision), DEFAULT_PRECISION) + _GUARD_DIGITS
-        normalized = [value / total for value in vector]
-        normalized[-1] += Decimal("1") - sum(normalized, Decimal("0"))
-        return tuple(normalized)
-
-
-def _row_sums(matrix: DecimalMatrix) -> DecimalVector:
-    return tuple(sum(row, Decimal("0")) for row in matrix)
-
-
-def _column_sums(matrix: DecimalMatrix) -> DecimalVector:
-    if not matrix:
-        return ()
-    return tuple(sum((row[column_index] for row in matrix), Decimal("0")) for column_index in range(len(matrix[0])))
-
-
-def _one_hot(size: int, index: int) -> DecimalVector:
-    return tuple(Decimal("1") if position == index else Decimal("0") for position in range(size))
-
-
-def _sequence_weights(matrix: DecimalMatrix, sequence: tuple[CollarCoordinate, ...]) -> DecimalVector:
-    return tuple(matrix[row_index][column_index] for row_index, column_index in sequence)
-
-
-def _factorize_through_collar(
+def _feedback_signal(
     *,
-    observer_size: int,
-    boundary_size: int,
-    collar_weights: DecimalVector,
-    observer_conditionals: tuple[DecimalVector, ...],
-    boundary_conditionals: tuple[DecimalVector, ...],
-    precision: int = DEFAULT_PRECISION,
-) -> DecimalMatrix:
-    with localcontext() as context:
-        context.prec = max(int(precision), DEFAULT_PRECISION) + _GUARD_DIGITS
-        factorized = [[Decimal("0") for _ in range(boundary_size)] for _ in range(observer_size)]
-        for collar_weight, observer_vector, boundary_vector in zip(
-            collar_weights,
-            observer_conditionals,
-            boundary_conditionals,
-            strict=True,
-        ):
-            for observer_index in range(observer_size):
-                for boundary_index in range(boundary_size):
-                    factorized[observer_index][boundary_index] += (
-                        collar_weight * observer_vector[observer_index] * boundary_vector[boundary_index]
-                    )
-        return tuple(tuple(value for value in row) for row in factorized)
-
-
-def _matrix_residual(left: DecimalMatrix, right: DecimalMatrix) -> Decimal:
-    with localcontext() as context:
-        context.prec = DEFAULT_PRECISION + _GUARD_DIGITS
-        residual = Decimal("0")
-        for left_row, right_row in zip(left, right, strict=True):
-            for left_value, right_value in zip(left_row, right_row, strict=True):
-                residual += abs(left_value - right_value)
-        return residual
-
-
-def _mutual_information_bits(
-    joint: DecimalMatrix,
-    observer_marginal: DecimalVector,
-    boundary_marginal: DecimalVector,
-    *,
-    precision: int = DEFAULT_PRECISION,
+    bulk_entropy_state: DecimalMatrix,
+    coordinate: Coordinate,
+    precision: int,
 ) -> Decimal:
     with localcontext() as context:
         context.prec = max(int(precision), DEFAULT_PRECISION) + _GUARD_DIGITS
-        information = Decimal("0")
-        for observer_index, row in enumerate(joint):
-            for boundary_index, probability in enumerate(row):
-                if probability <= 0:
+        signal = Decimal("0")
+        for row_index, row in enumerate(bulk_entropy_state):
+            for column_index, state_weight in enumerate(row):
+                if state_weight == 0:
                     continue
-                denominator = observer_marginal[observer_index] * boundary_marginal[boundary_index]
-                if denominator <= 0:
-                    raise ValueError("Marginals must remain positive on the support of the joint state.")
-                information += probability * _decimal_log2(probability / denominator)
-        return information
+                signal += state_weight / Decimal(1 + _manhattan_distance((row_index, column_index), coordinate))
+    return signal
 
 
-def reframe_time_as_update_index(update_index: int) -> Decimal:
-    resolved_index = int(update_index)
-    if resolved_index <= 0:
-        raise ValueError("update_index must be a positive integer.")
-    return Decimal(resolved_index)
+@dataclass(frozen=True)
+class EntropyIteration:
+    iteration_index: int
+    coordinate: Coordinate
+    sequence_rank: int
+    baseline_boundary_share: Decimal
+    adjusted_boundary_share: Decimal
+    baseline_entanglement_share: Decimal
+    adjusted_entanglement_share: Decimal
+    bulk_feedback_signal: Decimal
+    boundary_bit_residue: Decimal
+    bulk_entropy_bit_residue: Decimal
+    temporal_increment: Decimal
+    cumulative_boundary_bit_residue: Decimal
+    cumulative_bulk_entropy_bit_residue: Decimal
+    cumulative_bulk_entropy_fraction: Decimal
+    projected_dimension_before: Decimal
+    projected_dimension_after: Decimal
+    delta_projection_26d_to_4d: Decimal
+    bulk_entropy_state: DecimalMatrix
 
+    @property
+    def feedback_perturbs_boundary_resolution(self) -> bool:
+        return abs(self.adjusted_boundary_share - self.baseline_boundary_share) > _RESOLUTION_TOLERANCE
 
-def build_markov_collar(
-    *,
-    lepton_level: int = LEPTON_LEVEL,
-    quark_level: int = QUARK_LEVEL,
-    precision: int = DEFAULT_PRECISION,
-) -> MarkovCollar:
-    manifold_slice = map_manifold_slice_bit_loading_density(
-        lepton_level=int(lepton_level),
-        quark_level=int(quark_level),
-        precision=precision,
-    )
-    collar_sequence = tuple(manifold_slice.dominant_loading_sequence)
-    collar_weights = _sequence_weights(manifold_slice.loading_density, collar_sequence)
-    observer_marginal = _row_sums(manifold_slice.loading_density)
-    boundary_marginal = _column_sums(manifold_slice.loading_density)
-    observer_conditionals = tuple(
-        _one_hot(len(manifold_slice.lepton_charge_labels), row_index)
-        for row_index, _ in collar_sequence
-    )
-    boundary_conditionals = tuple(
-        _one_hot(len(manifold_slice.quark_weight_labels), column_index)
-        for _, column_index in collar_sequence
-    )
-    factorized_joint_state = _factorize_through_collar(
-        observer_size=len(manifold_slice.lepton_charge_labels),
-        boundary_size=len(manifold_slice.quark_weight_labels),
-        collar_weights=collar_weights,
-        observer_conditionals=observer_conditionals,
-        boundary_conditionals=boundary_conditionals,
-        precision=precision,
-    )
-    factorization_residual = _matrix_residual(manifold_slice.loading_density, factorized_joint_state)
-    mutual_information = _mutual_information_bits(
-        manifold_slice.loading_density,
-        observer_marginal,
-        boundary_marginal,
-        precision=precision,
-    )
-    return MarkovCollar(
-        manifold_slice=manifold_slice,
-        collar_sequence=collar_sequence,
-        collar_weights=collar_weights,
-        observer_marginal=observer_marginal,
-        boundary_marginal=boundary_marginal,
-        observer_conditionals=observer_conditionals,
-        boundary_conditionals=boundary_conditionals,
-        factorized_joint_state=factorized_joint_state,
-        factorization_residual=factorization_residual,
-        observer_boundary_mutual_information_bits=mutual_information,
-        conditional_mutual_information_bits=Decimal("0"),
-    )
+    @property
+    def causal_feedback_active(self) -> bool:
+        return self.bulk_feedback_signal > 0
 
-
-def simulate_entanglement_entropy_growth(
-    *,
-    markov_collar: MarkovCollar | None = None,
-    lepton_level: int = LEPTON_LEVEL,
-    quark_level: int = QUARK_LEVEL,
-    entropy_budget_bits: Decimal | Fraction | float | int | str = HOLOGRAPHIC_BITS,
-    precision: int = DEFAULT_PRECISION,
-) -> EntropyFeedbackAudit:
-    collar = (
-        build_markov_collar(
-            lepton_level=lepton_level,
-            quark_level=quark_level,
-            precision=precision,
+    @property
+    def arrow_of_time_positive(self) -> bool:
+        return bool(
+            self.temporal_increment > 0
+            and self.delta_projection_26d_to_4d > 0
+            and self.projected_dimension_after < self.projected_dimension_before
         )
-        if markov_collar is None
-        else markov_collar
-    )
-    resolved_entropy_budget = _decimal(entropy_budget_bits)
-    if resolved_entropy_budget <= 0:
-        raise ValueError("entropy_budget_bits must be positive.")
 
-    base_entropy_weights = _sequence_weights(collar.entanglement_density, collar.collar_sequence)
-    raw_feedback_weights: list[Decimal] = []
-    resolved_boundary_fraction = Decimal("0")
-    with localcontext() as context:
-        context.prec = max(int(precision), DEFAULT_PRECISION) + _GUARD_DIGITS
-        for loading_weight, entropy_weight in zip(collar.collar_weights, base_entropy_weights, strict=True):
-            feedback_multiplier = Decimal("1") + resolved_boundary_fraction
-            raw_feedback_weights.append(entropy_weight * feedback_multiplier)
-            resolved_boundary_fraction += loading_weight
+    @property
+    def projection_time_identity_holds(self) -> bool:
+        return abs(self.delta_projection_26d_to_4d - (_PROJECTION_GAP * self.temporal_increment)) <= _IDENTITY_TOLERANCE
 
-    feedback_weight_profile = _normalize_vector(tuple(raw_feedback_weights), precision=precision)
 
-    steps: list[EntanglementEntropyStep] = []
-    cumulative_entropy_fraction = Decimal("0")
-    resolved_boundary_fraction = Decimal("0")
-    with localcontext() as context:
-        context.prec = max(int(precision), DEFAULT_PRECISION) + _GUARD_DIGITS
-        for update_index, (
-            collar_coordinate,
-            loading_weight,
-            entropy_weight,
-            feedback_weight,
-        ) in enumerate(
-            zip(
-                collar.collar_sequence,
-                collar.collar_weights,
-                base_entropy_weights,
-                feedback_weight_profile,
-                strict=True,
-            ),
-            start=1,
-        ):
-            row_index, column_index = collar_coordinate
-            resolved_before = resolved_boundary_fraction
-            resolved_after = resolved_before + loading_weight
-            feedback_multiplier = (
-                feedback_weight / entropy_weight if entropy_weight > 0 else Decimal("0")
+@dataclass(frozen=True)
+class EntropyEngineAudit:
+    branch: Branch
+    bit_budget: Decimal
+    feedback_coupling: Decimal
+    source_projection_dimension: int
+    target_projection_dimension: int
+    manifold_slice: ManifoldSliceLoadingMap
+    loading_sequence: tuple[Coordinate, ...]
+    iterations: tuple[EntropyIteration, ...]
+    final_bulk_entropy_state: DecimalMatrix
+    boundary_budget_residual: Decimal
+    bulk_entropy_budget_residual: Decimal
+    final_projection_residual: Decimal
+
+    @property
+    def total_boundary_bit_residue(self) -> Decimal:
+        return Decimal("0") if not self.iterations else self.iterations[-1].cumulative_boundary_bit_residue
+
+    @property
+    def total_bulk_entropy_bit_residue(self) -> Decimal:
+        return Decimal("0") if not self.iterations else self.iterations[-1].cumulative_bulk_entropy_bit_residue
+
+    @property
+    def total_temporal_overhead(self) -> Decimal:
+        return sum((step.temporal_increment for step in self.iterations), Decimal("0"))
+
+    @property
+    def final_projected_dimension(self) -> Decimal:
+        if not self.iterations:
+            return Decimal(str(self.source_projection_dimension))
+        return self.iterations[-1].projected_dimension_after
+
+    @property
+    def arrow_of_time_established(self) -> bool:
+        return bool(
+            self.iterations
+            and all(step.arrow_of_time_positive for step in self.iterations)
+            and all(step.projection_time_identity_holds for step in self.iterations)
+            and all(
+                self.iterations[index].cumulative_bulk_entropy_bit_residue
+                > self.iterations[index - 1].cumulative_bulk_entropy_bit_residue
+                for index in range(1, len(self.iterations))
             )
-            cumulative_entropy_fraction += feedback_weight
-            entanglement_entropy_bits = resolved_entropy_budget * cumulative_entropy_fraction
-            steps.append(
-                EntanglementEntropyStep(
-                    update_index=update_index,
-                    arrow_of_time_index=reframe_time_as_update_index(update_index),
-                    collar_coordinate=collar_coordinate,
-                    observer_state=collar.observer_basis[row_index],
-                    boundary_state=collar.boundary_basis[column_index],
-                    base_loading_weight=loading_weight,
-                    base_entropy_weight=entropy_weight,
-                    resolved_boundary_fraction_before=resolved_before,
-                    resolved_boundary_fraction_after=resolved_after,
-                    feedback_multiplier=feedback_multiplier,
-                    feedback_weight=feedback_weight,
-                    entropy_delta_fraction=feedback_weight,
-                    cumulative_entanglement_fraction=cumulative_entropy_fraction,
-                    entanglement_entropy_bits=entanglement_entropy_bits,
+        )
+
+    @property
+    def bulk_boundary_causal_loop_closed(self) -> bool:
+        if len(self.iterations) < 2:
+            return False
+        return bool(
+            any(step.causal_feedback_active for step in self.iterations[1:])
+            and any(step.feedback_perturbs_boundary_resolution for step in self.iterations[1:])
+        )
+
+    @property
+    def time_is_computational_overhead(self) -> bool:
+        return bool(
+            abs(self.total_temporal_overhead - derive_temporal_increment(self.total_bulk_entropy_bit_residue, self.bit_budget))
+            <= _RESOLUTION_TOLERANCE
+        )
+
+    @property
+    def self_resolution_complete(self) -> bool:
+        return bool(
+            abs(self.boundary_budget_residual) <= _RESOLUTION_TOLERANCE
+            and abs(self.bulk_entropy_budget_residual) <= _RESOLUTION_TOLERANCE
+            and abs(self.final_projection_residual) <= _RESOLUTION_TOLERANCE
+        )
+
+    @property
+    def statement(self) -> str:
+        return "Time is the computational overhead of the universe's self-resolution."
+
+
+class EntropyAccumulator:
+    def __init__(
+        self,
+        *,
+        bit_budget: Decimal | Fraction | float | int | str = HOLOGRAPHIC_BITS,
+        lepton_level: int = LEPTON_LEVEL,
+        quark_level: int = QUARK_LEVEL,
+        parent_level: int = PARENT_LEVEL,
+        feedback_coupling: Decimal | Fraction | float | int | str = DEFAULT_FEEDBACK_COUPLING,
+        precision: int = DEFAULT_PRECISION,
+    ) -> None:
+        self.bit_budget = _decimal(bit_budget)
+        self.lepton_level = int(lepton_level)
+        self.quark_level = int(quark_level)
+        self.parent_level = int(parent_level)
+        self.branch: Branch = (self.lepton_level, self.quark_level, self.parent_level)
+        self.feedback_coupling = _decimal(feedback_coupling)
+        self.precision = max(int(precision), DEFAULT_PRECISION)
+        if self.bit_budget <= 0:
+            raise ValueError("bit_budget must be positive.")
+        if self.feedback_coupling < 0:
+            raise ValueError("feedback_coupling must be non-negative.")
+
+        self.manifold_slice = map_manifold_slice_bit_loading_density(
+            lepton_level=self.lepton_level,
+            quark_level=self.quark_level,
+            precision=self.precision,
+        )
+        self.loading_sequence = tuple(
+            sequence_bit_loading(lepton_level=self.lepton_level, quark_level=self.quark_level)
+        )
+        assert self.loading_sequence == self.manifold_slice.dominant_loading_sequence
+        self._sequence_rank = {coordinate: index + 1 for index, coordinate in enumerate(self.loading_sequence)}
+        self._iterations: list[EntropyIteration] = []
+        self._bulk_entropy_state = _zero_matrix(_matrix_shape(self.manifold_slice.entanglement_density))
+        self._cumulative_boundary_bit_residue = Decimal("0")
+        self._cumulative_bulk_entropy_bit_residue = Decimal("0")
+
+    @property
+    def iterations(self) -> tuple[EntropyIteration, ...]:
+        return tuple(self._iterations)
+
+    @property
+    def iteration_count(self) -> int:
+        return len(self._iterations)
+
+    @property
+    def bulk_entropy_state(self) -> DecimalMatrix:
+        return self._bulk_entropy_state
+
+    @property
+    def remaining_coordinates(self) -> tuple[Coordinate, ...]:
+        return self.loading_sequence[self.iteration_count :]
+
+    def _remaining_share_maps(
+        self,
+        *,
+        remaining_coordinates: Sequence[Coordinate],
+    ) -> tuple[dict[Coordinate, Decimal], dict[Coordinate, Decimal], dict[Coordinate, Decimal], dict[Coordinate, Decimal], dict[Coordinate, Decimal]]:
+        loading_density = self.manifold_slice.loading_density
+        entanglement_density = self.manifold_slice.entanglement_density
+        with localcontext() as context:
+            context.prec = self.precision + _GUARD_DIGITS
+            feedback_signals = {
+                coordinate: _feedback_signal(
+                    bulk_entropy_state=self._bulk_entropy_state,
+                    coordinate=coordinate,
+                    precision=self.precision,
                 )
+                for coordinate in remaining_coordinates
+            }
+            baseline_boundary_total = sum(
+                (loading_density[row_index][column_index] for row_index, column_index in remaining_coordinates),
+                Decimal("0"),
             )
-            resolved_boundary_fraction = resolved_after
+            baseline_entanglement_total = sum(
+                (entanglement_density[row_index][column_index] for row_index, column_index in remaining_coordinates),
+                Decimal("0"),
+            )
+            adjusted_boundary_weights = {
+                coordinate: loading_density[coordinate[0]][coordinate[1]]
+                * (Decimal("1") + self.feedback_coupling * feedback_signals[coordinate])
+                for coordinate in remaining_coordinates
+            }
+            adjusted_entanglement_weights = {
+                coordinate: entanglement_density[coordinate[0]][coordinate[1]]
+                * (Decimal("1") + self.feedback_coupling * feedback_signals[coordinate])
+                for coordinate in remaining_coordinates
+            }
+            adjusted_boundary_total = sum(adjusted_boundary_weights.values(), Decimal("0"))
+            adjusted_entanglement_total = sum(adjusted_entanglement_weights.values(), Decimal("0"))
+            baseline_boundary_share = {
+                coordinate: loading_density[coordinate[0]][coordinate[1]] / baseline_boundary_total
+                for coordinate in remaining_coordinates
+            }
+            adjusted_boundary_share = {
+                coordinate: adjusted_boundary_weights[coordinate] / adjusted_boundary_total
+                for coordinate in remaining_coordinates
+            }
+            baseline_entanglement_share = {
+                coordinate: entanglement_density[coordinate[0]][coordinate[1]] / baseline_entanglement_total
+                for coordinate in remaining_coordinates
+            }
+            adjusted_entanglement_share = {
+                coordinate: adjusted_entanglement_weights[coordinate] / adjusted_entanglement_total
+                for coordinate in remaining_coordinates
+            }
+        return (
+            feedback_signals,
+            baseline_boundary_share,
+            adjusted_boundary_share,
+            baseline_entanglement_share,
+            adjusted_entanglement_share,
+        )
 
-    return EntropyFeedbackAudit(
-        markov_collar=collar,
-        entropy_budget_bits=resolved_entropy_budget,
-        feedback_weight_profile=feedback_weight_profile,
-        steps=tuple(steps),
-    )
+    def step(self) -> EntropyIteration:
+        remaining_coordinates = self.remaining_coordinates
+        if not remaining_coordinates:
+            raise StopIteration("EntropyAccumulator has already resolved the full loading sequence.")
+
+        coordinate = remaining_coordinates[0]
+        (
+            feedback_signals,
+            baseline_boundary_share,
+            adjusted_boundary_share,
+            baseline_entanglement_share,
+            adjusted_entanglement_share,
+        ) = self._remaining_share_maps(remaining_coordinates=remaining_coordinates)
+
+        with localcontext() as context:
+            context.prec = self.precision + _GUARD_DIGITS
+            remaining_boundary_budget = self.bit_budget - self._cumulative_boundary_bit_residue
+            remaining_bulk_entropy_budget = self.bit_budget - self._cumulative_bulk_entropy_bit_residue
+            boundary_bit_residue = remaining_boundary_budget * adjusted_boundary_share[coordinate]
+            bulk_entropy_bit_residue = remaining_bulk_entropy_budget * adjusted_entanglement_share[coordinate]
+            projected_dimension_before = Decimal(str(SOURCE_PROJECTION_DIMENSION)) - _PROJECTION_GAP * derive_temporal_increment(
+                self._cumulative_bulk_entropy_bit_residue,
+                self.bit_budget,
+                precision=self.precision,
+            )
+            temporal_increment = derive_temporal_increment(
+                bulk_entropy_bit_residue,
+                self.bit_budget,
+                precision=self.precision,
+            )
+            self._cumulative_boundary_bit_residue += boundary_bit_residue
+            self._cumulative_bulk_entropy_bit_residue += bulk_entropy_bit_residue
+            cumulative_bulk_entropy_fraction = derive_temporal_increment(
+                self._cumulative_bulk_entropy_bit_residue,
+                self.bit_budget,
+                precision=self.precision,
+            )
+            projected_dimension_after = Decimal(str(SOURCE_PROJECTION_DIMENSION)) - _PROJECTION_GAP * cumulative_bulk_entropy_fraction
+            delta_projection = projected_dimension_before - projected_dimension_after
+            self._bulk_entropy_state = _matrix_update(
+                self._bulk_entropy_state,
+                coordinate,
+                temporal_increment,
+            )
+
+        iteration = EntropyIteration(
+            iteration_index=self.iteration_count + 1,
+            coordinate=coordinate,
+            sequence_rank=self._sequence_rank[coordinate],
+            baseline_boundary_share=baseline_boundary_share[coordinate],
+            adjusted_boundary_share=adjusted_boundary_share[coordinate],
+            baseline_entanglement_share=baseline_entanglement_share[coordinate],
+            adjusted_entanglement_share=adjusted_entanglement_share[coordinate],
+            bulk_feedback_signal=feedback_signals[coordinate],
+            boundary_bit_residue=boundary_bit_residue,
+            bulk_entropy_bit_residue=bulk_entropy_bit_residue,
+            temporal_increment=temporal_increment,
+            cumulative_boundary_bit_residue=self._cumulative_boundary_bit_residue,
+            cumulative_bulk_entropy_bit_residue=self._cumulative_bulk_entropy_bit_residue,
+            cumulative_bulk_entropy_fraction=cumulative_bulk_entropy_fraction,
+            projected_dimension_before=projected_dimension_before,
+            projected_dimension_after=projected_dimension_after,
+            delta_projection_26d_to_4d=delta_projection,
+            bulk_entropy_state=self._bulk_entropy_state,
+        )
+        self._iterations.append(iteration)
+        return iteration
+
+    def run(self) -> EntropyEngineAudit:
+        while self.remaining_coordinates:
+            self.step()
+        return self.audit()
+
+    def simulate(self) -> EntropyEngineAudit:
+        return self.run()
+
+    def audit(self) -> EntropyEngineAudit:
+        final_projection_residual = self.final_projected_dimension - Decimal(str(TARGET_PROJECTION_DIMENSION))
+        return EntropyEngineAudit(
+            branch=self.branch,
+            bit_budget=self.bit_budget,
+            feedback_coupling=self.feedback_coupling,
+            source_projection_dimension=SOURCE_PROJECTION_DIMENSION,
+            target_projection_dimension=TARGET_PROJECTION_DIMENSION,
+            manifold_slice=self.manifold_slice,
+            loading_sequence=self.loading_sequence,
+            iterations=self.iterations,
+            final_bulk_entropy_state=self._bulk_entropy_state,
+            boundary_budget_residual=self.bit_budget - self._cumulative_boundary_bit_residue,
+            bulk_entropy_budget_residual=self.bit_budget - self._cumulative_bulk_entropy_bit_residue,
+            final_projection_residual=final_projection_residual,
+        )
+
+    @property
+    def final_projected_dimension(self) -> Decimal:
+        if not self._iterations:
+            return Decimal(str(SOURCE_PROJECTION_DIMENSION))
+        return self._iterations[-1].projected_dimension_after
 
 
-def build_entropy_feedback_audit(
+def build_entropy_engine_audit(
     *,
+    bit_budget: Decimal | Fraction | float | int | str = HOLOGRAPHIC_BITS,
     lepton_level: int = LEPTON_LEVEL,
     quark_level: int = QUARK_LEVEL,
-    entropy_budget_bits: Decimal | Fraction | float | int | str = HOLOGRAPHIC_BITS,
+    parent_level: int = PARENT_LEVEL,
+    feedback_coupling: Decimal | Fraction | float | int | str = DEFAULT_FEEDBACK_COUPLING,
     precision: int = DEFAULT_PRECISION,
-) -> EntropyFeedbackAudit:
-    return simulate_entanglement_entropy_growth(
+) -> EntropyEngineAudit:
+    return EntropyAccumulator(
+        bit_budget=bit_budget,
         lepton_level=lepton_level,
         quark_level=quark_level,
-        entropy_budget_bits=entropy_budget_bits,
+        parent_level=parent_level,
+        feedback_coupling=feedback_coupling,
         precision=precision,
-    )
+    ).run()
 
 
-def render_report(audit: EntropyFeedbackAudit) -> str:
+def render_report(audit: EntropyEngineAudit) -> str:
     lines = [
         "Entropy Engine",
         "==============",
-        "Markov collars factorize the observer from the external boundary through the holographic interface.",
-        "Entanglement entropy grows under a bulk-to-boundary feedback law on the ordered transport lattice.",
+        "Time is modeled as the iterative entropic overhead of holographic self-resolution.",
+        f"Benchmark branch                  : {audit.branch}",
+        f"Feedback coupling lambda          : {audit.feedback_coupling}",
+        f"Loading sequence length           : {len(audit.loading_sequence)}",
+        f"Arrow of Time established         : {audit.arrow_of_time_established}",
+        f"Bulk-boundary causal loop         : {audit.bulk_boundary_causal_loop_closed}",
+        f"Time is computational overhead    : {audit.time_is_computational_overhead}",
+        f"Self-resolution complete          : {audit.self_resolution_complete}",
+        f"Final projected dimension         : {audit.final_projected_dimension}",
+        f"Total temporal overhead           : {audit.total_temporal_overhead}",
         audit.statement,
-        "",
-        f"Lepton level                        : {audit.markov_collar.manifold_slice.lepton_level}",
-        f"Quark level                         : {audit.markov_collar.manifold_slice.quark_level}",
-        f"Collar states                       : {len(audit.markov_collar.collar_sequence)}",
-        f"Factorization residual              : {audit.markov_collar.factorization_residual}",
-        f"Observer-boundary mutual information: {audit.markov_collar.observer_boundary_mutual_information_bits}",
-        f"Entropy budget [bits]               : {audit.entropy_budget_bits}",
-        f"Monotonic entropy growth            : {audit.monotonic_entanglement_growth}",
-        f"Arrow of time recovered             : {audit.arrow_of_time_reframed}",
-        f"Transport resolution closed         : {audit.transport_resolution_closed}",
     ]
-    if audit.steps:
-        final_step = audit.steps[-1]
-        lines.extend(
-            (
-                "",
-                f"Terminal update index              : {final_step.update_index}",
-                f"Final resolved boundary fraction    : {final_step.resolved_boundary_fraction_after}",
-                f"Final entanglement entropy [bits]   : {final_step.entanglement_entropy_bits}",
-            )
-        )
     return "\n".join(lines)
 
 
 __all__ = [
+    "BENCHMARK_BRANCH",
+    "DEFAULT_FEEDBACK_COUPLING",
     "DEFAULT_PRECISION",
-    "BoundaryBasis",
-    "CollarCoordinate",
-    "DecimalMatrix",
-    "DecimalVector",
-    "EntanglementEntropyStep",
-    "EntropyFeedbackAudit",
-    "MarkovCollar",
-    "build_entropy_feedback_audit",
-    "build_markov_collar",
+    "EntropyAccumulator",
+    "EntropyEngineAudit",
+    "EntropyIteration",
+    "SOURCE_PROJECTION_DIMENSION",
+    "TARGET_PROJECTION_DIMENSION",
+    "build_entropy_engine_audit",
     "render_report",
-    "reframe_time_as_update_index",
-    "simulate_entanglement_entropy_growth",
 ]
