@@ -33,6 +33,11 @@ acceleration is the way an internal agent perceives boundary entropy gradients,
 with
 
     a = c^2 * grad_Sigma.
+
+The same local smearing also dresses boundary-derived constants. In
+particular, the benchmark surface value of ``alpha^{-1}`` is not changed at the
+branch level, but an internal observer sees an apparent drift whenever hidden
+entropy is redistributed into the bulk image of the horizon.
 """
 
 from dataclasses import dataclass
@@ -44,12 +49,12 @@ import numpy as np
 import numpy.typing as npt
 
 from shbt.constants import LEPTON_LEVEL, LIGHT_SPEED_M_PER_S, PARENT_LEVEL, QUARK_LEVEL
+from shbt.core.derivation_api import TopologicalVacuum, UniverseFactory
 from shbt.core.differential_geometry import MetricTensor, build_metric_tensor, coordinate_transform
 from shbt.core.observer import DEFAULT_PRECISION as CORE_OBSERVER_DEFAULT_PRECISION, Observer as CoreObserver
 from shbt.core.projector import (
     BoundaryDeterminedBulkGeometry,
     HolographicCompiler,
-    actualize_boundary_determined_bulk,
 )
 
 
@@ -95,11 +100,20 @@ class AgentLatticeCoordinates:
 
     @classmethod
     def benchmark(cls) -> "AgentLatticeCoordinates":
-        parent_level = Decimal(PARENT_LEVEL)
+        return cls.from_branch(LEPTON_LEVEL, QUARK_LEVEL, PARENT_LEVEL)
+
+    @classmethod
+    def from_branch(
+        cls,
+        lepton_level: int,
+        quark_level: int,
+        parent_level: int,
+    ) -> "AgentLatticeCoordinates":
+        parent_level_decimal = Decimal(parent_level)
         return cls(
-            lepton_coordinate=Decimal(LEPTON_LEVEL) / parent_level,
-            quark_coordinate=Decimal(QUARK_LEVEL) / parent_level,
-            support_coordinate=Decimal(LEPTON_LEVEL + QUARK_LEVEL) / parent_level,
+            lepton_coordinate=Decimal(lepton_level) / parent_level_decimal,
+            quark_coordinate=Decimal(quark_level) / parent_level_decimal,
+            support_coordinate=Decimal(lepton_level + quark_level) / parent_level_decimal,
         )
 
     @property
@@ -134,6 +148,8 @@ class SelfValuationAudit:
     hidden_entropy_fraction: Decimal
     local_entropy_density_bits_per_m2: Decimal
     frame_shift: Decimal
+    boundary_weight: Decimal
+    bulk_weight: Decimal
     coordinate_weight: Decimal
     sigma: Decimal
     localized_entropy_gradient_per_m: Decimal
@@ -147,17 +163,24 @@ class SelfValuationAudit:
         return abs(self.local_entropy_fraction + self.hidden_entropy_fraction - Decimal("1")) <= _ENTROPY_TOLERANCE
 
     @property
+    def axiom_ix_satisfied(self) -> bool:
+        return bool(
+            self.entropy_partition_closed
+            and self.sigma > 0
+            and self.local_entropy_density_bits_per_m2 > 0
+            and abs(self.boundary_weight + self.bulk_weight - Decimal("1")) <= _ENTROPY_TOLERANCE
+        )
+
+    @property
     def internal_observer_consistent(self) -> bool:
         return bool(
             self.frame_dependent
-            and self.entropy_partition_closed
-            and self.sigma > 0
-            and self.local_entropy_density_bits_per_m2 > 0
+            and self.axiom_ix_satisfied
         )
 
     @property
     def statement(self) -> str:
-        return "Self-valuation Sigma localizes the observer's frame by combining horizon entropy and covariant shift."
+        return "Axiom IX (Self-Valuation Sigma) localizes the observer's frame by combining horizon entropy and covariant shift."
 
 
 @dataclass(frozen=True)
@@ -223,6 +246,80 @@ class GeneralRelativityUIAudit:
         )
 
 
+@dataclass(frozen=True)
+class FrameDependentAlphaAudit:
+    self_valuation: SelfValuationAudit
+    benchmark_alpha_inverse: Decimal
+    apparent_alpha_inverse: Decimal
+    benchmark_alpha: Decimal
+    apparent_alpha: Decimal
+    codata_alpha_inverse: Decimal
+    boundary_visibility: Decimal
+    bulk_smearing_fraction: Decimal
+    sigma_smearing_factor: Decimal
+    apparent_drift_inverse: Decimal
+    apparent_drift_fraction: Decimal
+
+    @property
+    def alpha_drift_detected(self) -> bool:
+        return self.apparent_drift_fraction > _ENTROPY_TOLERANCE
+
+    @property
+    def benchmark_recovered(self) -> bool:
+        return bool(
+            self.self_valuation.hidden_entropy_fraction <= _ENTROPY_TOLERANCE
+            and abs(self.apparent_drift_inverse) <= _ENTROPY_TOLERANCE
+        )
+
+    @property
+    def statement(self) -> str:
+        return (
+            "The fine-structure constant appears to drift because Sigma smears boundary information over the observer's local horizon."
+        )
+
+
+@dataclass(frozen=True)
+class ObserverFrameAudit:
+    self_valuation: SelfValuationAudit
+    projection: HolographicProjectionShift
+    general_relativity_ui: GeneralRelativityUIAudit
+    alpha_drift: FrameDependentAlphaAudit
+
+    @property
+    def observer_frame_consistent(self) -> bool:
+        return bool(
+            self.self_valuation.axiom_ix_satisfied
+            and self.general_relativity_ui.general_relativity_is_ui
+            and (self.alpha_drift.alpha_drift_detected or self.alpha_drift.benchmark_recovered)
+        )
+
+    @property
+    def statement(self) -> str:
+        return (
+            "Axiom IX closes the loop: Sigma projects boundary data into an observer-local metric and makes alpha drift a frame effect."
+        )
+
+
+def _vacuum_from_branch(branch: tuple[int, int, int]) -> TopologicalVacuum:
+    benchmark_vacuum = UniverseFactory.benchmark_vacuum()
+    return TopologicalVacuum(
+        lepton_level=int(branch[0]),
+        quark_level=int(branch[1]),
+        parent_level=int(branch[2]),
+        generation_count=int(benchmark_vacuum.generation_count),
+    )
+
+
+def _actualize_geometry_for_vacuum(
+    vacuum: TopologicalVacuum,
+    *,
+    precision: int = DEFAULT_PRECISION,
+) -> BoundaryDeterminedBulkGeometry:
+    compiler = HolographicCompiler(precision=max(int(precision), DEFAULT_PRECISION))
+    lattice = compiler.build_benchmark_lattice(vacuum=vacuum)
+    return compiler.actualize_bulk_geometry(lattice)
+
+
 class SelfValuationSigma:
     def __init__(self, *, precision: int = DEFAULT_PRECISION) -> None:
         self.precision = max(int(precision), DEFAULT_PRECISION)
@@ -277,10 +374,49 @@ class SelfValuationSigma:
             hidden_entropy_fraction=+hidden_entropy_fraction,
             local_entropy_density_bits_per_m2=+perspective.horizon_limit.surface_bit_loading_bits_per_m2,
             frame_shift=+perspective.covariant_frame_shift,
+            boundary_weight=+perspective.boundary_weight,
+            bulk_weight=+perspective.bulk_weight,
             coordinate_weight=+coordinate_weight,
             sigma=+sigma,
             localized_entropy_gradient_per_m=+localized_entropy_gradient_per_m,
         )
+
+
+def derive_frame_dependent_alpha(
+    *,
+    self_valuation: SelfValuationAudit,
+    vacuum: TopologicalVacuum | None = None,
+    precision: int = DEFAULT_PRECISION,
+) -> FrameDependentAlphaAudit:
+    resolved_precision = max(int(precision), DEFAULT_PRECISION)
+    resolved_vacuum = _vacuum_from_branch(self_valuation.evaluated_branch) if vacuum is None else vacuum
+    alpha_surface = UniverseFactory.derive_alpha_surface(precision=resolved_precision, vacuum=resolved_vacuum)
+
+    with localcontext() as context:
+        context.prec = resolved_precision + _GUARD_DIGITS
+        benchmark_alpha_inverse = alpha_surface.alpha_inverse_decimal
+        boundary_visibility = self_valuation.local_entropy_fraction * self_valuation.boundary_weight
+        bulk_smearing_fraction = self_valuation.hidden_entropy_fraction * self_valuation.bulk_weight
+        sigma_smearing_factor = bulk_smearing_fraction * self_valuation.sigma
+        apparent_alpha_inverse = benchmark_alpha_inverse / (Decimal("1") + sigma_smearing_factor)
+        benchmark_alpha = Decimal("1") / benchmark_alpha_inverse
+        apparent_alpha = Decimal("1") / apparent_alpha_inverse
+        apparent_drift_inverse = apparent_alpha_inverse - benchmark_alpha_inverse
+        apparent_drift_fraction = abs(apparent_drift_inverse) / benchmark_alpha_inverse
+
+    return FrameDependentAlphaAudit(
+        self_valuation=self_valuation,
+        benchmark_alpha_inverse=+benchmark_alpha_inverse,
+        apparent_alpha_inverse=+apparent_alpha_inverse,
+        benchmark_alpha=+benchmark_alpha,
+        apparent_alpha=+apparent_alpha,
+        codata_alpha_inverse=+alpha_surface.codata_alpha_inverse,
+        boundary_visibility=+boundary_visibility,
+        bulk_smearing_fraction=+bulk_smearing_fraction,
+        sigma_smearing_factor=+sigma_smearing_factor,
+        apparent_drift_inverse=+apparent_drift_inverse,
+        apparent_drift_fraction=+apparent_drift_fraction,
+    )
 
 
 def shift_holographic_projection(
@@ -290,7 +426,11 @@ def shift_holographic_projection(
     geometry: BoundaryDeterminedBulkGeometry | None = None,
 ) -> HolographicProjectionShift:
     resolved_agent_coordinates = self_valuation.agent_coordinates if agent_coordinates is None else agent_coordinates
-    resolved_geometry = actualize_boundary_determined_bulk() if geometry is None else geometry
+    resolved_geometry = (
+        _actualize_geometry_for_vacuum(_vacuum_from_branch(self_valuation.evaluated_branch))
+        if geometry is None
+        else geometry
+    )
     coordinate_shift = tuple(self_valuation.sigma * value for value in resolved_agent_coordinates.as_decimal_tuple)
 
     entropic_potential = self_valuation.sigma * self_valuation.hidden_entropy_fraction
@@ -368,6 +508,46 @@ def derive_general_relativity_ui(
     )
 
 
+def derive_observer_frame(
+    *,
+    self_valuation: SelfValuationAudit,
+    projection: HolographicProjectionShift | None = None,
+    general_relativity_ui: GeneralRelativityUIAudit | None = None,
+    alpha_drift: FrameDependentAlphaAudit | None = None,
+    geometry: BoundaryDeterminedBulkGeometry | None = None,
+    vacuum: TopologicalVacuum | None = None,
+    precision: int = DEFAULT_PRECISION,
+) -> ObserverFrameAudit:
+    resolved_projection = (
+        shift_holographic_projection(self_valuation=self_valuation, geometry=geometry)
+        if projection is None
+        else projection
+    )
+    resolved_general_relativity_ui = (
+        derive_general_relativity_ui(
+            self_valuation=self_valuation,
+            projection=resolved_projection,
+        )
+        if general_relativity_ui is None
+        else general_relativity_ui
+    )
+    resolved_alpha_drift = (
+        derive_frame_dependent_alpha(
+            self_valuation=self_valuation,
+            vacuum=vacuum,
+            precision=precision,
+        )
+        if alpha_drift is None
+        else alpha_drift
+    )
+    return ObserverFrameAudit(
+        self_valuation=self_valuation,
+        projection=resolved_projection,
+        general_relativity_ui=resolved_general_relativity_ui,
+        alpha_drift=resolved_alpha_drift,
+    )
+
+
 class InternalObserver:
     def __init__(
         self,
@@ -380,16 +560,30 @@ class InternalObserver:
         precision: int = DEFAULT_PRECISION,
     ) -> None:
         self.precision = max(int(precision), DEFAULT_PRECISION)
-        self.agent_coordinates = AgentLatticeCoordinates.benchmark() if agent_coordinates is None else agent_coordinates
+        self.vacuum = TopologicalVacuum(
+            lepton_level=int(lepton_level),
+            quark_level=int(quark_level),
+            parent_level=int(parent_level),
+            generation_count=int(UniverseFactory.benchmark_vacuum().generation_count),
+        )
+        self.agent_coordinates = (
+            AgentLatticeCoordinates.from_branch(*self.vacuum.branch)
+            if agent_coordinates is None
+            else agent_coordinates
+        )
         self._core_observer = CoreObserver(
             observer_radius_m=observer_radius_m,
-            lepton_level=lepton_level,
-            quark_level=quark_level,
-            parent_level=parent_level,
+            lepton_level=self.vacuum.lepton_level,
+            quark_level=self.vacuum.quark_level,
+            parent_level=self.vacuum.parent_level,
             precision=self.precision,
         )
         self._sigma_module = SelfValuationSigma(precision=self.precision)
         self._compiler = HolographicCompiler(precision=self.precision)
+
+    @property
+    def coordinates(self) -> AgentLatticeCoordinates:
+        return self.agent_coordinates
 
     @property
     def global_horizon_radius_m(self) -> Decimal:
@@ -417,7 +611,7 @@ class InternalObserver:
         )
 
     def actualize_bulk_geometry(self) -> BoundaryDeterminedBulkGeometry:
-        return self._compiler.actualize_benchmark_bulk_geometry()
+        return _actualize_geometry_for_vacuum(self.vacuum, precision=self.precision)
 
     def shift_holographic_projection(self) -> HolographicProjectionShift:
         return shift_holographic_projection(
@@ -438,15 +632,63 @@ class InternalObserver:
             projection=projection,
         )
 
+    def derive_frame_dependent_alpha(self) -> FrameDependentAlphaAudit:
+        return derive_frame_dependent_alpha(
+            self_valuation=self.self_valuate(),
+            vacuum=self.vacuum,
+            precision=self.precision,
+        )
+
+    def derive_observer_frame(self) -> ObserverFrameAudit:
+        self_valuation = self.self_valuate()
+        projection = shift_holographic_projection(
+            self_valuation=self_valuation,
+            agent_coordinates=self.agent_coordinates,
+            geometry=self.actualize_bulk_geometry(),
+        )
+        return derive_observer_frame(
+            self_valuation=self_valuation,
+            projection=projection,
+            vacuum=self.vacuum,
+            precision=self.precision,
+        )
+
+
+class Observer(InternalObserver):
+    def __init__(
+        self,
+        *,
+        coordinates: AgentLatticeCoordinates | None = None,
+        agent_coordinates: AgentLatticeCoordinates | None = None,
+        observer_radius_m: Decimal | Fraction | float | int | str = Decimal("0"),
+        lepton_level: int = LEPTON_LEVEL,
+        quark_level: int = QUARK_LEVEL,
+        parent_level: int = PARENT_LEVEL,
+        precision: int = DEFAULT_PRECISION,
+    ) -> None:
+        super().__init__(
+            agent_coordinates=coordinates if agent_coordinates is None else agent_coordinates,
+            observer_radius_m=observer_radius_m,
+            lepton_level=lepton_level,
+            quark_level=quark_level,
+            parent_level=parent_level,
+            precision=precision,
+        )
+
 
 __all__ = [
     "AgentLatticeCoordinates",
     "DEFAULT_PRECISION",
+    "FrameDependentAlphaAudit",
     "GeneralRelativityUIAudit",
     "HolographicProjectionShift",
     "InternalObserver",
+    "Observer",
+    "ObserverFrameAudit",
     "SelfValuationAudit",
     "SelfValuationSigma",
+    "derive_frame_dependent_alpha",
     "derive_general_relativity_ui",
+    "derive_observer_frame",
     "shift_holographic_projection",
 ]
