@@ -35,6 +35,7 @@ def test_main_initializes_zero_parameter_mode_before_sector_audits(monkeypatch, 
         return SimpleNamespace(
             kernel=SimpleNamespace(branch=(lepton_level, quark_level, parent_level)),
             stable_eigenvalue=main_module.ZERO_PARAMETER_STABLE_EIGENVALUE,
+            apply_runtime_constants_patch=lambda namespace: events.append(("patch", namespace.get("__name__"))),
         )
 
     def fake_run_targeted_sector_audits(*, sector: str | None, output_dir: Path) -> tuple[Path, ...]:
@@ -65,4 +66,5 @@ def test_main_initializes_zero_parameter_mode_before_sector_audits(monkeypatch, 
         main_module.G_SM,
         main_module.BENCHMARK_VACUUM_PRESSURE,
     )
-    assert events[1] == ("sector", "rigidity", tmp_path)
+    assert events[1] == ("patch", main_module.__name__)
+    assert events[2] == ("sector", "rigidity", tmp_path)
