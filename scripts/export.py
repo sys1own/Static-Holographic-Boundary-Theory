@@ -30,6 +30,7 @@ from audit_generator import (
 )
 from plotting_runtime import managed_figure
 from shbt.core.evolutionary_engine import DEFAULT_PRECISION, UniverseFactory
+from shbt.export import write_json_artifact as _package_write_json_artifact
 from shbt.main import build_quantified_two_loop_residuals
 from shbt.paths import ProjectPaths
 from shbt.template_utils import render_latex_table
@@ -39,7 +40,7 @@ EvolutionaryEngine = UniverseFactory
 
 
 def write_json_artifact(output_path: Path, payload: Mapping[str, object]) -> None:
-    output_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    _package_write_json_artifact(output_path, payload)
 
 
 def write_csv_artifact(output_path: Path, fieldnames: Sequence[str], rows: Iterable[Mapping[str, object]]) -> None:
@@ -217,21 +218,44 @@ def build_residual_export_payload(*, precision: int = DEFAULT_PRECISION) -> dict
             int(_get_member(vacuum, "quark_level")),
             int(_get_member(vacuum, "parent_level")),
         ],
-        "alpha_inverse_decimal": float(_get_member(alpha_surface, "alpha_inverse_decimal")),
-        "codata_alpha_inverse": float(_get_member(alpha_surface, "codata_alpha_inverse")),
-        "m_nu_ev": float(_get_member(mass_bridge, "neutrino_floor_ev")),
-        "m_nu_mev": float(_get_member(mass_bridge, "neutrino_floor_mev")),
-        "epsilon_lambda": float(_get_member(unity_of_scale, "epsilon_lambda")),
-        "decimal_tolerance": float(_get_member(unity_of_scale, "decimal_tolerance")),
-        "register_noise_floor": float(_get_member(unity_of_scale, "register_noise_floor")),
+        "alpha_inverse_decimal": _get_member(alpha_surface, "alpha_inverse_decimal"),
+        "codata_alpha_inverse": _get_member(alpha_surface, "codata_alpha_inverse"),
+        "m_nu_ev": _get_member(mass_bridge, "neutrino_floor_ev"),
+        "m_nu_mev": _get_member(mass_bridge, "neutrino_floor_mev"),
+        "epsilon_lambda": _get_member(unity_of_scale, "epsilon_lambda"),
+        "decimal_tolerance": _get_member(unity_of_scale, "decimal_tolerance"),
+        "register_noise_floor": _get_member(unity_of_scale, "register_noise_floor"),
     }
 
     if lambda_surface is not None:
-        derivation_residues["lambda_holo_si_m2"] = float(_get_member(lambda_surface, "lambda_holo_si_m2"))
-        derivation_residues["lambda_obs_si_m2"] = float(_get_member(lambda_surface, "anchor_lambda_si_m2"))
+        derivation_residues["lambda_holo_si_m2"] = _get_member(lambda_surface, "lambda_holo_si_m2")
+        derivation_residues["lambda_obs_si_m2"] = _get_member(lambda_surface, "anchor_lambda_si_m2")
 
     payload["derivation_residues"] = derivation_residues
     return payload
+
+
+def _generate_residual_payload_from_engine(
+    cls,
+    *,
+    precision: int = DEFAULT_PRECISION,
+) -> dict[str, object]:
+    return build_residual_export_payload(precision=precision)
+
+
+if not hasattr(UniverseFactory, "generate_residual_payload"):
+    UniverseFactory.generate_residual_payload = classmethod(_generate_residual_payload_from_engine)
+
+
+def generate_residual_payload(
+    *,
+    precision: int = DEFAULT_PRECISION,
+    engine: object | None = None,
+) -> dict[str, object]:
+    resolved_engine = EvolutionaryEngine() if engine is None else engine
+    if hasattr(resolved_engine, "generate_residual_payload"):
+        return _call_engine_method(resolved_engine, "generate_residual_payload", precision=precision)
+    return build_residual_export_payload(precision=precision)
 
 
 def export_residual_payload(
@@ -240,12 +264,8 @@ def export_residual_payload(
     precision: int = DEFAULT_PRECISION,
 ) -> Path:
     resolved_output_path = _default_residuals_path() if output_path is None else Path(output_path)
-    resolved_output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    payload = build_residual_export_payload(precision=precision)
-    with resolved_output_path.open("w", encoding="utf-8") as handle:
-        json.dump(payload, handle, indent=2, sort_keys=True)
-        handle.write("\n")
+    payload = generate_residual_payload(precision=precision)
+    write_json_artifact(resolved_output_path, payload)
     return resolved_output_path
 
 
@@ -268,7 +288,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
-    output_path = export_residual_payload(output_path=args.output_path, precision=args.precision)
+    output_path = _default_residuals_path() if args.output_path is None else Path(args.output_path)
+    engine = EvolutionaryEngine()
+    payload = generate_residual_payload(precision=args.precision, engine=engine)
+    write_json_artifact(output_path, payload)
     print(f"Wrote residual audit payload to {output_path}")
     return 0
 
@@ -284,6 +307,7 @@ __all__ = [
     "export_support_overlap_table",
     "export_supplementary_tolerance_table",
     "export_transport_covariance_diagnostics",
+    "generate_residual_payload",
     "main",
     "parse_args",
     "write_csv_artifact",
