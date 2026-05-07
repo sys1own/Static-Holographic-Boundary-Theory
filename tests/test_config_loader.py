@@ -167,6 +167,21 @@ def test_default_compute_cluster_profile_exposes_dask_mpi_and_zarr_defaults() ->
     assert compute_config["storage"]["tensor_format"] == "zarr"
 
 
+def test_geometry_origin_profile_fields_flow_into_benchmark_config() -> None:
+    loader = ConfigLoader()
+
+    physics_profile = loader.load_physics_profile()
+    benchmark_config = loader.load_benchmark_config()
+    classifications = loader.load_parameter_classifications()
+
+    assert physics_profile["geometry_origin"]["kernel"] == "MasterTransportEquation[26D]"
+    assert physics_profile["geometry_origin"]["zero_anchor_boot"] is True
+    assert benchmark_config["geometry_origin"]["kernel"] == physics_profile["geometry_origin"]["kernel"]
+    assert benchmark_config["geometry_origin"]["zero_anchor_boot"] is True
+    assert classifications["geometry_origin.kernel"] == "Geometric Emergence"
+    assert classifications["geometry_origin.zero_anchor_boot"] == "Geometric Emergence"
+
+
 def test_compute_cluster_profile_uses_project_paths_with_custom_config_dir(tmp_path: Path) -> None:
     custom_config_dir = tmp_path / "isolated-config"
     custom_config_dir.mkdir()
