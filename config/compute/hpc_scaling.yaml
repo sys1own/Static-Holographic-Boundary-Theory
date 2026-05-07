@@ -1,0 +1,92 @@
+cluster:
+  name: shbt-full-universe-audit
+  profile: high-resolution-uniqueness-scan
+  default_backend: dask
+  failover_backend: mpi
+  parity_checks_enabled: true
+  deterministic_reductions: true
+  tensor_storage_backend: shbt.io_handler
+
+dask:
+  scheduler:
+    backend: distributed
+    address: tcp://scheduler:8786
+    dashboard_address: :8787
+    protocol: tcp
+    allowed_failures: 3
+    work_stealing: true
+  workers:
+    processes: 16
+    threads_per_worker: 1
+    memory_limit_gb: 16
+    local_directory: results/dask-worker-space
+    heartbeat_interval_seconds: 15
+  arrays:
+    chunk_target_mb: 64
+    rechunk_on_write: true
+    optimize_graph: true
+    persist_intermediate_tensors: true
+  adaptive:
+    enabled: true
+    minimum_workers: 8
+    maximum_workers: 256
+    target_duration_seconds: 8
+  retries:
+    task_retries: 2
+    lost_worker_timeout_seconds: 120
+
+mpi:
+  enabled: true
+  launcher: mpirun
+  transport: ucx
+  bind_to: core
+  map_by: ppr:32:node
+  ranks_per_node: 32
+  omp_threads_per_rank: 1
+  collective_io: true
+  checkpoint_barrier: true
+
+workloads:
+  uniqueness_scans:
+    backend: dask
+    failover_backend: mpi
+    target_resolution:
+      lepton_levels: 2048
+      quark_levels: 2048
+      parent_levels: 4096
+    chunk_shape:
+      - 64
+      - 64
+      - 128
+    checkpoint_every_chunks: 32
+    mpi_ensemble_ranks: 256
+  cross_sector_transport:
+    backend: dask
+    tensor_broadcast_mode: scatter
+    chunk_shape:
+      - 128
+      - 128
+    persist_intermediate_tensors: true
+  full_universe_audit:
+    backend: mpi
+    ensemble_ranks: 512
+    checkpoint_interval_minutes: 15
+    reduction_strategy: tree
+
+storage:
+  tensor_format: zarr
+  fallback_tensor_format: hdf5
+  tensor_layout: directory_store
+  compression: none
+  filters: []
+  chunk_cache_mb: 2048
+  chunk_order: C
+  endian: little
+  dtype_policy: preserve_input
+  checksum: sha256
+  consolidated_metadata: true
+  write_empty_chunks: false
+  audit_trail:
+    store_sector_metadata: true
+    store_transport_provenance: true
+    include_prime_indexed_lattice_hashes: true
