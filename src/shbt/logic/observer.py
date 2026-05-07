@@ -49,6 +49,7 @@ import numpy as np
 import numpy.typing as npt
 
 from shbt.constants import LEPTON_LEVEL, LIGHT_SPEED_M_PER_S, PARENT_LEVEL, QUARK_LEVEL
+from shbt.core.bulk_dynamics import BulkFlowAudit, build_bulk_dynamics_audit
 from shbt.core.derivation_api import TopologicalVacuum, UniverseFactory
 from shbt.core.differential_geometry import MetricTensor, build_metric_tensor, coordinate_transform
 from shbt.core.observer import DEFAULT_PRECISION as CORE_OBSERVER_DEFAULT_PRECISION, Observer as CoreObserver
@@ -184,9 +185,34 @@ class SelfValuationAudit:
 
 
 @dataclass(frozen=True)
+class ObserverProjectionKernel:
+    self_valuation: SelfValuationAudit
+    local_entropy_projection_weight: Decimal
+    hidden_entropy_projection_weight: Decimal
+    spatial_projection_weight: Decimal
+    temporal_projection_weight: Decimal
+
+    @property
+    def entropy_weighted(self) -> bool:
+        return bool(
+            self.local_entropy_projection_weight >= 0
+            and self.hidden_entropy_projection_weight >= 0
+            and self.spatial_projection_weight > 0
+            and self.temporal_projection_weight >= 0
+        )
+
+    @property
+    def statement(self) -> str:
+        return (
+            "The observer-local projection keeps accessible entropy at unit weight and amplifies hidden sectors through the frame shift."
+        )
+
+
+@dataclass(frozen=True)
 class HolographicProjectionShift:
     base_geometry: BoundaryDeterminedBulkGeometry
     self_valuation: SelfValuationAudit
+    projection_kernel: ObserverProjectionKernel
     jacobian_matrix: npt.ArrayLike
     coordinate_shift: tuple[Decimal, Decimal, Decimal]
     shifted_spacetime_metric: MetricTensor
@@ -209,8 +235,12 @@ class HolographicProjectionShift:
         return self.shifted_spacetime_metric.positive_definite and self.shifted_spatial_metric.positive_definite
 
     @property
+    def entropy_weighted_projection(self) -> bool:
+        return bool(self.projection_kernel.entropy_weighted and any(value > 0 for value in self.coordinate_shift))
+
+    @property
     def statement(self) -> str:
-        return "Internal lattice coordinates shift the holographic projection into an agent-local bulk frame."
+        return "Internal lattice coordinates shift the holographic projection into an entropy-weighted agent-local bulk frame."
 
 
 @dataclass(frozen=True)
@@ -300,6 +330,43 @@ class ObserverFrameAudit:
         )
 
 
+@dataclass(frozen=True)
+class InsideOutMetricAudit:
+    self_valuation: SelfValuationAudit
+    projection: HolographicProjectionShift
+    gravity_flow: BulkFlowAudit
+    inside_out_jacobian_matrix: npt.ArrayLike
+    perceived_spacetime_metric: MetricTensor
+    perceived_spatial_metric: MetricTensor
+    entropy_temporal_coupling: Decimal
+    observer_time_dilation: Decimal
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "inside_out_jacobian_matrix", _freeze_array(self.inside_out_jacobian_matrix))
+
+    @property
+    def perceived_metric_positive_definite(self) -> bool:
+        return self.perceived_spacetime_metric.positive_definite and self.perceived_spatial_metric.positive_definite
+
+    @property
+    def gravity_sector_accepts_internal_observer(self) -> bool:
+        return bool(self.gravity_flow.static_block_projects_bulk and self.projection.entropy_weighted_projection)
+
+    @property
+    def inside_out_consistent(self) -> bool:
+        return bool(
+            self.gravity_sector_accepts_internal_observer
+            and self.perceived_metric_positive_definite
+            and self.observer_time_dilation >= 0
+        )
+
+    @property
+    def statement(self) -> str:
+        return (
+            "The Universal Code runs inside-out: the internal observer's Sigma dresses the bulk metric perceived by the agent."
+        )
+
+
 def _vacuum_from_branch(branch: tuple[int, int, int]) -> TopologicalVacuum:
     benchmark_vacuum = UniverseFactory.benchmark_vacuum()
     return TopologicalVacuum(
@@ -323,6 +390,31 @@ def _actualize_geometry_for_vacuum(
 class SelfValuationSigma:
     def __init__(self, *, precision: int = DEFAULT_PRECISION) -> None:
         self.precision = max(int(precision), DEFAULT_PRECISION)
+
+    def derive_projection_kernel(
+        self,
+        *,
+        self_valuation: SelfValuationAudit,
+    ) -> ObserverProjectionKernel:
+        with localcontext() as context:
+            context.prec = self.precision + _GUARD_DIGITS
+            local_entropy_projection_weight = self_valuation.local_entropy_fraction
+            hidden_entropy_projection_weight = self_valuation.hidden_entropy_fraction * (
+                Decimal("1") + self_valuation.frame_shift
+            )
+            spatial_projection_weight = self_valuation.sigma * (
+                local_entropy_projection_weight + hidden_entropy_projection_weight
+            )
+            temporal_projection_weight = self_valuation.sigma * (
+                self_valuation.hidden_entropy_fraction + self_valuation.bulk_weight * self_valuation.frame_shift
+            )
+        return ObserverProjectionKernel(
+            self_valuation=self_valuation,
+            local_entropy_projection_weight=+local_entropy_projection_weight,
+            hidden_entropy_projection_weight=+hidden_entropy_projection_weight,
+            spatial_projection_weight=+spatial_projection_weight,
+            temporal_projection_weight=+temporal_projection_weight,
+        )
 
     def evaluate(
         self,
@@ -421,20 +513,39 @@ def derive_frame_dependent_alpha(
 
 def shift_holographic_projection(
     *,
-    self_valuation: SelfValuationAudit,
+    observer: "InternalObserver" | None = None,
+    self_valuation: SelfValuationAudit | None = None,
+    sigma: SelfValuationSigma | None = None,
     agent_coordinates: AgentLatticeCoordinates | None = None,
     geometry: BoundaryDeterminedBulkGeometry | None = None,
 ) -> HolographicProjectionShift:
-    resolved_agent_coordinates = self_valuation.agent_coordinates if agent_coordinates is None else agent_coordinates
-    resolved_geometry = (
-        _actualize_geometry_for_vacuum(_vacuum_from_branch(self_valuation.evaluated_branch))
-        if geometry is None
-        else geometry
-    )
-    coordinate_shift = tuple(self_valuation.sigma * value for value in resolved_agent_coordinates.as_decimal_tuple)
+    if observer is not None:
+        resolved_self_valuation = observer.self_valuate() if self_valuation is None else self_valuation
+        resolved_geometry = observer.actualize_bulk_geometry() if geometry is None else geometry
+        resolved_agent_coordinates = observer.coordinates if agent_coordinates is None else agent_coordinates
+        resolved_sigma = observer.sigma if sigma is None else sigma
+    else:
+        if self_valuation is None:
+            raise TypeError("shift_holographic_projection requires self_valuation when observer is not provided.")
+        resolved_self_valuation = self_valuation
+        resolved_geometry = (
+            _actualize_geometry_for_vacuum(_vacuum_from_branch(resolved_self_valuation.evaluated_branch))
+            if geometry is None
+            else geometry
+        )
+        resolved_agent_coordinates = (
+            resolved_self_valuation.agent_coordinates if agent_coordinates is None else agent_coordinates
+        )
+        resolved_sigma = SelfValuationSigma() if sigma is None else sigma
 
-    entropic_potential = self_valuation.sigma * self_valuation.hidden_entropy_fraction
-    time_shift = float(entropic_potential)
+    projection_kernel = resolved_sigma.derive_projection_kernel(self_valuation=resolved_self_valuation)
+    coordinate_shift = tuple(
+        projection_kernel.spatial_projection_weight * value for value in resolved_agent_coordinates.as_decimal_tuple
+    )
+
+    entropic_potential = projection_kernel.temporal_projection_weight
+    normalized_time_shift = entropic_potential / (Decimal("1") + entropic_potential)
+    time_shift = float(normalized_time_shift)
     spatial_shift = tuple(float(value) for value in coordinate_shift)
     jacobian_matrix = np.asarray(
         [
@@ -457,7 +568,8 @@ def shift_holographic_projection(
     )
     return HolographicProjectionShift(
         base_geometry=resolved_geometry,
-        self_valuation=self_valuation,
+        self_valuation=resolved_self_valuation,
+        projection_kernel=projection_kernel,
         jacobian_matrix=jacobian_matrix,
         coordinate_shift=coordinate_shift,
         shifted_spacetime_metric=shifted_spacetime_metric,
@@ -467,12 +579,16 @@ def shift_holographic_projection(
 
 def derive_general_relativity_ui(
     *,
-    self_valuation: SelfValuationAudit,
+    observer: "InternalObserver" | None = None,
+    self_valuation: SelfValuationAudit | None = None,
     projection: HolographicProjectionShift | None = None,
     geometry: BoundaryDeterminedBulkGeometry | None = None,
 ) -> GeneralRelativityUIAudit:
+    resolved_self_valuation = observer.self_valuate() if observer is not None and self_valuation is None else self_valuation
+    if resolved_self_valuation is None:
+        raise TypeError("derive_general_relativity_ui requires self_valuation when observer is not provided.")
     resolved_projection = (
-        shift_holographic_projection(self_valuation=self_valuation, geometry=geometry)
+        shift_holographic_projection(observer=observer, self_valuation=resolved_self_valuation, geometry=geometry)
         if projection is None
         else projection
     )
@@ -480,8 +596,11 @@ def derive_general_relativity_ui(
     with localcontext() as context:
         context.prec = DEFAULT_PRECISION + _GUARD_DIGITS
         light_speed_squared = _decimal(LIGHT_SPEED_M_PER_S) * _decimal(LIGHT_SPEED_M_PER_S)
-        entropic_potential = self_valuation.sigma * self_valuation.hidden_entropy_fraction
-        localized_entropy_gradient_per_m = self_valuation.localized_entropy_gradient_per_m
+        entropic_potential = resolved_projection.projection_kernel.temporal_projection_weight
+        localized_entropy_gradient_per_m = (
+            resolved_self_valuation.localized_entropy_gradient_per_m
+            * (Decimal("1") + resolved_projection.projection_kernel.hidden_entropy_projection_weight)
+        )
         gravitational_acceleration_m_per_s2 = light_speed_squared * localized_entropy_gradient_per_m
         observer_frame_curvature = _decimal(
             abs(
@@ -498,7 +617,7 @@ def derive_general_relativity_ui(
         )
 
     return GeneralRelativityUIAudit(
-        self_valuation=self_valuation,
+        self_valuation=resolved_self_valuation,
         projection=resolved_projection,
         entropic_potential=+entropic_potential,
         localized_entropy_gradient_per_m=+localized_entropy_gradient_per_m,
@@ -510,7 +629,8 @@ def derive_general_relativity_ui(
 
 def derive_observer_frame(
     *,
-    self_valuation: SelfValuationAudit,
+    observer: "InternalObserver" | None = None,
+    self_valuation: SelfValuationAudit | None = None,
     projection: HolographicProjectionShift | None = None,
     general_relativity_ui: GeneralRelativityUIAudit | None = None,
     alpha_drift: FrameDependentAlphaAudit | None = None,
@@ -518,14 +638,18 @@ def derive_observer_frame(
     vacuum: TopologicalVacuum | None = None,
     precision: int = DEFAULT_PRECISION,
 ) -> ObserverFrameAudit:
+    resolved_self_valuation = observer.self_valuate() if observer is not None and self_valuation is None else self_valuation
+    if resolved_self_valuation is None:
+        raise TypeError("derive_observer_frame requires self_valuation when observer is not provided.")
     resolved_projection = (
-        shift_holographic_projection(self_valuation=self_valuation, geometry=geometry)
+        shift_holographic_projection(observer=observer, self_valuation=resolved_self_valuation, geometry=geometry)
         if projection is None
         else projection
     )
     resolved_general_relativity_ui = (
         derive_general_relativity_ui(
-            self_valuation=self_valuation,
+            observer=observer,
+            self_valuation=resolved_self_valuation,
             projection=resolved_projection,
         )
         if general_relativity_ui is None
@@ -533,7 +657,7 @@ def derive_observer_frame(
     )
     resolved_alpha_drift = (
         derive_frame_dependent_alpha(
-            self_valuation=self_valuation,
+            self_valuation=resolved_self_valuation,
             vacuum=vacuum,
             precision=precision,
         )
@@ -541,10 +665,84 @@ def derive_observer_frame(
         else alpha_drift
     )
     return ObserverFrameAudit(
-        self_valuation=self_valuation,
+        self_valuation=resolved_self_valuation,
         projection=resolved_projection,
         general_relativity_ui=resolved_general_relativity_ui,
         alpha_drift=resolved_alpha_drift,
+    )
+
+
+def run_inside_out_simulation(
+    *,
+    observer: "InternalObserver" | None = None,
+    redshift: Decimal | Fraction | float | int | str = Decimal("0"),
+    self_valuation: SelfValuationAudit | None = None,
+    projection: HolographicProjectionShift | None = None,
+    gravity_flow: BulkFlowAudit | None = None,
+) -> InsideOutMetricAudit:
+    resolved_observer = InternalObserver() if observer is None else observer
+    resolved_self_valuation = resolved_observer.self_valuate() if self_valuation is None else self_valuation
+    resolved_projection = (
+        shift_holographic_projection(observer=resolved_observer, self_valuation=resolved_self_valuation)
+        if projection is None
+        else projection
+    )
+    resolved_gravity_flow = (
+        build_bulk_dynamics_audit(
+            redshift=redshift,
+            bit_budget=resolved_observer._core_observer.global_bit_budget,
+            lepton_level=resolved_observer.vacuum.lepton_level,
+            quark_level=resolved_observer.vacuum.quark_level,
+            precision=resolved_observer.precision,
+        )
+        if gravity_flow is None
+        else gravity_flow
+    )
+
+    with localcontext() as context:
+        context.prec = resolved_observer.precision + _GUARD_DIGITS
+        temporal_flow = abs(_decimal(resolved_gravity_flow.layerwise_arrow_of_time_gradient_km_s_mpc))
+        normalized_temporal_flow = temporal_flow / (Decimal("1") + temporal_flow)
+        entropy_temporal_coupling = resolved_projection.projection_kernel.temporal_projection_weight * (
+            Decimal("1") + normalized_temporal_flow * resolved_self_valuation.hidden_entropy_fraction
+        )
+        observer_time_dilation = entropy_temporal_coupling / (Decimal("1") + entropy_temporal_coupling)
+        spatial_projection_envelope = (
+            resolved_projection.projection_kernel.spatial_projection_weight
+            * normalized_temporal_flow
+            * resolved_self_valuation.hidden_entropy_fraction
+        )
+        spatial_scale_components = tuple(
+            Decimal("1") + spatial_projection_envelope * coordinate
+            for coordinate in resolved_self_valuation.agent_coordinates.as_decimal_tuple
+        )
+
+    inside_out_jacobian_matrix = np.diag(
+        [
+            float(Decimal("1") + observer_time_dilation),
+            float(spatial_scale_components[0]),
+            float(spatial_scale_components[1]),
+            float(spatial_scale_components[2]),
+        ]
+    )
+    perceived_spacetime_metric = coordinate_transform(
+        resolved_projection.shifted_spacetime_metric,
+        inside_out_jacobian_matrix,
+        label="internal_observer_perceived_spacetime_metric",
+    )
+    perceived_spatial_metric = build_metric_tensor(
+        perceived_spacetime_metric.components[1:, 1:],
+        label="internal_observer_perceived_spatial_metric",
+    )
+    return InsideOutMetricAudit(
+        self_valuation=resolved_self_valuation,
+        projection=resolved_projection,
+        gravity_flow=resolved_gravity_flow,
+        inside_out_jacobian_matrix=inside_out_jacobian_matrix,
+        perceived_spacetime_metric=perceived_spacetime_metric,
+        perceived_spatial_metric=perceived_spatial_metric,
+        entropy_temporal_coupling=+entropy_temporal_coupling,
+        observer_time_dilation=+observer_time_dilation,
     )
 
 
@@ -597,6 +795,10 @@ class InternalObserver:
     def local_horizon_radius_m(self) -> Decimal:
         return self._core_observer.local_horizon_radius_m
 
+    @property
+    def sigma(self) -> SelfValuationSigma:
+        return self._sigma_module
+
     def move_to(
         self,
         observer_radius_m: Decimal | Fraction | float | int | str,
@@ -613,24 +815,14 @@ class InternalObserver:
     def actualize_bulk_geometry(self) -> BoundaryDeterminedBulkGeometry:
         return _actualize_geometry_for_vacuum(self.vacuum, precision=self.precision)
 
+    def derive_projection_kernel(self) -> ObserverProjectionKernel:
+        return self.sigma.derive_projection_kernel(self_valuation=self.self_valuate())
+
     def shift_holographic_projection(self) -> HolographicProjectionShift:
-        return shift_holographic_projection(
-            self_valuation=self.self_valuate(),
-            agent_coordinates=self.agent_coordinates,
-            geometry=self.actualize_bulk_geometry(),
-        )
+        return shift_holographic_projection(observer=self)
 
     def derive_general_relativity_ui(self) -> GeneralRelativityUIAudit:
-        self_valuation = self.self_valuate()
-        projection = shift_holographic_projection(
-            self_valuation=self_valuation,
-            agent_coordinates=self.agent_coordinates,
-            geometry=self.actualize_bulk_geometry(),
-        )
-        return derive_general_relativity_ui(
-            self_valuation=self_valuation,
-            projection=projection,
-        )
+        return derive_general_relativity_ui(observer=self)
 
     def derive_frame_dependent_alpha(self) -> FrameDependentAlphaAudit:
         return derive_frame_dependent_alpha(
@@ -640,18 +832,18 @@ class InternalObserver:
         )
 
     def derive_observer_frame(self) -> ObserverFrameAudit:
-        self_valuation = self.self_valuate()
-        projection = shift_holographic_projection(
-            self_valuation=self_valuation,
-            agent_coordinates=self.agent_coordinates,
-            geometry=self.actualize_bulk_geometry(),
-        )
         return derive_observer_frame(
-            self_valuation=self_valuation,
-            projection=projection,
+            observer=self,
             vacuum=self.vacuum,
             precision=self.precision,
         )
+
+    def run_inside_out_simulation(
+        self,
+        *,
+        redshift: Decimal | Fraction | float | int | str = Decimal("0"),
+    ) -> InsideOutMetricAudit:
+        return run_inside_out_simulation(observer=self, redshift=redshift)
 
 
 class Observer(InternalObserver):
@@ -682,13 +874,16 @@ __all__ = [
     "FrameDependentAlphaAudit",
     "GeneralRelativityUIAudit",
     "HolographicProjectionShift",
+    "InsideOutMetricAudit",
     "InternalObserver",
     "Observer",
     "ObserverFrameAudit",
+    "ObserverProjectionKernel",
     "SelfValuationAudit",
     "SelfValuationSigma",
     "derive_frame_dependent_alpha",
     "derive_general_relativity_ui",
     "derive_observer_frame",
+    "run_inside_out_simulation",
     "shift_holographic_projection",
 ]
