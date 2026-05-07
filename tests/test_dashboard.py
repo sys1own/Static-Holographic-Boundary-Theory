@@ -10,6 +10,8 @@ from types import SimpleNamespace
 import numpy as np
 import pandas as pd
 
+from shbt.math_engine import PRECISION_GUARD, is_guard_zero
+
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "scripts" / "dashboard.py"
 
@@ -185,6 +187,7 @@ def test_build_derivation_snapshot_exposes_live_ledger() -> None:
 
 def test_build_detuning_snapshot_detects_anomaly_spike() -> None:
     module = _load_script_module()
+    guard_threshold = Fraction(1, 10**PRECISION_GUARD)
 
     benchmark = module.build_detuning_snapshot()
     detuned = module.build_detuning_snapshot(delta_lepton=1)
@@ -193,7 +196,9 @@ def test_build_detuning_snapshot_detects_anomaly_spike() -> None:
     assert benchmark.candidate_branch == module.BENCHMARK_BRANCH
     assert module._kernel_state_label(benchmark) == module.BENCHMARK_LOCKED_LABEL
     assert benchmark.rigidity_point.total_residue == 0.0
-    assert benchmark.anomaly_audit.framing.delta_fr == 0
+    assert benchmark.anomaly_audit.framing.delta_fr == Fraction(0, 1)
+    assert abs(benchmark.anomaly_audit.framing.delta_fr) <= guard_threshold
+    assert is_guard_zero(benchmark.anomaly_audit.framing.delta_fr) is True
     assert benchmark.anomaly_audit.closure_tensor.amplitude == 0
     assert benchmark.anomaly_audit.anomalous_source_si_m2.amplitude == 0
 
@@ -201,7 +206,9 @@ def test_build_detuning_snapshot_detects_anomaly_spike() -> None:
     assert detuned.candidate_branch == (27, 8, 312)
     assert module._kernel_state_label(detuned) == module.KERNEL_PANIC_LABEL
     assert detuned.rigidity_point.total_residue > 0.0
-    assert detuned.anomaly_audit.framing.delta_fr != 0
+    assert isinstance(detuned.anomaly_audit.framing.delta_fr, Fraction)
+    assert abs(detuned.anomaly_audit.framing.delta_fr) > guard_threshold
+    assert is_guard_zero(detuned.anomaly_audit.framing.delta_fr) is False
     assert detuned.anomaly_audit.closure_tensor.amplitude > 0
     assert detuned.anomaly_audit.anomalous_source_si_m2.amplitude > 0
 
@@ -291,11 +298,17 @@ def test_render_dashboard_exposes_branch_sliders_and_live_residue_table(monkeypa
         benchmark_branch=module.BENCHMARK_BRANCH,
         candidate_branch=(27, 7, 311),
         shift=(1, -1, -1),
-        rigidity_point=SimpleNamespace(total_residue=1.25e-2, delta_fr=1.0 / 17.0, c_dark_shift=2.0e-3, diophantine_gap=1.0, coordinates=(27, 7, 311)),
+        rigidity_point=SimpleNamespace(
+            total_residue=Fraction(1, 80),
+            delta_fr=Fraction(1, 17),
+            c_dark_shift=Fraction(1, 500),
+            diophantine_gap=Fraction(1, 1),
+            coordinates=(27, 7, 311),
+        ),
         anomaly_audit=SimpleNamespace(
             framing=SimpleNamespace(delta_fr=Fraction(1, 17), lepton_gap=Fraction(1, 17), quark_gap=Fraction(-1, 17)),
-            closure_tensor=SimpleNamespace(amplitude=2.5e-4),
-            anomalous_source_si_m2=SimpleNamespace(amplitude=3.5e-7),
+            closure_tensor=SimpleNamespace(amplitude=Fraction(1, 4000)),
+            anomalous_source_si_m2=SimpleNamespace(amplitude=Fraction(7, 20000000)),
             wep_status="Violated",
             verdict="Kernel panic",
         ),
@@ -374,11 +387,16 @@ def test_render_dashboard_accepts_absolute_coordinate_aliases(monkeypatch) -> No
         benchmark_branch=module.BENCHMARK_BRANCH,
         candidate_branch=(27, 7, 311),
         shift=(1, -1, -1),
-        rigidity_point=SimpleNamespace(total_residue=1.0, delta_fr=1.0, c_dark_shift=1.0, diophantine_gap=1.0),
+        rigidity_point=SimpleNamespace(
+            total_residue=Fraction(1, 1),
+            delta_fr=Fraction(1, 1),
+            c_dark_shift=Fraction(1, 1),
+            diophantine_gap=Fraction(1, 1),
+        ),
         anomaly_audit=SimpleNamespace(
             framing=SimpleNamespace(delta_fr=Fraction(1, 17), lepton_gap=Fraction(1, 17), quark_gap=Fraction(-1, 17)),
-            closure_tensor=SimpleNamespace(amplitude=1.0),
-            anomalous_source_si_m2=SimpleNamespace(amplitude=1.0),
+            closure_tensor=SimpleNamespace(amplitude=Fraction(1, 1)),
+            anomalous_source_si_m2=SimpleNamespace(amplitude=Fraction(1, 1)),
             wep_status="Violated",
             verdict="Kernel panic",
         ),
