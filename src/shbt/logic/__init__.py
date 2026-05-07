@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .bootstrap import RadauIIA, SymmetrySearcher, build_uniqueness_report, evaluate_kernel
+from .bootstrap import SymmetrySearcher, evaluate_kernel, build_uniqueness_report
 from .observer import (
     AgentLatticeCoordinates,
     FrameDependentAlphaAudit,
@@ -25,7 +25,6 @@ __all__ = [
     "InternalObserver",
     "Observer",
     "ObserverFrameAudit",
-    "RadauIIA",
     "SelfValuationAudit",
     "SelfValuationSigma",
     "SymmetrySearcher",
