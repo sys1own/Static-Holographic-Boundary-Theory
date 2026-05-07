@@ -17980,6 +17980,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=_master_transport.DEFAULT_RIGIDITY_SHIFT_FRACTION,
         help="Forced fractional flavor detuning used by --master-transport-audit.",
     )
+    parser.add_argument(
+        "--zero-parameter",
+        action="store_true",
+        help="Boot from zero numerical constants via topological extraction.",
+    )
     parser.add_argument("--seed", type=int, default=DEFAULT_RANDOM_SEED, help="Seed for stochastic transport and VEV ensemble audits.")
     parser.add_argument("--seed-audit", action="store_true", help="Run the stochastic pipeline across an ensemble of seeds and report relative variance.")
     parser.add_argument("--seed-audit-count", type=int, default=SEED_AUDIT_SAMPLE_COUNT, help="Number of seeds to include when --seed-audit is enabled.")
@@ -18128,6 +18133,41 @@ def run_targeted_sector_audits(*, sector: str | None, output_dir: Path) -> tuple
     return tuple(report_paths)
 
 
+def _initialize_zero_parameter_execution_mode() -> object:
+    from shbt.core import bootstrap as bootstrap_module
+
+    geometry_bootstrap = bootstrap_module.initialize_from_geometry(
+        lepton_level=LEPTON_LEVEL,
+        quark_level=QUARK_LEVEL,
+        parent_level=PARENT_LEVEL,
+        generation_count=G_SM,
+        vacuum_pressure=BENCHMARK_VACUUM_PRESSURE,
+    )
+    extracted_branch = tuple(int(value) for value in geometry_bootstrap.kernel.branch)
+    expected_branch = tuple(int(value) for value in ZERO_PARAMETER_RUNTIME_BOOTSTRAP.kernel.branch)
+    if extracted_branch != expected_branch:
+        raise RuntimeError(
+            "Zero-parameter execution bootstrap drifted away from the benchmark branch: "
+            f"expected {expected_branch}, received {extracted_branch}."
+        )
+    if not math.isclose(
+        float(geometry_bootstrap.stable_eigenvalue),
+        ZERO_PARAMETER_STABLE_EIGENVALUE,
+        rel_tol=0.0,
+        abs_tol=1.0e-15,
+    ):
+        raise RuntimeError(
+            "Zero-parameter execution bootstrap no longer reproduces the benchmark stable eigenvalue "
+            f"{ZERO_PARAMETER_STABLE_EIGENVALUE:.16f}."
+        )
+    LOGGER.info(
+        "[ZERO-PARAMETER BOOTSTRAP]: Initialized branch %s from topological extraction with kappa=%.16f.",
+        extracted_branch,
+        float(geometry_bootstrap.stable_eigenvalue),
+    )
+    return geometry_bootstrap
+
+
 def main(argv: list[str] | None = None) -> None:
     """Run the full publication-facing verifier report."""
 
@@ -18139,6 +18179,9 @@ def main(argv: list[str] | None = None) -> None:
     os.makedirs(output_dir, exist_ok=True)
     configure_reporting(quiet=args.quiet, log_file=None if args.log_file is None else args.log_file.expanduser())
     _emit_shbt_branding(sector=args.sector)
+
+    if args.zero_parameter:
+        _initialize_zero_parameter_execution_mode()
 
     if args.residue_check:
         run_residue_check(output_dir=output_dir)
