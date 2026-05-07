@@ -7,6 +7,7 @@ import numpy as np
 from shbt.logic.observer import (
     AgentLatticeCoordinates,
     InternalObserver,
+    Observer,
     shift_holographic_projection,
 )
 
@@ -72,3 +73,55 @@ def test_localized_entropy_gradient_manifests_as_gravitational_acceleration() ->
     assert near_horizon_ui.equivalence_principle_verified is True
     assert near_horizon_ui.general_relativity_is_ui is True
     assert near_horizon_ui.statement.startswith("General Relativity is the UI")
+
+
+def test_observer_class_exposes_coordinate_defined_axiom_ix_frame() -> None:
+    coordinates = AgentLatticeCoordinates(
+        lepton_coordinate=Decimal("0.2"),
+        quark_coordinate=Decimal("0.1"),
+        support_coordinate=Decimal("0.4"),
+    )
+    observer = Observer(coordinates=coordinates)
+
+    audit = observer.self_valuate()
+
+    assert observer.coordinates == coordinates
+    assert audit.agent_coordinates == coordinates
+    assert audit.axiom_ix_satisfied is True
+    assert audit.boundary_weight > 0
+    assert audit.bulk_weight >= 0
+    assert audit.statement.startswith("Axiom IX")
+
+
+def test_frame_dependent_alpha_drifts_under_information_smearing() -> None:
+    center_observer = Observer()
+    near_horizon_observer = Observer(
+        observer_radius_m=center_observer.global_horizon_radius_m * Decimal("0.9")
+    )
+
+    center_alpha = center_observer.derive_frame_dependent_alpha()
+    near_horizon_alpha = near_horizon_observer.derive_frame_dependent_alpha()
+
+    assert center_alpha.benchmark_recovered is True
+    assert center_alpha.apparent_drift_fraction == Decimal("0")
+    assert near_horizon_alpha.alpha_drift_detected is True
+    assert near_horizon_alpha.bulk_smearing_fraction > center_alpha.bulk_smearing_fraction
+    assert near_horizon_alpha.sigma_smearing_factor > center_alpha.sigma_smearing_factor
+    assert near_horizon_alpha.apparent_drift_fraction > center_alpha.apparent_drift_fraction
+    assert near_horizon_alpha.apparent_alpha_inverse < near_horizon_alpha.benchmark_alpha_inverse
+    assert near_horizon_alpha.statement.startswith("The fine-structure constant appears")
+
+
+def test_observer_frame_audit_closes_static_and_dynamic_loop() -> None:
+    reference_observer = Observer()
+    observer = Observer(
+        observer_radius_m=reference_observer.global_horizon_radius_m * Decimal("0.9")
+    )
+
+    frame = observer.derive_observer_frame()
+
+    assert frame.self_valuation.axiom_ix_satisfied is True
+    assert frame.general_relativity_ui.general_relativity_is_ui is True
+    assert frame.alpha_drift.alpha_drift_detected is True
+    assert frame.observer_frame_consistent is True
+    assert frame.statement.startswith("Axiom IX closes the loop")
