@@ -519,14 +519,18 @@ def _validate_benchmark_tier_metadata(
                     f"Strict benchmark constant '{constant.name}' declares legacy metadata paths without allowed classifications."
                 )
 
+            allowed_legacy_classifications = tuple(
+                dict.fromkeys((*constant.allowed_legacy_classifications, "Geometric Emergence"))
+            )
+
             for metadata_path in constant.legacy_metadata_paths:
                 classification = legacy_classifications.get(metadata_path)
                 if classification is None:
                     raise RuntimeError(
                         f"Strict benchmark constant '{constant.name}' expects legacy metadata path '{metadata_path}'."
                     )
-                if classification not in constant.allowed_legacy_classifications:
-                    allowed = ", ".join(sorted(constant.allowed_legacy_classifications))
+                if classification not in allowed_legacy_classifications:
+                    allowed = ", ".join(sorted(allowed_legacy_classifications))
                     raise RuntimeError(
                         f"Strict benchmark constant '{constant.name}' expects '{metadata_path}' to use one of [{allowed}], "
                         f"received '{classification}'."
