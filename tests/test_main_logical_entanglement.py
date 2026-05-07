@@ -1,0 +1,102 @@
+from __future__ import annotations
+
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+
+import shbt.main as main_module
+
+
+@pytest.fixture()
+def relaxed_guardian_checks(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(main_module.RigidityGuardian, "_global_parity_checkpoint", lambda self, **kwargs: None)
+    monkeypatch.setattr(main_module.RigidityGuardian, "_validate_result_parity", lambda self, **kwargs: None)
+
+
+@pytest.fixture()
+def stub_model() -> SimpleNamespace:
+    return SimpleNamespace(
+        parent_level=main_module.PARENT_LEVEL,
+        lepton_level=main_module.LEPTON_LEVEL,
+        quark_level=main_module.QUARK_LEVEL,
+        verify_bulk_emergence=lambda: SimpleNamespace(
+            bulk_emergent=True,
+            torsion_free=True,
+            non_singular_bulk=True,
+            lambda_aligned=True,
+            parity_bit_density_constraint_satisfied=True,
+        ),
+    )
+
+
+def test_flavor_sector_requires_gravity_metric_lock(
+    relaxed_guardian_checks: None,
+    stub_model: SimpleNamespace,
+) -> None:
+    guardian = main_module.RigidityGuardian(model=stub_model)
+
+    with pytest.raises(main_module.BenchmarkExecutionError, match=r"Gravity sector locks the metric tensor"):
+        guardian.calculate(
+            lambda: "flavor",
+            sector_name="flavor",
+            label="pmns transport",
+        )
+
+
+def test_targeted_flavor_audit_locks_gravity_before_module(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    relaxed_guardian_checks: None,
+) -> None:
+    events: list[tuple[str, str]] = []
+
+    def fake_ensure_metric_tensor_locked(self: main_module.RigidityGuardian) -> tuple[bool, ...]:
+        events.append(("gravity", "metric tensor lock"))
+        self.metric_tensor_locked = True
+        self.metric_tensor_signature = (True, True, True, True, True)
+        return self.metric_tensor_signature
+
+    def fake_capture_sector_module_report(module_name: str, *, output_dir: Path, sector: str) -> Path:
+        events.append((sector, module_name))
+        return output_dir / f"{sector}_{module_name.rsplit('.', 1)[-1]}.txt"
+
+    monkeypatch.setattr(main_module, "_ensure_audit_resources", lambda: ())
+    monkeypatch.setattr(main_module.RigidityGuardian, "ensure_metric_tensor_locked", fake_ensure_metric_tensor_locked)
+    monkeypatch.setattr(main_module, "_capture_sector_module_report", fake_capture_sector_module_report)
+
+    report_paths = main_module.run_targeted_sector_audits(sector="flavor", output_dir=tmp_path)
+
+    assert events[0] == ("gravity", "metric tensor lock")
+    assert [sector for sector, _ in events[1:]] == ["flavor", "flavor", "flavor"]
+    assert len(report_paths) == len(main_module.SECTOR_AUDIT_MODULES["flavor"])
+
+
+def test_guardian_rejects_manual_higgs_tuning(
+    relaxed_guardian_checks: None,
+    stub_model: SimpleNamespace,
+) -> None:
+    guardian = main_module.RigidityGuardian(model=stub_model)
+
+    with pytest.raises(main_module.BenchmarkExecutionError, match=r"manual tuning of m_126_gev"):
+        guardian.calculate(
+            lambda **kwargs: kwargs,
+            m_126_gev=main_module._BENCHMARK_HIGGS_MATCHING_THRESHOLD_GEV * 1.01,
+            sector_name="rigidity",
+            label="manual higgs tuning",
+        )
+
+
+def test_guardian_rejects_manual_cosmological_constant_tuning(
+    relaxed_guardian_checks: None,
+    stub_model: SimpleNamespace,
+) -> None:
+    guardian = main_module.RigidityGuardian(model=stub_model)
+
+    with pytest.raises(main_module.BenchmarkExecutionError, match=r"manual tuning of lambda_anchor_si_m2"):
+        guardian.calculate(
+            lambda **kwargs: kwargs,
+            lambda_anchor_si_m2=main_module._BENCHMARK_LAMBDA_OBS_SI_M2 * 1.01,
+            sector_name="cosmology",
+            label="manual lambda tuning",
+        )
