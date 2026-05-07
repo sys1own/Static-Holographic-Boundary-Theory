@@ -27,3 +27,10 @@ include = ["shbt", "shbt.*"]
 
 [tool.setuptools.package-data]
 shbt = ["config/*.yaml", "templates/*.tex.j2"]
+
+[tool.pytest.ini_options]
+filterwarnings = [
+  "ignore::pyparsing.PyparsingDeprecationWarning",
+  "ignore:.*resetCache.*:DeprecationWarning",
+  "ignore:.*enablePackrat.*:DeprecationWarning",
+]
