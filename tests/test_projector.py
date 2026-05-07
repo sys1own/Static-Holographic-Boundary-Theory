@@ -7,13 +7,32 @@ import numpy as np
 import pytest
 
 from shbt.constants import LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
+from shbt.core.derivation_api import TopologicalVacuum
 from shbt.core.projector import (
+    BulkProjector,
     HolographicCompiler,
     PrimeIndexedInformationLattice,
     PrimeIndexedLatticeSite,
     actualize_boundary_determined_bulk,
+    actualize_boundary_determined_bulk_from_radau,
     build_benchmark_prime_indexed_lattice,
 )
+from shbt.physics_engine import solve_ivp_with_fallback
+
+
+def _build_radau_boundary_solution():
+    initial_state = np.array([0.92, 0.73, 0.58, 0.41, 0.27], dtype=float)
+    benchmark_state = np.array([0.34, 0.23, 0.18, 0.15, 0.10], dtype=float)
+
+    def equations(_parameter: float, state: np.ndarray) -> np.ndarray:
+        return 0.35 * (benchmark_state - state)
+
+    return solve_ivp_with_fallback(
+        equations,
+        (0.0, 1.0),
+        initial_state,
+        t_eval=np.linspace(0.0, 1.0, 11),
+    )
 
 
 def test_holographic_compiler_builds_prime_indexed_benchmark_lattice() -> None:
@@ -83,3 +102,60 @@ def test_prime_indexed_information_lattice_requires_five_sites_for_3_plus_1_actu
                 PrimeIndexedLatticeSite(7, "d", Decimal("1")),
             ),
         )
+
+
+def test_bulk_projector_ingests_radau_solution_into_continuous_metric_field() -> None:
+    solution = _build_radau_boundary_solution()
+    projector = BulkProjector(precision=50)
+
+    trace = projector.ingest_solver_output(solution)
+    geometry = projector.project_bulk(solution)
+
+    assert trace.solver_method == "Radau"
+    assert trace.sample_count == solution.t.size
+    assert trace.site_count == 5
+    assert trace.topological_closure_locked is True
+    assert geometry.boundary_trace is trace
+    assert geometry.metric_field is not None
+    assert geometry.metric_field.sample_count == solution.t.size
+    assert geometry.continuum_sample_count == solution.t.size
+    assert geometry.boundary_closure_locked is True
+    assert geometry.rendered_from_boundary_closure is True
+    assert geometry.spacetime_dimension == 4
+    assert geometry.spatial_dimension == 3
+    assert np.all(np.linalg.eigvalsh(geometry.metric_field.final_metric.components) > 0)
+
+
+def test_bulk_projector_interpolates_metric_tensor_over_radau_parameter_grid() -> None:
+    solution = _build_radau_boundary_solution()
+    geometry = actualize_boundary_determined_bulk_from_radau(solution)
+
+    assert geometry.metric_field is not None
+    midpoint_metric = geometry.metric_field.metric_at(0.5)
+
+    assert midpoint_metric.dimension == 4
+    assert np.allclose(midpoint_metric.components, midpoint_metric.components.T)
+    assert np.all(np.linalg.eigvalsh(midpoint_metric.components) > 0)
+    assert not np.array_equal(midpoint_metric.components, geometry.metric_field.initial_metric.components)
+    assert not np.array_equal(midpoint_metric.components, geometry.metric_field.final_metric.components)
+
+
+def test_boundary_closure_controls_bulk_rendering_for_off_shell_branches() -> None:
+    solution = _build_radau_boundary_solution()
+    projector = BulkProjector(precision=50)
+    detuned_vacuum = TopologicalVacuum(
+        lepton_level=24,
+        quark_level=QUARK_LEVEL,
+        parent_level=PARENT_LEVEL,
+        generation_count=15,
+    )
+    detuned_lattice = projector.build_benchmark_lattice(vacuum=detuned_vacuum)
+
+    detuned_geometry = projector.project_bulk(solution, lattice=detuned_lattice)
+
+    assert detuned_geometry.boundary_closure_locked is False
+    assert detuned_geometry.rendered_from_boundary_closure is False
+    assert detuned_geometry.boundary_trace is not None
+    assert detuned_geometry.boundary_trace.closure_scale < Decimal("1")
+    with pytest.raises(RuntimeError, match="Boundary topological closure is required"):
+        projector.project_bulk(solution, lattice=detuned_lattice, require_boundary_closure=True)
