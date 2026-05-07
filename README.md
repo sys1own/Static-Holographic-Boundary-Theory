@@ -184,12 +184,12 @@ The benchmark branch is fixed by the Tier 1 topological coordinates $(k_{\ell}, 
 
 ## Reproducibility
 
-The benchmark now uses a split configuration model: `config/physics_profiles/standard_model.yaml` is the single source of truth for Tier 1 / Tier 2 inputs, while `config/benchmark_v1.yaml` retains the auxiliary runtime and reporting configuration.
+The benchmark now uses a split configuration model: `config/physics_profiles/standard_model.yaml` is the single source of truth for the Tier 1 branch inputs plus the geometry-origin bootstrap declaration, while `config/benchmark_v1.yaml` retains the auxiliary runtime and reporting configuration.
 
-- **Tier 1 / Tier 2 source of truth:** `config/physics_profiles/standard_model.yaml`
+- **Tier 1 + geometry-origin source of truth:** `config/physics_profiles/standard_model.yaml`
 - **Auxiliary runtime config:** `config/benchmark_v1.yaml`
-- **SHA-256 (`config/physics_profiles/standard_model.yaml`):** `bd79105efbd211a81f23955cc1efa4c6497cda3c9b925c57d06495a6363d65d2`
-- **SHA-256 (`config/benchmark_v1.yaml`):** `37a8b88a5045e98a699638efae6f8f8b718b8fb8753aeabd8619d9deb4169604`
+- **SHA-256 (`config/physics_profiles/standard_model.yaml`):** `973323dbf59f38b7068577cc4e33132676eec4f8140323cc83d19d51676286e8`
+- **SHA-256 (`config/benchmark_v1.yaml`):** `d0cc04539fcdcbab7ca436ae12a36d3e3f06edd1e17c17a19dc7f55d9dd8c122`
 - **Build backend:** `setuptools.build_meta`
 - **Python requirement:** `>=3.11`
 - **Pinned scientific stack:** `PyYAML==6.0.3`, `Jinja2==3.1.6`, `mpmath==1.3.0`, `numpy==1.26.4`, `scipy==1.12.0`, `matplotlib==3.8.3`, `sympy==1.12`
