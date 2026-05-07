@@ -100,6 +100,7 @@ $$ m_g = m_0 e^{\beta g} $$
 ### Complexity Sector
 
 - `complexity_sector.py` maps the branch-fixed mass ladder into complementary Prime-Sync windows and audits a duplex-DNA Shannon ceiling sourced by the same holographic bit budget $N$ that caps the universal complexity ledger.
+- `complexity.py` extends that audit into explicit biological isomorphisms, matching the `(26, 8, 312)` parity kernel to duplex-DNA codon checks, golden-angle/Fibonacci phyllotaxis windows, and a rigidity-derived ceiling on biological information throughput.
 
 ### Numerical Hardening
 
