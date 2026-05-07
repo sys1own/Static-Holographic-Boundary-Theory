@@ -3,43 +3,63 @@ from __future__ import annotations
 from decimal import Decimal
 
 from shbt.core.entropy_engine import (
-    build_entropy_feedback_audit,
-    build_markov_collar,
-    reframe_time_as_update_index,
-    simulate_entanglement_entropy_growth,
+    SOURCE_PROJECTION_DIMENSION,
+    TARGET_PROJECTION_DIMENSION,
+    EntropyAccumulator,
+    build_entropy_engine_audit,
+    render_report,
 )
 
 
-def test_markov_collar_factorizes_observer_from_external_boundary() -> None:
-    collar = build_markov_collar()
+def test_entropy_engine_turns_static_loading_into_dynamic_temporal_audit() -> None:
+    audit = build_entropy_engine_audit()
 
-    assert collar.factorization_verified is True
-    assert collar.factorized_joint_state == collar.loading_density
-    assert sum(collar.collar_weights, Decimal("0")) == Decimal("1")
-    assert sum(collar.observer_marginal, Decimal("0")) == Decimal("1")
-    assert sum(collar.boundary_marginal, Decimal("0")) == Decimal("1")
-    assert collar.observer_boundary_mutual_information_bits > 0
-    assert collar.conditional_mutual_information_bits == Decimal("0")
-
-
-def test_entropy_feedback_audit_grows_entanglement_monotonically_with_resolution() -> None:
-    audit = simulate_entanglement_entropy_growth(entropy_budget_bits=Decimal("9"))
-
-    assert len(audit.steps) == 9
-    assert audit.monotonic_entanglement_growth is True
-    assert audit.transport_resolution_closed is True
-    assert audit.steps[0].entropy_delta_fraction > 0
-    assert audit.steps[-1].cumulative_entanglement_fraction == Decimal("1")
-    assert audit.final_entanglement_entropy_bits == Decimal("9")
-    assert audit.steps[1].feedback_multiplier > audit.steps[0].feedback_multiplier
+    assert audit.branch == (26, 8, 312)
+    assert len(audit.iterations) == len(audit.loading_sequence) == 9
+    assert audit.iterations[0].projected_dimension_before == Decimal(str(SOURCE_PROJECTION_DIMENSION))
+    assert audit.final_projected_dimension == Decimal(str(TARGET_PROJECTION_DIMENSION))
+    assert audit.total_temporal_overhead == Decimal("1")
+    assert audit.arrow_of_time_established is True
+    assert audit.bulk_boundary_causal_loop_closed is True
+    assert audit.time_is_computational_overhead is True
+    assert audit.self_resolution_complete is True
+    assert audit.statement == "Time is the computational overhead of the universe's self-resolution."
 
 
-def test_arrow_of_time_is_the_transport_update_index() -> None:
-    audit = build_entropy_feedback_audit(entropy_budget_bits=Decimal("1"))
+def test_entropy_accumulator_tracks_stepwise_bit_residue_and_feedback_activation() -> None:
+    accumulator = EntropyAccumulator()
 
-    assert audit.arrow_of_time_reframed is True
-    assert [step.update_index for step in audit.steps] == list(range(1, len(audit.steps) + 1))
-    assert [step.arrow_of_time_index for step in audit.steps] == [Decimal(index) for index in range(1, len(audit.steps) + 1)]
-    assert [step.collar_coordinate for step in audit.steps] == list(audit.markov_collar.collar_sequence)
-    assert reframe_time_as_update_index(4) == Decimal("4")
-    assert audit.statement == "Time is the sequential delta update index of holographic transport resolution."
+    first = accumulator.step()
+    second = accumulator.step()
+
+    assert first.iteration_index == 1
+    assert second.iteration_index == 2
+    assert first.boundary_bit_residue > 0
+    assert first.bulk_entropy_bit_residue > 0
+    assert first.temporal_increment > 0
+    assert first.bulk_feedback_signal == 0
+    assert first.feedback_perturbs_boundary_resolution is False
+    assert second.bulk_feedback_signal > 0
+    assert second.feedback_perturbs_boundary_resolution is True
+    assert second.cumulative_bulk_entropy_bit_residue > first.cumulative_bulk_entropy_bit_residue
+    assert second.projected_dimension_after < first.projected_dimension_after
+
+
+def test_zero_feedback_recovers_static_resolution_shares_without_causal_perturbation() -> None:
+    audit = build_entropy_engine_audit(feedback_coupling=Decimal("0"))
+
+    assert audit.arrow_of_time_established is True
+    assert audit.time_is_computational_overhead is True
+    assert audit.self_resolution_complete is True
+    assert audit.bulk_boundary_causal_loop_closed is False
+    assert all(step.bulk_feedback_signal >= 0 for step in audit.iterations)
+    assert all(step.feedback_perturbs_boundary_resolution is False for step in audit.iterations)
+
+
+def test_entropy_engine_report_mentions_causal_loop_and_overhead_language() -> None:
+    report = render_report(build_entropy_engine_audit())
+
+    assert "Entropy Engine" in report
+    assert "Bulk-boundary causal loop         : True" in report
+    assert "Time is computational overhead    : True" in report
+    assert "Time is modeled as the iterative entropic overhead of holographic self-resolution." in report
