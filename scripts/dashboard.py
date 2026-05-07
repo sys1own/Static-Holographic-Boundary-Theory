@@ -381,6 +381,7 @@ def build_residue_comparison_table(
 def _build_ui_residue_payload(derivation: DerivationSnapshot) -> dict[str, object]:
     residues = dict(getattr(derivation, "residues", {}))
     residues.update(_ui_constant_aliases())
+    residues["k_l"] = float(LEPTON_LEVEL)
     return residues
 
 
