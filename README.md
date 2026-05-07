@@ -97,6 +97,10 @@ $$ m_g = m_0 e^{\beta g} $$
 - `uniqueness_theorem.py` formally certifies the lexicographic elimination of off-shell coordinates and isolates $(26, 8, 312)$ as the unique Minimal Anomaly-Free Local Survivor.
 - `minimality_proof.py` proves that $SO(10)$ is the minimal parent Lie algebra that simultaneously furnishes the direct renormalizable Majorana channel and the required Virasoro-orthogonal completion residue.
 
+### Complexity Sector
+
+- `complexity_sector.py` maps the branch-fixed mass ladder into complementary Prime-Sync windows and audits a duplex-DNA Shannon ceiling sourced by the same holographic bit budget $N$ that caps the universal complexity ledger.
+
 ### Numerical Hardening
 
 - `stiff_transport_audit.py` proves the mathematical necessity of the implicit Radau IIA solver for stiff holographic transport. Explicit RK45 is audited as non-certified at the $10^{-12}$ floor, while duplicate Radau runs remain reproducible below $10^{-12}\sigma$.
@@ -149,7 +153,7 @@ To go from the branch-fixed integer inputs to the compiled manuscript PDFs in on
 python scripts/build_manuscript.py
 ```
 
-This orchestrator checks for a local `pdflatex` installation, runs all four Sector Proofs, executes the full Universal Audit, refreshes the manuscript-facing macro export, and compiles `papers/gravity.tex`, yielding `papers/gravity.pdf` when LaTeX is available.
+This orchestrator checks for a local `pdflatex` installation, runs all five Sector Proofs, executes the full Universal Audit, refreshes the manuscript-facing macro export, and compiles `papers/gravity.tex`, yielding `papers/gravity.pdf` when LaTeX is available.
 
 The package entrypoint in `src/shbt/main.py` regenerates the benchmark-facing artifacts, numerical audits, manuscript exports, and reviewer packets from the disclosed branch data. The intended use is verification of a rigid branch-fixed theorem stack, not parameter search.
 
