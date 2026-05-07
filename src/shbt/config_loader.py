@@ -267,6 +267,9 @@ class ConfigLoader:
         tier_2 = physics_profile.setdefault("tier_2", {})
         if not isinstance(tier_2, dict):
             raise TypeError("Configuration section 'tier_2' must be a mapping when provided")
+        geometry_origin = physics_profile.setdefault("geometry_origin", {})
+        if not isinstance(geometry_origin, dict):
+            raise TypeError("Configuration section 'geometry_origin' must be a mapping when provided")
 
         from shbt.core.master_transport import build_geometry_origin_profile
 
@@ -279,6 +282,10 @@ class ConfigLoader:
 
         for leaf_path, value in synthesized_values.items():
             if not leaf_path.startswith("physical_constants."):
+                if leaf_path.startswith("geometry_origin."):
+                    field_name = leaf_path.removeprefix("geometry_origin.")
+                    geometry_origin.setdefault(field_name, value)
+                    metadata.setdefault(f"geometry_origin.{field_name}", synthesized_metadata[leaf_path])
                 continue
             constant_name = leaf_path.removeprefix("physical_constants.")
             tier_2.setdefault(constant_name, value)
@@ -324,8 +331,18 @@ class ConfigLoader:
             config["physical_constants"] = physical_constants
         if not isinstance(physical_constants, dict):
             raise TypeError("Benchmark configuration section 'physical_constants' must be a mapping")
+        geometry_origin = config.get("geometry_origin")
+        if geometry_origin is None:
+            geometry_origin = {}
+            config["geometry_origin"] = geometry_origin
+        if not isinstance(geometry_origin, dict):
+            raise TypeError("Benchmark configuration section 'geometry_origin' must be a mapping")
         for leaf_path, value in synthesized_values.items():
             if not leaf_path.startswith("physical_constants."):
+                if leaf_path.startswith("geometry_origin."):
+                    field_name = leaf_path.removeprefix("geometry_origin.")
+                    geometry_origin.setdefault(field_name, value)
+                    metadata.setdefault(leaf_path, synthesized_metadata[leaf_path])
                 continue
             constant_name = leaf_path.removeprefix("physical_constants.")
             physical_constants.setdefault(constant_name, value)
@@ -337,6 +354,9 @@ class ConfigLoader:
         tier_2 = physics_profile.get("tier_2", {})
         if not isinstance(tier_2, dict):
             raise TypeError("Configuration section 'tier_2' must be a mapping when provided")
+        geometry_origin = physics_profile.get("geometry_origin", {})
+        if not isinstance(geometry_origin, dict):
+            raise TypeError("Configuration section 'geometry_origin' must be a mapping when provided")
 
         lepton_level = int(tier_1["lepton_level"])
         quark_level = int(tier_1["quark_level"])
@@ -361,7 +381,13 @@ class ConfigLoader:
             for key, value in synthesized_values.items()
             if key.startswith("physical_constants.")
         }
+        translated_geometry_origin = {
+            key.removeprefix("geometry_origin."): value
+            for key, value in synthesized_values.items()
+            if key.startswith("geometry_origin.")
+        }
         physical_constants.update({key: value for key, value in tier_2.items()})
+        translated_geometry_origin.update({key: value for key, value in geometry_origin.items()})
         if "planck2018_lambda_si_m2" not in physical_constants:
             hubble_si = float(physical_constants["planck2018_h0_km_s_mpc"]) * 1.0e3 / float(physical_constants["mpc_in_meters"])
             light_speed = float(physical_constants["light_speed_m_per_s"])
@@ -382,6 +408,7 @@ class ConfigLoader:
                 "quark_fixed_point_index": parent_level // (3 * quark_level),
                 "g_sm": int(tier_1["g_sm"]),
             },
+            "geometry_origin": translated_geometry_origin,
             "physical_constants": physical_constants,
         }
 
@@ -405,9 +432,17 @@ class ConfigLoader:
         tier_2 = physics_profile.get("tier_2", {})
         if not isinstance(tier_2, dict):
             raise TypeError("Configuration section 'tier_2' must be a mapping when provided")
+        geometry_origin = physics_profile.get("geometry_origin", {})
+        if not isinstance(geometry_origin, dict):
+            raise TypeError("Configuration section 'geometry_origin' must be a mapping when provided")
         for name in tier_2:
             translated[f"physical_constants.{name}"] = metadata.get(
                 f"tier_2.{name}",
+                GEOMETRIC_EMERGENCE_CLASSIFICATION,
+            )
+        for name in geometry_origin:
+            translated[f"geometry_origin.{name}"] = metadata.get(
+                f"geometry_origin.{name}",
                 GEOMETRIC_EMERGENCE_CLASSIFICATION,
             )
         from shbt.core.master_transport import build_geometry_origin_profile
