@@ -13038,6 +13038,25 @@ def write_benchmark_diagnostics(
     return diagnostics
 
 
+def write_canonical_benchmark_manifest(
+    output_dir: Path,
+    *,
+    model: "TopologicalVacuum" | None = None,
+) -> Path:
+    """Write the architecture-stable benchmark manifest for a generated output directory."""
+
+    resolved_model = DEFAULT_TOPOLOGICAL_VACUUM if model is None else model
+    benchmark_tuple = tuple(
+        int(value)
+        for value in getattr(resolved_model, "target_tuple", (LEPTON_LEVEL, QUARK_LEVEL, PARENT_LEVEL))
+    )
+    return _export_mod.write_canonical_benchmark_manifest(
+        Path(output_dir),
+        benchmark_tuple=benchmark_tuple,
+        filename=BENCHMARK_MANIFEST_FILENAME,
+    )
+
+
 def write_holographic_curvature_audit(
     audit: HolographicCurvatureAudit | None = None,
     *,
@@ -14629,6 +14648,7 @@ def export_manuscript_artifacts(
         vacuum=vacuum,
         output_dir=manuscript_output_dir,
     )
+    write_canonical_benchmark_manifest(manuscript_output_dir, model=resolved_vacuum)
     return manuscript_output_dir
 
 
@@ -18482,6 +18502,7 @@ def main(argv: list[str] | None = None) -> None:
         vacuum=vacuum,
         output_dir=output_dir,
     )
+    write_canonical_benchmark_manifest(output_dir, model=vacuum)
     referee_summary_payload = None
     if args.referee_audit:
         referee_summary_payload = MasterAudit.peer_review_defensive_summary(
