@@ -221,6 +221,35 @@ def _resolve_numeric_field(
     return _power_of_ten(logarithmic_value)
 
 
+def _resolve_named_numeric_field(
+    payload: Mapping[str, Any],
+    *,
+    linear_keys: Sequence[str],
+    sequence_paths: Sequence[str] = ("default_parameters", "parameters"),
+    name_keys: Sequence[str] = ("name", "parameter", "parameter_name"),
+    value_keys: Sequence[str] = ("best", "value", "median", "mean", "maximum_likelihood", "maximum_likelihood_value"),
+) -> Decimal | None:
+    direct_value = _resolve_numeric_field(payload, linear_keys=linear_keys)
+    if direct_value is not None:
+        return direct_value
+
+    normalized_candidates = {_normalized_key(candidate) for candidate in linear_keys}
+    for sequence_path in sequence_paths:
+        sequence_value = _lookup_value(payload, (sequence_path,))
+        if not isinstance(sequence_value, Sequence) or isinstance(sequence_value, (str, bytes)):
+            continue
+        for entry in sequence_value:
+            if not isinstance(entry, Mapping):
+                continue
+            name = _string_or_none(_lookup_value(entry, name_keys))
+            if name is None or _normalized_key(name) not in normalized_candidates:
+                continue
+            nested_value = _resolve_numeric_field(entry, linear_keys=value_keys)
+            if nested_value is not None:
+                return nested_value
+    return None
+
+
 def _clip_unit_interval(value: Decimal) -> Decimal:
     if value <= _ZERO:
         return _ZERO
@@ -686,10 +715,10 @@ class LiveVerificationBridge:
         observations: list[LIGOStrainObservation] = []
         for index, (fallback_name, raw_event) in enumerate(event_mappings, start=1):
             event_id = _string_or_none(_lookup_value(raw_event, _LIGO_ID_KEYS)) or fallback_name or f"ligo-{index}"
-            peak_strain = _resolve_numeric_field(raw_event, linear_keys=_LIGO_STRAIN_KEYS)
-            network_snr = _resolve_numeric_field(raw_event, linear_keys=_LIGO_SNR_KEYS)
-            redshift = _resolve_numeric_field(raw_event, linear_keys=_LIGO_REDSHIFT_KEYS)
-            luminosity_distance = _resolve_numeric_field(raw_event, linear_keys=_LIGO_DISTANCE_KEYS)
+            peak_strain = _resolve_named_numeric_field(raw_event, linear_keys=_LIGO_STRAIN_KEYS)
+            network_snr = _resolve_named_numeric_field(raw_event, linear_keys=_LIGO_SNR_KEYS)
+            redshift = _resolve_named_numeric_field(raw_event, linear_keys=_LIGO_REDSHIFT_KEYS)
+            luminosity_distance = _resolve_named_numeric_field(raw_event, linear_keys=_LIGO_DISTANCE_KEYS)
             if peak_strain is None and network_snr is None and luminosity_distance is None:
                 continue
             observations.append(
