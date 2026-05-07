@@ -51,44 +51,7 @@ majorana:
   lobster_grid_points:
     value: 20
     classification: Empirical Matching Ansatz
-physical_constants:
-  planck_mass_ev:
-    value: 1.22089e28
-    classification: Empirical Matching Ansatz
-  planck_length_m:
-    value: 1.616255e-35
-    classification: Empirical Matching Ansatz
-  light_speed_m_per_s:
-    value: 299792458.0
-    classification: Empirical Matching Ansatz
-  mpc_in_meters:
-    value: 3.085677581491367e22
-    classification: Empirical Matching Ansatz
-  planck2018_h0_km_s_mpc:
-    value: 67.36
-    classification: Empirical Matching Ansatz
-  planck2018_h0_sigma_km_s_mpc:
-    value: 0.54
-    classification: Empirical Matching Ansatz
-  planck2018_omega_lambda:
-    value: 0.6847
-    classification: Empirical Matching Ansatz
-  planck2018_omega_lambda_sigma:
-    value: 0.0073
-    classification: Empirical Matching Ansatz
-  planck2018_alpha_em_inv_mz:
-    value: 127.955
-    classification: Empirical Matching Ansatz
-  planck2018_sin2_theta_w_mz:
-    value: 0.23122
-    classification: Empirical Matching Ansatz
-  planck2018_alpha_s_mz:
-    value: 0.1179
-    classification: Empirical Matching Ansatz
 model:
-  geometric_kappa:
-    value: 0.9887710512663789
-    classification: Empirical Matching Ansatz
   parent_level:
     value: 312
     classification: Topological Necessity
@@ -101,6 +64,13 @@ model:
   dirac_higgs_benchmark_mass_gev:
     value: 1.0e15
     classification: Topological Necessity
+geometry_origin:
+  kernel:
+    value: MasterTransportEquation[26D]
+    classification: Geometric Emergence
+  zero_anchor_boot:
+    value: true
+    classification: Geometric Emergence
 benchmarks:
   sm_gut_yukawa:
     electron:
