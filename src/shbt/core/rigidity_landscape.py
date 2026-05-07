@@ -42,7 +42,7 @@ from shbt.constants import (
     SU3_DUAL_COXETER,
 )
 from shbt.core.noether_bridge import framing_defect
-from shbt.math_engine import FIXED_POINT_DENOMINATOR, PRECISION_GUARD, guard_fraction, guard_sum, is_guard_zero
+from shbt.math_engine import guard_fraction, guard_sum, is_guard_zero
 
 
 EXPECTED_BENCHMARK: Final[tuple[int, int, int]] = (26, 8, 312)
@@ -53,7 +53,7 @@ DEFAULT_DISCOVERY_DIMENSION_LEVELS: Final[tuple[int, ...]] = tuple(range(2, 41))
 DEFAULT_DISCOVERY_GAUGE_LEVELS: Final[tuple[int, ...]] = tuple(range(1, 21))
 DEFAULT_DISCOVERY_PARENT_LEVELS: Final[tuple[int, ...]] = tuple(range(2, 401))
 DEFAULT_FRONTIER_SIZE: Final[int] = 16
-ZERO_TOLERANCE: Final[float] = float(Fraction(1, FIXED_POINT_DENOMINATOR))
+ZERO_TOLERANCE: Final[float] = 1.0e-15
 MIN_COLOR_CEILING: Final[float] = 1.0e-6
 
 
@@ -65,12 +65,23 @@ def _benchmark_coordinates() -> tuple[int, int, int]:
     return benchmark
 
 
-def _sanitize_small(value: Fraction | int) -> Fraction:
-    return guard_fraction(value)
+def _sanitize_small(value: float) -> float:
+    numeric_value = float(value)
+    if is_guard_zero(value):
+        return 0.0
+    return numeric_value
 
 
-def _is_zero(value: Fraction | int) -> bool:
-    return is_guard_zero(value)
+def _is_zero(value: float) -> bool:
+    return bool(is_guard_zero(value))
+
+
+def _is_positive_residue(value: float | Fraction) -> bool:
+    return not is_guard_zero(value) and float(value) > 0.0
+
+
+def _guard_zero_mask(values: np.ndarray) -> np.ndarray:
+    return np.asarray(np.vectorize(is_guard_zero, otypes=[bool])(values), dtype=bool)
 
 
 def _centered_levels(center: int, half_width: int) -> tuple[int, ...]:
@@ -90,26 +101,42 @@ def _coerce_levels(levels: Sequence[int]) -> tuple[int, ...]:
     return resolved_levels
 
 
+def _distance_to_guard_integer(value: Fraction) -> Fraction:
+    denominator = value.denominator
+    remainder = Fraction(value.numerator % denominator, denominator)
+    return remainder if remainder <= Fraction(1, 1) - remainder else Fraction(1, 1) - remainder
+
+
+def calculate_moat_depth(parent_level: int, lepton_level: int, quark_level: int) -> Fraction:
+    lepton_loading = guard_fraction(parent_level, 2 * int(lepton_level))
+    quark_loading = guard_fraction(parent_level, 3 * int(quark_level))
+    lepton_gap = _distance_to_guard_integer(lepton_loading)
+    quark_gap = _distance_to_guard_integer(quark_loading)
+    return lepton_gap if lepton_gap >= quark_gap else quark_gap
+
+
 def _wzw_central_charge(level: int, dimension: int, dual_coxeter: int) -> Fraction:
     resolved_level = int(level)
     denominator = resolved_level + int(dual_coxeter)
     if denominator <= 0:
         raise ValueError("WZW central charge requires k + h^∨ > 0.")
-    return Fraction(resolved_level * int(dimension), denominator)
+    return guard_fraction(resolved_level * int(dimension), denominator)
 
 
 def _c_dark_residue(parent_level: int, lepton_level: int, quark_level: int) -> Fraction:
-    return (
-        _wzw_central_charge(parent_level, SU3_DIMENSION, SU3_DUAL_COXETER)
-        + _wzw_central_charge(parent_level, SU2_DIMENSION, SU2_DUAL_COXETER)
-        - _wzw_central_charge(quark_level, SU3_DIMENSION, SU3_DUAL_COXETER)
-        - _wzw_central_charge(lepton_level, SU2_DIMENSION, SU2_DUAL_COXETER)
+    return guard_sum(
+        (
+            _wzw_central_charge(parent_level, SU3_DIMENSION, SU3_DUAL_COXETER),
+            _wzw_central_charge(parent_level, SU2_DIMENSION, SU2_DUAL_COXETER),
+            -_wzw_central_charge(quark_level, SU3_DIMENSION, SU3_DUAL_COXETER),
+            -_wzw_central_charge(lepton_level, SU2_DIMENSION, SU2_DUAL_COXETER),
+        )
     )
 
 
 def _diophantine_gap(parent_level: int, lepton_level: int, quark_level: int) -> Fraction:
     minimal_parent_level = math.lcm(2 * int(lepton_level), 3 * int(quark_level))
-    return _sanitize_small(Fraction(abs(int(parent_level) - minimal_parent_level), minimal_parent_level))
+    return abs(guard_fraction(int(parent_level) - minimal_parent_level, minimal_parent_level))
 
 
 def _point_order_key(point: "RigidityPoint") -> tuple[float, float, float, float, int, int, int]:
@@ -127,14 +154,14 @@ def _point_order_key(point: "RigidityPoint") -> tuple[float, float, float, float
 @dataclass(frozen=True)
 class RigidityPoint:
     coordinates: tuple[int, int, int]
-    lepton_framing_gap: Fraction
-    quark_framing_gap: Fraction
-    delta_fr: Fraction
+    lepton_framing_gap: float
+    quark_framing_gap: float
+    delta_fr: float
     delta_fr_label: str
-    c_dark_shift: Fraction
-    diophantine_gap: Fraction
-    total_residue: Fraction
-    topological_closure_score: Fraction
+    c_dark_shift: float
+    diophantine_gap: float
+    total_residue: float
+    topological_closure_score: float
 
     @property
     def dimension_level(self) -> int:
@@ -192,7 +219,7 @@ class RigidityLandscapeScan:
 
     @property
     def topological_closure_grid(self) -> np.ndarray:
-        return np.asarray(self.total_residue_grid == 0.0, dtype=int)
+        return np.asarray(_guard_zero_mask(self.total_residue_grid), dtype=int)
 
     @property
     def unique_stable_fixed_point(self) -> RigidityPoint | None:
@@ -308,7 +335,7 @@ class SymmetrySearchAudit:
             self.discovered_kernel.coordinates == self.benchmark_coordinates
             and self.unique_fixed_point_count == 1
             and self.unique_non_singular_fixed_points[0].coordinates == self.benchmark_coordinates
-            and self.runner_up_kernel.total_residue > 0.0
+            and _is_positive_residue(self.runner_up_kernel.total_residue)
         )
 
     @property
@@ -343,26 +370,29 @@ class SymmetrySearchAudit:
                 "The only stable fixed point is not the benchmark kernel: "
                 f"{self.unique_non_singular_fixed_points[0].coordinates}."
             )
-        if self.runner_up_kernel.total_residue <= 0.0:
+        if not _is_positive_residue(self.runner_up_kernel.total_residue):
             raise AssertionError("Runner-up candidate retained zero closure residue; uniqueness proof failed.")
 
 
 def build_rigidity_point(lepton_level: int, quark_level: int, parent_level: int) -> RigidityPoint:
     defect = framing_defect(int(parent_level), int(lepton_level), int(quark_level))
-    lepton_gap = _sanitize_small(defect.lepton_gap)
-    quark_gap = _sanitize_small(defect.quark_gap)
-    delta_fr = _sanitize_small(defect.delta_fr)
-    c_dark_shift = _sanitize_small(
-        abs(_c_dark_residue(parent_level, lepton_level, quark_level) - BENCHMARK_C_DARK_RESIDUE_FRACTION)
+    lepton_gap = _sanitize_small(float(defect.lepton_gap))
+    quark_gap = _sanitize_small(float(defect.quark_gap))
+    delta_fr_fraction = calculate_moat_depth(parent_level, lepton_level, quark_level)
+    delta_fr = _sanitize_small(delta_fr_fraction)
+    c_dark_shift_fraction = abs(_c_dark_residue(parent_level, lepton_level, quark_level) - BENCHMARK_C_DARK_RESIDUE_FRACTION)
+    c_dark_shift = _sanitize_small(c_dark_shift_fraction)
+    diophantine_gap_fraction = _diophantine_gap(parent_level, lepton_level, quark_level)
+    diophantine_gap = _sanitize_small(diophantine_gap_fraction)
+    topological_closure_score = _sanitize_small(
+        guard_sum((delta_fr_fraction, c_dark_shift_fraction, diophantine_gap_fraction))
     )
-    diophantine_gap = _diophantine_gap(parent_level, lepton_level, quark_level)
-    topological_closure_score = guard_sum(delta_fr, c_dark_shift, diophantine_gap)
     return RigidityPoint(
         coordinates=(int(lepton_level), int(quark_level), int(parent_level)),
         lepton_framing_gap=lepton_gap,
         quark_framing_gap=quark_gap,
         delta_fr=delta_fr,
-        delta_fr_label=str(defect.delta_fr),
+        delta_fr_label=str(delta_fr_fraction),
         c_dark_shift=c_dark_shift,
         diophantine_gap=diophantine_gap,
         total_residue=topological_closure_score,
@@ -391,10 +421,10 @@ def build_rigidity_landscape_scan(
     )
 
     grid_shape = (len(resolved_lepton_levels), len(resolved_quark_levels), len(resolved_parent_levels))
-    total_residue_grid = np.empty(grid_shape, dtype=object)
-    delta_fr_grid = np.empty(grid_shape, dtype=object)
-    c_dark_shift_grid = np.empty(grid_shape, dtype=object)
-    diophantine_gap_grid = np.empty(grid_shape, dtype=object)
+    total_residue_grid = np.zeros(grid_shape, dtype=float)
+    delta_fr_grid = np.zeros(grid_shape, dtype=float)
+    c_dark_shift_grid = np.zeros(grid_shape, dtype=float)
+    diophantine_gap_grid = np.zeros(grid_shape, dtype=float)
     points: list[RigidityPoint] = []
 
     for lepton_index, lepton_level in enumerate(resolved_lepton_levels):
@@ -418,18 +448,18 @@ def build_rigidity_landscape_scan(
     )
     maximum_residue_point = max(points, key=_point_order_key)
 
-    positive_residues = [value for value in delta_fr_grid.flat if value > 0]
-    color_floor = min((float(value) for value in positive_residues), default=MIN_COLOR_CEILING)
+    positive_residues = delta_fr_grid[~_guard_zero_mask(delta_fr_grid)]
+    color_floor = float(np.min(positive_residues)) if positive_residues.size else MIN_COLOR_CEILING
 
     scan = RigidityLandscapeScan(
         benchmark_coordinates=(benchmark_kl, benchmark_kq, benchmark_parent),
         lepton_levels=resolved_lepton_levels,
         quark_levels=resolved_quark_levels,
         parent_levels=resolved_parent_levels,
-        total_residue_grid=np.asarray(total_residue_grid, dtype=object),
-        delta_fr_grid=np.asarray(delta_fr_grid, dtype=object),
-        c_dark_shift_grid=np.asarray(c_dark_shift_grid, dtype=object),
-        diophantine_gap_grid=np.asarray(diophantine_gap_grid, dtype=object),
+        total_residue_grid=np.asarray(total_residue_grid, dtype=float),
+        delta_fr_grid=np.asarray(delta_fr_grid, dtype=float),
+        c_dark_shift_grid=np.asarray(c_dark_shift_grid, dtype=float),
+        diophantine_gap_grid=np.asarray(diophantine_gap_grid, dtype=float),
         benchmark_index=benchmark_index,
         benchmark_point=benchmark_point,
         nearest_detuned_point=nearest_detuned_point,
@@ -586,12 +616,12 @@ __all__ = [
     "DEFAULT_QUARK_HALF_WIDTH",
     "EXPECTED_BENCHMARK",
     "MIN_COLOR_CEILING",
-    "PRECISION_GUARD",
     "RigidityLandscapeScan",
     "RigidityPoint",
     "SymmetrySearchAudit",
     "SymmetrySearcher",
     "ZERO_TOLERANCE",
+    "calculate_moat_depth",
     "build_centered_rigidity_landscape_scan",
     "build_rigidity_landscape_scan",
     "build_rigidity_point",
