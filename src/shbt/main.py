@@ -40,7 +40,6 @@ from scipy.optimize import brentq
 from scipy.stats import chi2 as _chi2_distribution
 
 from shbt import constants as _constants
-from shbt import export as _export_mod
 from shbt import physics_engine
 from shbt import reporting as presentation_reporting
 from shbt import reporting_engine
@@ -50,6 +49,7 @@ from shbt.audit import audit_generator as _audit_generator
 from shbt.core import algebra
 from shbt.core import bootstrap as _bootstrap
 from shbt.core import engine as publication_engine
+from shbt.core.math_utils import GKOCentralChargeAudit, verify_gko_orthogonality
 from shbt.core import master_transport as _master_transport
 from shbt.core import noether_bridge as _noether_bridge
 from shbt.core import transport as _transport
@@ -537,11 +537,41 @@ RK45_STIFFNESS_NOTICE = (
 )
 LOCAL_LEPTON_LEVEL_WINDOW = tuple(range(max(2, LEPTON_LEVEL - 2), LEPTON_LEVEL + 3))
 
+
+def _export_transport_covariance_diagnostics(*args: Any, **kwargs: Any) -> Any:
+    from shbt import export as export_mod
+
+    return export_mod.export_transport_covariance_diagnostics(*args, **kwargs)
+
+
+def _export_matrix_spectrum_csv(*args: Any, **kwargs: Any) -> Any:
+    from shbt import export as export_mod
+
+    return export_mod.export_matrix_spectrum_csv(*args, **kwargs)
+
+
+def _write_json_artifact(*args: Any, **kwargs: Any) -> Any:
+    from shbt import export as export_mod
+
+    return export_mod.write_json_artifact(*args, **kwargs)
+
+
+def _write_csv_artifact(*args: Any, **kwargs: Any) -> Any:
+    from shbt import export as export_mod
+
+    return export_mod.write_csv_artifact(*args, **kwargs)
+
+
+def _export_dm_fingerprint_figure(*args: Any, **kwargs: Any) -> Any:
+    from shbt import export as export_mod
+
+    return export_mod.export_dm_fingerprint_figure(*args, **kwargs)
+
 publication_export = SimpleNamespace(
-    export_transport_covariance_diagnostics=_export_mod.export_transport_covariance_diagnostics,
+    export_transport_covariance_diagnostics=_export_transport_covariance_diagnostics,
     export_ih_singular_value_spectrum_figure=_audit_generator.export_ih_singular_value_spectrum_figure,
-    export_matrix_spectrum_csv=_export_mod.export_matrix_spectrum_csv,
-    write_json_artifact=_export_mod.write_json_artifact,
+    export_matrix_spectrum_csv=_export_matrix_spectrum_csv,
+    write_json_artifact=_write_json_artifact,
 )
 
 GRAVITY_SIDE_RIGIDITY_REPORT_FILENAME = "gravity_side_rigidity_report.txt"
@@ -1098,22 +1128,6 @@ class GaugeEmergenceAudit:
     @property
     def gauge_emergent(self) -> bool:
         return not self.bulk_decoupled
-
-
-@dataclass(frozen=True)
-class GKOCentralChargeAudit:
-    parent_level: int
-    lepton_level: int
-    quark_level: int
-    parent_su3_central_charge: float
-    parent_su2_central_charge: float
-    visible_su3_central_charge: float
-    visible_su2_central_charge: float
-    c_dark_residue: float
-
-    @property
-    def orthogonality_verified(self) -> bool:
-        return self.c_dark_residue > 0.0
 
 
 @dataclass(frozen=True)
@@ -4164,35 +4178,6 @@ def gko_c_dark_residue(
     return float(
         (parent_su3_central_charge + parent_su2_central_charge)
         - (visible_su3_central_charge + visible_su2_central_charge)
-    )
-
-
-def verify_gko_orthogonality(
-    *,
-    parent_level: int = PARENT_LEVEL,
-    lepton_level: int = LEPTON_LEVEL,
-    quark_level: int = QUARK_LEVEL,
-) -> GKOCentralChargeAudit:
-    """Audit the rigid GKO central-charge residue for the selected branch."""
-
-    parent_su3_central_charge = wzw_central_charge(parent_level, SU3_DIMENSION, SU3_DUAL_COXETER)
-    parent_su2_central_charge = wzw_central_charge(parent_level, SU2_DIMENSION, SU2_DUAL_COXETER)
-    visible_su3_central_charge = wzw_central_charge(quark_level, SU3_DIMENSION, SU3_DUAL_COXETER)
-    visible_su2_central_charge = wzw_central_charge(lepton_level, SU2_DIMENSION, SU2_DUAL_COXETER)
-    c_dark_residue = gko_c_dark_residue(
-        parent_level=parent_level,
-        lepton_level=lepton_level,
-        quark_level=quark_level,
-    )
-    return GKOCentralChargeAudit(
-        parent_level=int(parent_level),
-        lepton_level=int(lepton_level),
-        quark_level=int(quark_level),
-        parent_su3_central_charge=float(parent_su3_central_charge),
-        parent_su2_central_charge=float(parent_su2_central_charge),
-        visible_su3_central_charge=float(visible_su3_central_charge),
-        visible_su2_central_charge=float(visible_su2_central_charge),
-        c_dark_residue=float(c_dark_residue),
     )
 
 
@@ -14085,7 +14070,7 @@ def export_dm_fingerprint_artifact(
 
     resolved_output_dir = _resolved_output_dir(output_dir)
     dm_fingerprint = derive_dm_fingerprint_inputs(weight_profile, geometric_kappa, framing_gap_stability)
-    _export_mod.export_dm_fingerprint_figure(
+    _export_dm_fingerprint_figure(
         output_path=resolved_output_dir / DM_FINGERPRINT_FIGURE_FILENAME,
         dm_mass_gev=float(dm_fingerprint.dm_mass_gev),
         rhn_scale_gev=float(dm_fingerprint.rhn_scale_gev),
@@ -14290,7 +14275,7 @@ def export_followup_chi2_landscape_table(chi2_landscape_audit: Chi2LandscapeAudi
 
 def export_global_sensitivity_scan_csv(global_audit: GlobalSensitivityAudit, output_path: Path) -> None:
     rows = tuple(getattr(global_audit, "rows", ()) or ())
-    _export_mod.write_csv_artifact(
+    _write_csv_artifact(
         Path(output_path),
         ("lepton_level", "quark_level", "parent_level", "modularity_gap", "framing_gap", "anomaly_energy"),
         (
@@ -14309,7 +14294,7 @@ def export_global_sensitivity_scan_csv(global_audit: GlobalSensitivityAudit, out
 
 def export_followup_chi2_landscape_csv(chi2_landscape_audit: Chi2LandscapeAuditData, output_path: Path) -> None:
     points = tuple(getattr(chi2_landscape_audit, "points", ()) or ())
-    _export_mod.write_csv_artifact(
+    _write_csv_artifact(
         Path(output_path),
         ("lepton_level", "quark_level", "predictive_chi2", "framing_gap", "modularity_gap"),
         (
@@ -14334,7 +14319,7 @@ def export_robustness_audit_csv(robustness_scan: object, output_path: Path) -> N
         elif isinstance(row, dict):
             normalized_rows.append(dict(row))
     fieldnames = tuple(sorted({key for row in normalized_rows for key in row}))
-    _export_mod.write_csv_artifact(Path(output_path), fieldnames, normalized_rows)
+    _write_csv_artifact(Path(output_path), fieldnames, normalized_rows)
 
 
 def export_detuning_sensitivity_artifacts(
@@ -14362,7 +14347,7 @@ def export_detuning_sensitivity_artifacts(
         }
         for point in tuple(getattr(detuning_sensitivity, "points", ()) or ())
     ]
-    _export_mod.write_csv_artifact(csv_output_path, tuple(rows[0].keys()) if rows else (), rows)
+    _write_csv_artifact(csv_output_path, tuple(rows[0].keys()) if rows else (), rows)
 
     if rows:
         fig, ax = plt.subplots(figsize=(6.0, 3.8))
