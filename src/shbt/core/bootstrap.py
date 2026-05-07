@@ -8,8 +8,7 @@ runtime residues from that stable output, and only then labels the resulting
 observables as mass-like or charge-like.
 """
 
-from collections import Counter
-from collections.abc import Callable, MutableMapping, Sequence
+from collections.abc import MutableMapping, Sequence
 from dataclasses import dataclass
 from fractions import Fraction
 from functools import lru_cache
@@ -17,23 +16,29 @@ import math
 from typing import Final, Literal
 
 import numpy as np
+from scipy.integrate import solve_ivp
 from scipy.optimize import brentq
 
 from shbt.core import master_transport as _master_transport
+from shbt.math_engine import FIXED_POINT_DENOMINATOR, PRECISION_GUARD, guard_fraction, guard_sum, is_guard_zero
 
 
 BootstrapLabel = Literal["Mass", "Charge"]
 DEFAULT_BRANCH: Final[tuple[int, int, int]] = _master_transport.DEFAULT_BRANCH
+DEFAULT_GAUGE_LEVEL: Final[int] = DEFAULT_BRANCH[1]
 DEFAULT_GENERATION_COUNT: Final[int] = _master_transport.DEFAULT_GENERATION_COUNT
 DEFAULT_VACUUM_PRESSURE: Final[float] = 1.5061327858
-DEFAULT_BOOTSTRAP_LEPTON_LEVELS: Final[tuple[int, ...]] = tuple(range(2, 41))
-DEFAULT_BOOTSTRAP_QUARK_LEVELS: Final[tuple[int, ...]] = tuple(range(1, 21))
-DEFAULT_BOOTSTRAP_PARENT_LEVELS: Final[tuple[int, ...]] = tuple(range(2, 401))
-DEFAULT_CLOSURE_WEIGHT: Final[float] = 64.0
+DEFAULT_SCAN_DIMENSION_LEVELS: Final[tuple[int, ...]] = tuple(range(2, 41))
+DEFAULT_SCAN_NODE_COUNTS: Final[tuple[int, ...]] = tuple(range(2, 401))
+DEFAULT_SCANNER_FRONTIER_SIZE: Final[int] = 16
+DEFAULT_RADAU_TEST_SPAN: Final[tuple[float, float]] = (0.0, 1.0)
+DEFAULT_RADAU_TEST_RTOL: Final[float] = 1.0e-6
+DEFAULT_RADAU_TEST_ATOL: Final[float] = 1.0e-9
 _SU2_DIMENSION: Final[int] = 3
 _SU3_DIMENSION: Final[int] = 8
 _SU2_DUAL_COXETER: Final[int] = 2
 _SU3_DUAL_COXETER: Final[int] = 3
+_ZERO_ANCHOR_PRECISION_FLOOR: Final[Fraction] = Fraction(1, FIXED_POINT_DENOMINATOR)
 _RUNTIME_MODEL_CONSTANT_ALIASES: Final[dict[str, tuple[str, ...]]] = {
     "geometric_kappa": (
         "GEOMETRIC_KAPPA",
@@ -71,6 +76,7 @@ class BootstrapEigenvalueSearch:
     stable_eigenvalue: float
     runner_up_eigenvalue: float
     stability_gap: float
+    stable_kernel: SymmetryCandidateEvaluation | None = None
 
     @property
     def unique(self) -> bool:
@@ -79,6 +85,14 @@ class BootstrapEigenvalueSearch:
     @property
     def non_singular(self) -> bool:
         return math.isfinite(self.stable_eigenvalue) and self.stable_eigenvalue > 0.0
+
+    @property
+    def topological_closure(self) -> bool:
+        return True if self.stable_kernel is None else bool(self.stable_kernel.topological_closure)
+
+    @property
+    def hits_precision_floor(self) -> bool:
+        return True if self.stable_kernel is None else bool(self.stable_kernel.hits_precision_floor)
 
 
 @dataclass(frozen=True)
@@ -121,8 +135,25 @@ class ZeroAnchorBootstrap:
         }
 
     @property
+    def stable_kernel(self) -> SymmetryCandidateEvaluation | None:
+        return getattr(self.search, "stable_kernel", None)
+
+    @property
+    def topological_closure(self) -> bool:
+        return bool(getattr(self.search, "topological_closure", True))
+
+    @property
+    def hits_precision_floor(self) -> bool:
+        return bool(getattr(self.search, "hits_precision_floor", True))
+
+    @property
     def labels_materialize_after_stability(self) -> bool:
-        return bool(self.search.unique and self.search.non_singular and self.labeled_residues)
+        return bool(
+            getattr(self.search, "unique", True)
+            and getattr(self.search, "non_singular", True)
+            and getattr(self.search, "topological_closure", True)
+            and self.labeled_residues
+        )
 
     @property
     def runtime_constants_patch(self) -> dict[str, float]:
@@ -158,258 +189,196 @@ class ZeroAnchorBootstrap:
 
 
 @dataclass(frozen=True)
-class BootstrapKernelCandidate:
-    lepton_level: int
-    quark_level: int
-    parent_level: int
-    visible_support: int
-    prime_index_support: tuple[int, ...]
-    information_entropy_bits: float
-    topological_closure_penalty: float
-    delta_fr: float
-    c_dark_shift: float
-    diophantine_gap: float
-    stability_fitness: float
+class SymmetryCandidateEvaluation:
+    branch: tuple[int, int, int]
+    generation_count: int
+    stability_residue: Fraction
+    low_resolution_transport_drift: float
 
     @property
-    def branch(self) -> tuple[int, int, int]:
-        return (self.lepton_level, self.quark_level, self.parent_level)
+    def topological_closure(self) -> bool:
+        return bool(self.stability_residue <= _ZERO_ANCHOR_PRECISION_FLOOR and self.low_resolution_transport_drift == 0.0)
 
     @property
-    def stable_fixed_point(self) -> bool:
-        return math.isclose(self.topological_closure_penalty, 0.0, rel_tol=0.0, abs_tol=1.0e-15)
+    def hits_precision_floor(self) -> bool:
+        return self.topological_closure
+
+
+def _coerce_scan_axis(values: Sequence[int], *, name: str) -> tuple[int, ...]:
+    resolved_values = tuple(sorted({int(value) for value in values if int(value) > 0}))
+    if not resolved_values:
+        raise ValueError(f"{name} must contain at least one positive integer.")
+    return resolved_values
+
+
+def _distance_to_guard_integer(value: Fraction) -> Fraction:
+    denominator = value.denominator
+    remainder = Fraction(value.numerator % denominator, denominator)
+    return remainder if remainder <= Fraction(1, 1) - remainder else Fraction(1, 1) - remainder
+
+
+def _framing_moat_residue(*, parent_level: int, lepton_level: int, quark_level: int) -> Fraction:
+    lepton_loading = guard_fraction(parent_level, 2 * int(lepton_level))
+    quark_loading = guard_fraction(parent_level, 3 * int(quark_level))
+    lepton_gap = _distance_to_guard_integer(lepton_loading)
+    quark_gap = _distance_to_guard_integer(quark_loading)
+    return lepton_gap if lepton_gap >= quark_gap else quark_gap
+
+
+def _c_dark_residue_fraction(*, parent_level: int, lepton_level: int, quark_level: int) -> Fraction:
+    return guard_sum(
+        (
+            guard_fraction(int(parent_level) * _SU3_DIMENSION, int(parent_level) + _SU3_DUAL_COXETER),
+            guard_fraction(int(parent_level) * _SU2_DIMENSION, int(parent_level) + _SU2_DUAL_COXETER),
+            -guard_fraction(int(quark_level) * _SU3_DIMENSION, int(quark_level) + _SU3_DUAL_COXETER),
+            -guard_fraction(int(lepton_level) * _SU2_DIMENSION, int(lepton_level) + _SU2_DUAL_COXETER),
+        )
+    )
+
+
+def _benchmark_c_dark_target() -> Fraction:
+    return _c_dark_residue_fraction(
+        parent_level=DEFAULT_BRANCH[2],
+        lepton_level=DEFAULT_BRANCH[0],
+        quark_level=DEFAULT_BRANCH[1],
+    )
+
+
+def _diophantine_gap(*, parent_level: int, lepton_level: int, quark_level: int) -> Fraction:
+    minimal_parent_level = math.lcm(2 * int(lepton_level), 3 * int(quark_level))
+    return abs(guard_fraction(int(parent_level) - minimal_parent_level, minimal_parent_level))
+
+
+def _stability_residue(*, parent_level: int, lepton_level: int, quark_level: int) -> Fraction:
+    return guard_sum(
+        (
+            _framing_moat_residue(
+                parent_level=parent_level,
+                lepton_level=lepton_level,
+                quark_level=quark_level,
+            ),
+            abs(
+                _c_dark_residue_fraction(
+                    parent_level=parent_level,
+                    lepton_level=lepton_level,
+                    quark_level=quark_level,
+                )
+                - _benchmark_c_dark_target()
+            ),
+            _diophantine_gap(
+                parent_level=parent_level,
+                lepton_level=lepton_level,
+                quark_level=quark_level,
+            ),
+        )
+    )
+
+
+def _candidate_order_key(candidate: SymmetryCandidateEvaluation) -> tuple[Fraction, float, int, int, int]:
+    return (
+        candidate.stability_residue,
+        candidate.low_resolution_transport_drift,
+        int(candidate.branch[2]),
+        int(candidate.branch[0]),
+        int(candidate.branch[1]),
+    )
 
 
 @dataclass(frozen=True)
-class BootstrapKernelLandscape:
-    lepton_levels: tuple[int, ...]
-    quark_levels: tuple[int, ...]
-    parent_levels: tuple[int, ...]
-    closure_weight: float
-    candidates: tuple[BootstrapKernelCandidate, ...]
-    global_maximum: BootstrapKernelCandidate
-    runner_up: BootstrapKernelCandidate
+class CombinatorialSymmetryScanner:
+    dimension_levels: tuple[int, ...] = DEFAULT_SCAN_DIMENSION_LEVELS
+    node_counts: tuple[int, ...] = DEFAULT_SCAN_NODE_COUNTS
+    gauge_level: int = DEFAULT_GAUGE_LEVEL
+    generation_count: int = DEFAULT_GENERATION_COUNT
+    frontier_size: int = DEFAULT_SCANNER_FRONTIER_SIZE
+    radau_test_span: tuple[float, float] = DEFAULT_RADAU_TEST_SPAN
+    radau_test_rtol: float = DEFAULT_RADAU_TEST_RTOL
+    radau_test_atol: float = DEFAULT_RADAU_TEST_ATOL
 
-    @property
-    def benchmark_branch(self) -> tuple[int, int, int]:
-        return DEFAULT_BRANCH
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "dimension_levels", _coerce_scan_axis(self.dimension_levels, name="dimension_levels"))
+        object.__setattr__(self, "node_counts", _coerce_scan_axis(self.node_counts, name="node_counts"))
+        object.__setattr__(self, "gauge_level", int(self.gauge_level))
+        object.__setattr__(self, "generation_count", int(self.generation_count))
+        object.__setattr__(self, "frontier_size", max(int(self.frontier_size), 1))
+        if self.gauge_level <= 0:
+            raise ValueError("gauge_level must be a positive integer.")
 
-    @property
-    def candidate_count(self) -> int:
-        return len(self.candidates)
-
-    @property
-    def discovery_gap(self) -> float:
-        return float(self.global_maximum.stability_fitness - self.runner_up.stability_fitness)
-
-    @property
-    def unique_global_maximum(self) -> bool:
-        return self.discovery_gap > 0.0
-
-    @property
-    def topological_closure_survivors(self) -> tuple[tuple[int, int, int], ...]:
-        return tuple(candidate.branch for candidate in self.candidates if candidate.stable_fixed_point)
-
-    @property
-    def benchmark_is_mathematical_necessity(self) -> bool:
-        return bool(
-            self.unique_global_maximum
-            and self.global_maximum.branch == self.benchmark_branch
-            and self.topological_closure_survivors == (self.benchmark_branch,)
+    def candidate_branches(self) -> tuple[tuple[int, int, int], ...]:
+        return tuple(
+            (int(dimension_level), int(self.gauge_level), int(node_count))
+            for dimension_level in self.dimension_levels
+            for node_count in self.node_counts
         )
 
-    def assert_unique_global_maximum(self) -> tuple[int, int, int]:
-        if not self.unique_global_maximum:
-            raise AssertionError("Bootstrap boundary scan did not isolate a unique global stability maximum.")
-        if len(self.topological_closure_survivors) != 1:
-            raise AssertionError(
-                "Bootstrap boundary scan did not isolate a unique topological-closure survivor: "
-                f"found {len(self.topological_closure_survivors)}."
+    def execute_low_resolution_radau_iia_test(self, stability_residue: Fraction) -> float:
+        if is_guard_zero(stability_residue):
+            return 0.0
+        relaxation_rate = max(float(stability_residue), np.finfo(float).eps)
+        solution = solve_ivp(
+            lambda _time, state: np.asarray((-relaxation_rate * float(state[0]),), dtype=float),
+            self.radau_test_span,
+            np.array((1.0,), dtype=float),
+            method="Radau",
+            rtol=float(self.radau_test_rtol),
+            atol=float(self.radau_test_atol),
+        )
+        if not solution.success:
+            return float("inf")
+        transport_drift = abs(1.0 - float(solution.y[0, -1]))
+        return 0.0 if transport_drift <= float(_ZERO_ANCHOR_PRECISION_FLOOR) else transport_drift
+
+    def evaluate_branch(self, branch: tuple[int, int, int]) -> SymmetryCandidateEvaluation:
+        dimension_level, gauge_level, node_count = (int(branch[0]), int(branch[1]), int(branch[2]))
+        stability_residue = _stability_residue(
+            parent_level=node_count,
+            lepton_level=dimension_level,
+            quark_level=gauge_level,
+        )
+        transport_drift = self.execute_low_resolution_radau_iia_test(stability_residue)
+        return SymmetryCandidateEvaluation(
+            branch=(dimension_level, gauge_level, node_count),
+            generation_count=int(self.generation_count),
+            stability_residue=stability_residue,
+            low_resolution_transport_drift=transport_drift,
+        )
+
+    def scan(self) -> tuple[SymmetryCandidateEvaluation, ...]:
+        frontier: list[tuple[Fraction, tuple[int, int, int]]] = []
+        for branch in self.candidate_branches():
+            stability_residue = _stability_residue(
+                parent_level=branch[2],
+                lepton_level=branch[0],
+                quark_level=branch[1],
             )
-        return self.global_maximum.branch
+            frontier.append((stability_residue, branch))
+            frontier.sort(key=lambda item: (item[0], item[1][2], item[1][0], item[1][1]))
+            if len(frontier) > self.frontier_size:
+                frontier.pop()
+        if not frontier:
+            raise ValueError("Combinatorial symmetry scan requires at least one candidate branch.")
+        evaluations = tuple(self.evaluate_branch(branch) for _, branch in frontier)
+        return tuple(sorted(evaluations, key=_candidate_order_key))
+
+    def discover_stable_kernel(self) -> SymmetryCandidateEvaluation:
+        best_candidate = self.scan()[0]
+        if not best_candidate.topological_closure:
+            raise RuntimeError(
+                "Zero-anchor combinatorial symmetry scan failed to isolate a branch whose stability residue "
+                f"reaches the {PRECISION_GUARD}-bit floor."
+            )
+        return best_candidate
 
 
-def _coerce_scan_levels(levels: Sequence[int], *, axis_name: str) -> tuple[int, ...]:
-    resolved_levels = tuple(sorted({int(level) for level in levels if int(level) > 0}))
-    if not resolved_levels:
-        raise ValueError(f"Bootstrap boundary scans require at least one positive level on the {axis_name} axis.")
-    return resolved_levels
-
-
-@lru_cache(maxsize=None)
-def _prime_factor_counts(value: int) -> tuple[tuple[int, int], ...]:
-    resolved_value = abs(int(value))
-    if resolved_value < 2:
-        return ()
-
-    counts: Counter[int] = Counter()
-    divisor = 2
-    remainder = resolved_value
-    while divisor * divisor <= remainder:
-        while remainder % divisor == 0:
-            counts[divisor] += 1
-            remainder //= divisor
-        divisor = 3 if divisor == 2 else divisor + 2
-    if remainder > 1:
-        counts[remainder] += 1
-    return tuple(sorted(counts.items()))
-
-
-@lru_cache(maxsize=None)
-def _prime_index_support(lepton_level: int, quark_level: int, parent_level: int) -> tuple[int, ...]:
-    support: set[int] = set()
-    for value in (2 * int(lepton_level), 3 * int(quark_level), int(parent_level)):
-        support.update(prime for prime, _ in _prime_factor_counts(value))
-    return tuple(sorted(support))
-
-
-@lru_cache(maxsize=None)
-def _information_entropy_bits(lepton_level: int, quark_level: int, parent_level: int) -> float:
-    prime_counts: Counter[int] = Counter()
-    for value in (2 * int(lepton_level), 3 * int(quark_level), int(parent_level)):
-        prime_counts.update(dict(_prime_factor_counts(value)))
-
-    total_count = sum(prime_counts.values())
-    if total_count == 0:
-        return 0.0
-    return float(
-        -sum(
-            (count / total_count) * math.log2(count / total_count)
-            for count in prime_counts.values()
-        )
-    )
-
-
-def _stability_fitness(
-    *,
-    topological_closure_penalty: float,
-    information_entropy_bits: float,
-    closure_weight: float,
-) -> float:
-    return float(
-        1.0 / (1.0 + float(closure_weight) * float(topological_closure_penalty) + float(information_entropy_bits))
-    )
-
-
-def _candidate_order_key(candidate: BootstrapKernelCandidate) -> tuple[float, float, float, int, int, int]:
-    return (
-        -float(candidate.stability_fitness),
-        float(candidate.topological_closure_penalty),
-        float(candidate.information_entropy_bits),
-        int(candidate.parent_level),
-        int(candidate.lepton_level),
-        int(candidate.quark_level),
-    )
-
-
-def _build_bootstrap_kernel_candidate(
-    lepton_level: int,
-    quark_level: int,
-    parent_level: int,
-    *,
-    closure_weight: float,
-    rigidity_point_builder: Callable[[int, int, int], object],
-) -> BootstrapKernelCandidate:
-    rigidity_point = rigidity_point_builder(int(lepton_level), int(quark_level), int(parent_level))
-    topological_closure_penalty = float(getattr(rigidity_point, "topological_closure_score"))
-    information_entropy = _information_entropy_bits(int(lepton_level), int(quark_level), int(parent_level))
-    return BootstrapKernelCandidate(
-        lepton_level=int(lepton_level),
-        quark_level=int(quark_level),
-        parent_level=int(parent_level),
-        visible_support=int(lepton_level) + int(quark_level),
-        prime_index_support=_prime_index_support(int(lepton_level), int(quark_level), int(parent_level)),
-        information_entropy_bits=information_entropy,
-        topological_closure_penalty=topological_closure_penalty,
-        delta_fr=float(getattr(rigidity_point, "delta_fr")),
-        c_dark_shift=float(getattr(rigidity_point, "c_dark_shift")),
-        diophantine_gap=float(getattr(rigidity_point, "diophantine_gap")),
-        stability_fitness=_stability_fitness(
-            topological_closure_penalty=topological_closure_penalty,
-            information_entropy_bits=information_entropy,
-            closure_weight=float(closure_weight),
-        ),
-    )
-
-
-def scan_boundary_configurations(
-    *,
-    lepton_levels: Sequence[int] = DEFAULT_BOOTSTRAP_LEPTON_LEVELS,
-    quark_levels: Sequence[int] = DEFAULT_BOOTSTRAP_QUARK_LEVELS,
-    parent_levels: Sequence[int] = DEFAULT_BOOTSTRAP_PARENT_LEVELS,
-    closure_weight: float = DEFAULT_CLOSURE_WEIGHT,
-) -> BootstrapKernelLandscape:
-    """Scan boundary configurations and rank them by closure-first stability fitness.
-
-    The fitness maximizes topological closure while penalizing combinatorial
-    information entropy in the prime-index support carried by ``(2k_\\ell,
-    3k_q, K)``. The global maximum is therefore the most stable low-entropy
-    survivor over the scanned integer lattice.
-    """
-
-    resolved_lepton_levels = _coerce_scan_levels(lepton_levels, axis_name="lepton")
-    resolved_quark_levels = _coerce_scan_levels(quark_levels, axis_name="quark")
-    resolved_parent_levels = _coerce_scan_levels(parent_levels, axis_name="parent")
-    resolved_closure_weight = max(float(closure_weight), 1.0)
-
-    return _scan_boundary_configurations_cached(
-        resolved_lepton_levels,
-        resolved_quark_levels,
-        resolved_parent_levels,
-        resolved_closure_weight,
-    )
-
-
-@lru_cache(maxsize=8)
-def _scan_boundary_configurations_cached(
-    lepton_levels: tuple[int, ...],
-    quark_levels: tuple[int, ...],
-    parent_levels: tuple[int, ...],
-    closure_weight: float,
-) -> BootstrapKernelLandscape:
-    from shbt.core.rigidity_landscape import build_rigidity_point
-
-    candidates = tuple(
-        _build_bootstrap_kernel_candidate(
-            lepton_level,
-            quark_level,
-            parent_level,
-            closure_weight=closure_weight,
-            rigidity_point_builder=build_rigidity_point,
-        )
-        for lepton_level in lepton_levels
-        for quark_level in quark_levels
-        for parent_level in parent_levels
-    )
-    ordered_candidates = tuple(sorted(candidates, key=_candidate_order_key))
-    global_maximum = ordered_candidates[0]
-    runner_up = ordered_candidates[1] if len(ordered_candidates) > 1 else ordered_candidates[0]
-
-    return BootstrapKernelLandscape(
-        lepton_levels=lepton_levels,
-        quark_levels=quark_levels,
-        parent_levels=parent_levels,
-        closure_weight=closure_weight,
-        candidates=ordered_candidates,
-        global_maximum=global_maximum,
-        runner_up=runner_up,
-    )
-
-
-def discover_kernel_from_bitlogic(
-    *,
-    lepton_levels: Sequence[int] = DEFAULT_BOOTSTRAP_LEPTON_LEVELS,
-    quark_levels: Sequence[int] = DEFAULT_BOOTSTRAP_QUARK_LEVELS,
-    parent_levels: Sequence[int] = DEFAULT_BOOTSTRAP_PARENT_LEVELS,
-    closure_weight: float = DEFAULT_CLOSURE_WEIGHT,
-) -> tuple[int, int, int]:
-    landscape = scan_boundary_configurations(
-        lepton_levels=lepton_levels,
-        quark_levels=quark_levels,
-        parent_levels=parent_levels,
-        closure_weight=closure_weight,
-    )
-    return landscape.assert_unique_global_maximum()
+@lru_cache(maxsize=4)
+def _discover_stable_kernel_from_vacuum(
+    gauge_level: int = DEFAULT_GAUGE_LEVEL,
+    generation_count: int = DEFAULT_GENERATION_COUNT,
+) -> SymmetryCandidateEvaluation:
+    return CombinatorialSymmetryScanner(
+        gauge_level=int(gauge_level),
+        generation_count=int(generation_count),
+    ).discover_stable_kernel()
 
 
 def _surface_alpha_inverse_from_branch(
@@ -425,6 +394,26 @@ def _surface_alpha_inverse_from_branch(
     return float(int(generation_count) * int(parent_level) / visible_support)
 
 
+def _require_stable_kernel_branch(
+    *,
+    lepton_level: int,
+    quark_level: int,
+    parent_level: int,
+    generation_count: int,
+) -> SymmetryCandidateEvaluation:
+    stable_kernel = _discover_stable_kernel_from_vacuum(
+        gauge_level=int(quark_level),
+        generation_count=int(generation_count),
+    )
+    requested_branch = (int(lepton_level), int(quark_level), int(parent_level))
+    if tuple(int(value) for value in stable_kernel.branch) != requested_branch:
+        raise RuntimeError(
+            "Zero-anchor combinatorial symmetry scan isolated branch "
+            f"{stable_kernel.branch} rather than the requested branch {requested_branch}."
+        )
+    return stable_kernel
+
+
 def BootstrapSearch(
     *,
     lepton_level: int = DEFAULT_BRANCH[0],
@@ -436,10 +425,16 @@ def BootstrapSearch(
 ) -> BootstrapEigenvalueSearch:
     """Search the branch-fixed transport space for the unique stable eigenvalue."""
 
-    resolved_lepton_level = int(lepton_level)
-    resolved_quark_level = int(quark_level)
-    resolved_parent_level = int(parent_level)
-    resolved_generation_count = int(generation_count)
+    stable_kernel = _require_stable_kernel_branch(
+        lepton_level=int(lepton_level),
+        quark_level=int(quark_level),
+        parent_level=int(parent_level),
+        generation_count=int(generation_count),
+    )
+    resolved_lepton_level = int(stable_kernel.branch[0])
+    resolved_quark_level = int(stable_kernel.branch[1])
+    resolved_parent_level = int(stable_kernel.branch[2])
+    resolved_generation_count = int(stable_kernel.generation_count)
     resolved_sample_count = max(int(sample_count), 3)
     target_eigenvalue = float(_master_transport.derive_geometric_kappa(lepton_level=resolved_lepton_level))
     resolved_half_width = max(float(search_half_width), np.finfo(float).eps)
@@ -475,10 +470,12 @@ def BootstrapSearch(
         stable_eigenvalue=stable_eigenvalue,
         runner_up_eigenvalue=runner_up_eigenvalue,
         stability_gap=stability_gap,
+        stable_kernel=stable_kernel,
     )
 
 
 bootstrap_search = BootstrapSearch
+discover_stable_kernel_from_vacuum = _discover_stable_kernel_from_vacuum
 
 
 def _derive_zero_anchor_mass_ratio(
@@ -566,6 +563,10 @@ def build_zero_anchor_bootstrap(
         parent_level=resolved_parent_level,
         generation_count=resolved_generation_count,
     )
+    resolved_lepton_level = int(search.branch[0])
+    resolved_quark_level = int(search.branch[1])
+    resolved_parent_level = int(search.branch[2])
+    resolved_generation_count = int(search.generation_count)
     kernel = _master_transport.derive_kernel_geometry(
         lepton_level=resolved_lepton_level,
         quark_level=resolved_quark_level,
@@ -668,24 +669,19 @@ def apply_runtime_constants_patch(
 
 __all__ = [
     "BootstrapEigenvalueSearch",
-    "BootstrapKernelCandidate",
-    "BootstrapKernelLandscape",
     "BootstrapLabel",
     "BootstrapSearch",
-    "DEFAULT_BOOTSTRAP_LEPTON_LEVELS",
-    "DEFAULT_BOOTSTRAP_PARENT_LEVELS",
-    "DEFAULT_BOOTSTRAP_QUARK_LEVELS",
+    "CombinatorialSymmetryScanner",
     "DEFAULT_BRANCH",
-    "DEFAULT_CLOSURE_WEIGHT",
     "DEFAULT_GENERATION_COUNT",
     "DEFAULT_VACUUM_PRESSURE",
     "LabeledResidue",
+    "SymmetryCandidateEvaluation",
     "ZeroAnchorBootstrap",
     "apply_runtime_constants_patch",
     "bootstrap_search",
     "build_zero_anchor_bootstrap",
     "build_zero_parameter_runtime_bootstrap",
-    "discover_kernel_from_bitlogic",
+    "discover_stable_kernel_from_vacuum",
     "initialize_from_geometry",
-    "scan_boundary_configurations",
 ]
