@@ -62,3 +62,24 @@ def test_derived_emergent_constants_preserve_loader_benchmark_outputs() -> None:
     assert math.isclose(constants.planck2018_alpha_em_inv_mz, 127.955, rel_tol=5.0e-5)
     assert math.isclose(constants.planck2018_sin2_theta_w_mz, 0.23122, rel_tol=5.0e-5)
     assert math.isclose(constants.codata_fine_structure_alpha_inverse, 137.035999084, rel_tol=5.0e-5)
+
+
+def test_geometric_kappa_override_recomputes_dependent_observables() -> None:
+    baseline = derive_emergent_constants()
+    delta = 1.0e-4
+    shifted = derive_emergent_constants(geometric_kappa=baseline.geometric_kappa + delta)
+
+    assert math.isclose(shifted.geometric_kappa, baseline.geometric_kappa + delta, rel_tol=0.0, abs_tol=1.0e-15)
+    assert math.isclose(
+        shifted.planck2018_h0_km_s_mpc,
+        baseline.planck2018_h0_km_s_mpc - delta,
+        rel_tol=0.0,
+        abs_tol=1.0e-12,
+    )
+    assert math.isclose(
+        shifted.codata_fine_structure_alpha_inverse,
+        baseline.codata_fine_structure_alpha_inverse - delta,
+        rel_tol=0.0,
+        abs_tol=1.0e-12,
+    )
+    assert shifted.holographic_bits != baseline.holographic_bits
