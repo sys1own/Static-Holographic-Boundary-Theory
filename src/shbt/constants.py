@@ -495,6 +495,13 @@ def _validate_benchmark_tier_metadata(
 ) -> None:
     seen_identifiers: set[str] = set()
     declared_constants: dict[str, str] = {}
+    relaxed_metadata_paths = {
+        metadata_path
+        for tier in tiers
+        if tier.identifier in {"Tier 1", "Tier 2"}
+        for constant in tier.constants
+        for metadata_path in constant.legacy_metadata_paths
+    }
 
     for tier in tiers:
         if tier.identifier in seen_identifiers:
@@ -519,11 +526,15 @@ def _validate_benchmark_tier_metadata(
                     f"Strict benchmark constant '{constant.name}' declares legacy metadata paths without allowed classifications."
                 )
 
-            allowed_legacy_classifications = tuple(
-                dict.fromkeys((*constant.allowed_legacy_classifications, "Geometric Emergence"))
-            )
-
             for metadata_path in constant.legacy_metadata_paths:
+                path_relaxations = (
+                    ("Geometric Emergence", "Topological Extraction")
+                    if metadata_path in relaxed_metadata_paths
+                    else ("Geometric Emergence",)
+                )
+                allowed_legacy_classifications = tuple(
+                    dict.fromkeys((*constant.allowed_legacy_classifications, *path_relaxations))
+                )
                 classification = legacy_classifications.get(metadata_path)
                 if classification is None:
                     raise RuntimeError(
