@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+from fractions import Fraction
+from types import SimpleNamespace
+
 import pytest
 
 from shbt import constants as constants_module
+import shbt.core.bootstrap as bootstrap_module
 from shbt.core.bootstrap import BootstrapSearch, apply_runtime_constants_patch, build_zero_anchor_bootstrap
 
 
@@ -15,6 +19,29 @@ def test_zero_anchor_bootstrap_search_finds_unique_stable_eigenvalue() -> None:
     assert search.non_singular is True
     assert search.sample_count >= 4097
     assert search.stable_eigenvalue == pytest.approx(0.9887710512663789, rel=0.0, abs=1.0e-12)
+
+
+def test_bootstrap_search_uses_discovered_stable_kernel(monkeypatch: pytest.MonkeyPatch) -> None:
+    stable_kernel = bootstrap_module.SymmetryCandidateEvaluation(
+        branch=(26, 8, 312),
+        generation_count=15,
+        stability_residue=Fraction(0, 1),
+        low_resolution_transport_drift=0.0,
+    )
+    calls: list[tuple[int, int]] = []
+
+    def fake_discover_stable_kernel_from_vacuum(*, gauge_level: int, generation_count: int):
+        calls.append((gauge_level, generation_count))
+        return stable_kernel
+
+    monkeypatch.setattr(bootstrap_module, "_discover_stable_kernel_from_vacuum", fake_discover_stable_kernel_from_vacuum)
+
+    search = BootstrapSearch()
+
+    assert calls == [(8, 15)]
+    assert search.stable_kernel == stable_kernel
+    assert search.topological_closure is True
+    assert search.hits_precision_floor is True
 
 
 def test_zero_anchor_bootstrap_labels_charge_and_mass_only_after_stability() -> None:
@@ -79,6 +106,29 @@ def test_apply_runtime_constants_patch_updates_namespace() -> None:
     assert runtime.mass_observables["proton_electron_mass_ratio"] == pytest.approx(1835.248988001927, rel=0.0, abs=1.0e-9)
     assert runtime.labeled_residues["fine_structure_alpha_inverse"].label == "Charge"
     assert runtime.labeled_residues["proton_electron_mass_ratio"].label == "Mass"
+
+
+def test_zero_anchor_runtime_uses_branch_selected_by_search(monkeypatch: pytest.MonkeyPatch) -> None:
+    build_zero_anchor_bootstrap.cache_clear()
+    original_search = bootstrap_module.BootstrapSearch
+
+    def fake_bootstrap_search(**_: object) -> SimpleNamespace:
+        return SimpleNamespace(branch=(26, 8, 312), generation_count=15, stable_eigenvalue=0.9887710512663789)
+
+    monkeypatch.setattr(bootstrap_module, "BootstrapSearch", fake_bootstrap_search)
+    try:
+        runtime = build_zero_anchor_bootstrap(
+            lepton_level=25,
+            quark_level=8,
+            parent_level=300,
+            generation_count=15,
+        )
+    finally:
+        monkeypatch.setattr(bootstrap_module, "BootstrapSearch", original_search)
+        build_zero_anchor_bootstrap.cache_clear()
+
+    assert runtime.kernel.branch == (26, 8, 312)
+    assert runtime.stable_kernel is None
 
 
 def test_constants_boot_from_zero_anchor_runtime() -> None:
