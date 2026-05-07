@@ -46,7 +46,12 @@ from shbt.math_engine import PRECISION_GUARD, guard_fraction, guard_sum
 
 _ONE: Final[Fraction] = Fraction(1, 1)
 _MANDATORY_STABILITY_LEDGER_TITLE: Final[str] = "Mandatory Stability Ledger"
+_BENCHMARK_BRANCH_LABEL: Final[str] = "Benchmark Branch"
+_CANDIDATE_BRANCH_LABEL: Final[str] = "Candidate Branch"
+_DEGENERATE_BRANCH_LABEL: Final[str] = "Degenerate Branch"
+_DEGENERATE_BRANCH_TOLERANCE: Final[Fraction] = guard_fraction(1, 10**15)
 _COORDINATE_FIELD_GROUPS: Final[tuple[tuple[str, str, str], ...]] = (
+    ("dimension", "generation", "nodes"),
     ("dimension_level", "gauge_level", "parent_level"),
     ("lepton_level", "quark_level", "parent_level"),
 )
@@ -202,6 +207,15 @@ def _zero_value(value: float | None) -> bool:
     return value is not None and math.isclose(float(value), 0.0, rel_tol=0.0, abs_tol=1.0e-15)
 
 
+def _fraction_value(value: object | None) -> Fraction | None:
+    if value is None:
+        return None
+    try:
+        return _coerce_fraction(value)
+    except (TypeError, ValueError, ZeroDivisionError):
+        return None
+
+
 def _levels_from_payload(levels: object | None) -> tuple[int, ...]:
     if levels is None:
         return ()
@@ -221,26 +235,50 @@ def _normalize_point(candidate: object) -> dict[str, object]:
     delta_fr = _float_value(_named_value(candidate, "delta_fr"))
     c_dark_shift = _float_value(_named_value(candidate, "c_dark_shift"))
     diophantine_gap = _float_value(_named_value(candidate, "diophantine_gap"))
+    stability_score = _fraction_value(_named_value(candidate, "stability_score"))
     total_residue = _float_value(_named_value(candidate, "total_residue", "topological_closure_score"))
     topological_closure_score = _float_value(_named_value(candidate, "topological_closure_score", "total_residue"))
 
+    if stability_score is not None:
+        stability_penalty = guard_fraction(_ONE, stability_score) - _ONE
+        if total_residue is None:
+            total_residue = float(stability_penalty)
+        if topological_closure_score is None:
+            topological_closure_score = float(stability_penalty)
+    elif total_residue is not None:
+        stability_score = _stability_score_from_penalty(_coerce_fraction(total_residue))
+    elif topological_closure_score is not None:
+        stability_score = _stability_score_from_penalty(_coerce_fraction(topological_closure_score))
+
     non_singular_value = _named_value(candidate, "non_singular")
     stable_fixed_point_value = _named_value(candidate, "stable_fixed_point")
+    is_closed_value = _named_value(candidate, "is_closed")
     topological_closure_locked_value = _named_value(candidate, "topological_closure_locked", "topological_closure")
+    closure_locked_from_score = bool(
+        stability_score == _ONE
+        if stability_score is not None
+        else _zero_value(topological_closure_score)
+    )
 
     non_singular = (
         bool(non_singular_value) if non_singular_value is not None else _zero_value(delta_fr) and _zero_value(c_dark_shift)
-    )
+        if is_closed_value is None
+        else bool(is_closed_value)
+    ) or closure_locked_from_score
     stable_fixed_point = (
         bool(stable_fixed_point_value)
         if stable_fixed_point_value is not None
+        else bool(is_closed_value)
+        if is_closed_value is not None
         else non_singular and _zero_value(diophantine_gap)
-    )
+    ) or closure_locked_from_score
     topological_closure_locked = (
         bool(topological_closure_locked_value)
         if topological_closure_locked_value is not None
+        else bool(is_closed_value)
+        if is_closed_value is not None
         else stable_fixed_point and _zero_value(topological_closure_score)
-    )
+    ) or closure_locked_from_score
 
     return {
         "coordinates": coordinates,
@@ -253,10 +291,12 @@ def _normalize_point(candidate: object) -> dict[str, object]:
         "delta_fr_label": _named_value(candidate, "delta_fr_label") or (str(delta_fr) if delta_fr is not None else None),
         "c_dark_shift": c_dark_shift,
         "diophantine_gap": diophantine_gap,
+        "stability_score": stability_score,
         "total_residue": total_residue,
         "topological_closure_score": topological_closure_score,
         "non_singular": non_singular,
         "stable_fixed_point": stable_fixed_point,
+        "is_closed": topological_closure_locked,
         "topological_closure": topological_closure_locked,
         "topological_closure_locked": topological_closure_locked,
     }
@@ -356,6 +396,272 @@ def _stability_penalty_from_point(point: RigidityPoint) -> Fraction:
 
 def _stability_score_from_penalty(penalty: Fraction) -> Fraction:
     return guard_fraction(1, _ONE + penalty)
+
+
+def _merge_kernel_result_entry(candidate: object) -> dict[str, object]:
+    if isinstance(candidate, Mapping):
+        return dict(candidate)
+    if is_dataclass(candidate):
+        return asdict(candidate)
+    if hasattr(candidate, "__dict__"):
+        return dict(vars(candidate))
+
+    if isinstance(candidate, CollectionSequence) and not isinstance(candidate, (str, bytes, bytearray)):
+        sequence = tuple(candidate)
+        merged: dict[str, object] = {}
+        if len(sequence) >= 3:
+            coordinates = _coordinate_sequence(sequence[:3])
+            if coordinates is not None:
+                merged["coordinates"] = coordinates
+                tail = sequence[3:]
+                if tail:
+                    first_tail = tail[0]
+                    if isinstance(first_tail, Mapping):
+                        merged.update(first_tail)
+                    else:
+                        merged["stability_score"] = first_tail
+                if len(tail) >= 2 and "is_closed" not in merged:
+                    merged["is_closed"] = tail[1]
+                return merged
+
+        if len(sequence) == 2:
+            left, right = sequence
+            left_coordinates = _extract_coordinates(left)
+            right_coordinates = _extract_coordinates(right)
+            if left_coordinates is not None:
+                merged["coordinates"] = left_coordinates
+            elif right_coordinates is not None:
+                merged["coordinates"] = right_coordinates
+
+            if isinstance(left, Mapping):
+                merged.update(left)
+            elif _fraction_value(left) is not None and "stability_score" not in merged:
+                merged["stability_score"] = left
+
+            if isinstance(right, Mapping):
+                merged.update(right)
+            elif _fraction_value(right) is not None and "stability_score" not in merged:
+                merged["stability_score"] = right
+
+            return merged
+
+    raise TypeError("Kernel result entries must be mappings, dataclasses, or coordinate/result tuples.")
+
+
+def _normalize_kernel_result_entry(candidate: object) -> dict[str, object]:
+    merged_candidate = _merge_kernel_result_entry(candidate)
+    normalized_point = _normalize_point(merged_candidate)
+    if normalized_point["stability_score"] is None:
+        raise ValueError("Kernel result entries must expose a stability_score or closure residue.")
+    return normalized_point
+
+
+def _normalized_point_sort_key(point: Mapping[str, object]) -> tuple[Fraction, int, int, int, int]:
+    stability_score = _fraction_value(point.get("stability_score")) or Fraction(0, 1)
+    coordinates = _extract_coordinates(point)
+    if coordinates is None:
+        raise ValueError("Normalized kernel reports must expose coordinates.")
+    return (
+        -stability_score,
+        0 if coordinates == _benchmark_coordinates() else 1,
+        int(coordinates[2]),
+        int(coordinates[0]),
+        int(coordinates[1]),
+    )
+
+
+def _annotate_branch_status(
+    point: dict[str, object],
+    *,
+    benchmark_coordinates: tuple[int, int, int],
+    benchmark_stability_score: Fraction,
+) -> dict[str, object]:
+    stability_score = _fraction_value(point.get("stability_score")) or Fraction(0, 1)
+    stability_gap_to_benchmark = abs(stability_score - benchmark_stability_score)
+    is_benchmark = point["coordinates"] == benchmark_coordinates
+    is_degenerate_branch = bool(
+        not is_benchmark and stability_gap_to_benchmark <= _DEGENERATE_BRANCH_TOLERANCE
+    )
+    branch_status = (
+        _BENCHMARK_BRANCH_LABEL
+        if is_benchmark
+        else _DEGENERATE_BRANCH_LABEL
+        if is_degenerate_branch
+        else _CANDIDATE_BRANCH_LABEL
+    )
+    return {
+        **point,
+        "branch_status": branch_status,
+        "branch_classification": branch_status,
+        "degenerate_branch": is_degenerate_branch,
+        "stability_gap_to_benchmark": stability_gap_to_benchmark,
+    }
+
+
+def _build_uniqueness_report_from_kernel_results(scan_results: Sequence[object]) -> dict[str, object]:
+    normalized_results = tuple(_normalize_kernel_result_entry(result) for result in scan_results)
+    if not normalized_results:
+        raise ValueError("Uniqueness reports require at least one kernel evaluation result.")
+
+    benchmark_coordinates = _benchmark_coordinates()
+    benchmark_kernel = _annotate_branch_status(
+        _normalize_kernel_result_entry({"coordinates": benchmark_coordinates, **evaluate_kernel(*benchmark_coordinates)}),
+        benchmark_coordinates=benchmark_coordinates,
+        benchmark_stability_score=evaluate_kernel(*benchmark_coordinates)["stability_score"],
+    )
+    benchmark_stability_score = _fraction_value(benchmark_kernel["stability_score"]) or Fraction(0, 1)
+
+    evolutionary_frontier = tuple(
+        sorted(
+            (
+                _annotate_branch_status(
+                    point,
+                    benchmark_coordinates=benchmark_coordinates,
+                    benchmark_stability_score=benchmark_stability_score,
+                )
+                for point in normalized_results
+            ),
+            key=_normalized_point_sort_key,
+        )
+    )
+
+    discovered_kernel = evolutionary_frontier[0]
+    runner_up_kernel = evolutionary_frontier[1] if len(evolutionary_frontier) > 1 else evolutionary_frontier[0]
+    unique_non_singular_fixed_points = tuple(
+        point for point in evolutionary_frontier if bool(point["topological_closure_locked"])
+    )
+    degenerate_branches = tuple(
+        point for point in evolutionary_frontier if bool(point["degenerate_branch"])
+    )
+
+    dimension_levels = tuple(sorted({int(point["coordinates"][0]) for point in evolutionary_frontier}))
+    gauge_levels = tuple(sorted({int(point["coordinates"][1]) for point in evolutionary_frontier}))
+    parent_levels = tuple(sorted({int(point["coordinates"][2]) for point in evolutionary_frontier}))
+    search_space_shape = (len(dimension_levels), len(gauge_levels), len(parent_levels))
+    trial_count = len(evolutionary_frontier)
+
+    unique_fixed_point_count = len(unique_non_singular_fixed_points)
+    certified_unique_survivor = (
+        unique_non_singular_fixed_points[0]["coordinates"]
+        if unique_fixed_point_count == 1 and not degenerate_branches
+        else None
+    )
+    benchmark_uniquely_discovered = bool(
+        discovered_kernel["coordinates"] == benchmark_coordinates
+        and certified_unique_survivor == benchmark_coordinates
+        and not degenerate_branches
+    )
+    non_benchmark_singular_divergence = bool(benchmark_uniquely_discovered)
+
+    discovered_total_residue = _float_value(discovered_kernel.get("total_residue")) or 0.0
+    runner_up_total_residue = _float_value(runner_up_kernel.get("total_residue")) or discovered_total_residue
+    closure_gap = float(runner_up_total_residue - discovered_total_residue)
+    discovered_stability_score = _fraction_value(discovered_kernel.get("stability_score")) or Fraction(0, 1)
+    runner_up_stability_score = _fraction_value(runner_up_kernel.get("stability_score")) or discovered_stability_score
+    stability_gap = discovered_stability_score - runner_up_stability_score
+
+    timestamps = _timestamp_payload()
+    degenerate_branch_statement = (
+        f"Detected {len(degenerate_branches)} {_DEGENERATE_BRANCH_LABEL} candidate(s) within {_DEGENERATE_BRANCH_TOLERANCE} "
+        f"of the benchmark stability score {benchmark_stability_score}."
+        if degenerate_branches
+        else f"No {_DEGENERATE_BRANCH_LABEL} candidates appear within {_DEGENERATE_BRANCH_TOLERANCE} of the benchmark."
+    )
+    singular_divergence_statement = (
+        f"All non-{benchmark_coordinates} configurations resulted in singular divergence."
+        if non_benchmark_singular_divergence
+        else (
+            f"At least one non-{benchmark_coordinates} configuration falls within the {_DEGENERATE_BRANCH_LABEL} tolerance."
+            if degenerate_branches
+            else f"At least one non-{benchmark_coordinates} configuration avoided singular divergence."
+        )
+    )
+    statement = (
+        f"{_MANDATORY_STABILITY_LEDGER_TITLE}: the blind symmetry search certifies {benchmark_coordinates} "
+        f"as the unique non-singular stable fixed point after scanning {trial_count} candidate (D, G, N) paths."
+        if benchmark_uniquely_discovered
+        else (
+            f"{_MANDATORY_STABILITY_LEDGER_TITLE}: the scanned domain flags {len(degenerate_branches)} "
+            f"{_DEGENERATE_BRANCH_LABEL} candidate(s) within {_DEGENERATE_BRANCH_TOLERANCE} of the benchmark stability, "
+            "so mathematical necessity is not certified."
+            if degenerate_branches
+            else (
+                f"{_MANDATORY_STABILITY_LEDGER_TITLE}: the scanned domain does not certify {benchmark_coordinates} "
+                "as the unique non-singular stable fixed point."
+            )
+        )
+    )
+
+    ledger_summary = {
+        "title": _MANDATORY_STABILITY_LEDGER_TITLE,
+        "benchmark_coordinates": benchmark_coordinates,
+        "benchmark_kernel": benchmark_kernel,
+        "benchmark_stability_score": benchmark_stability_score,
+        "certified_unique_survivor": certified_unique_survivor,
+        "closure_gap": closure_gap,
+        "stability_gap": stability_gap,
+        "discovered_kernel": discovered_kernel,
+        "runner_up_kernel": runner_up_kernel,
+        "timestamps": timestamps,
+        "precision_guard": PRECISION_GUARD,
+        "precision_guard_bits": PRECISION_GUARD,
+        "trial_count": trial_count,
+        "unique_fixed_point_count": unique_fixed_point_count,
+        "benchmark_uniquely_discovered": benchmark_uniquely_discovered,
+        "all_non_benchmark_configurations_singular_divergence": non_benchmark_singular_divergence,
+        "degenerate_branches": degenerate_branches,
+        "degenerate_branch_count": len(degenerate_branches),
+        "degenerate_branch_detected": bool(degenerate_branches),
+        "degenerate_branch_tolerance": _DEGENERATE_BRANCH_TOLERANCE,
+        "degenerate_branch_statement": degenerate_branch_statement,
+        "singular_divergence_statement": singular_divergence_statement,
+        "statement": statement,
+    }
+
+    return {
+        "title": _MANDATORY_STABILITY_LEDGER_TITLE,
+        "report_type": _MANDATORY_STABILITY_LEDGER_TITLE,
+        "ledger_type": _MANDATORY_STABILITY_LEDGER_TITLE,
+        "meta_audit": "kernel_stability",
+        "timestamps": timestamps,
+        "generated_at_utc": timestamps["generated_at_utc"],
+        "generated_at_unix": timestamps["generated_at_unix"],
+        "generated_at_unix_ms": timestamps["generated_at_unix_ms"],
+        "precision_guard": PRECISION_GUARD,
+        "precision_guard_bits": PRECISION_GUARD,
+        "precision_guard_label": f"{PRECISION_GUARD}-bit",
+        "benchmark_coordinates": benchmark_coordinates,
+        "benchmark_kernel": benchmark_kernel,
+        "benchmark_stability_score": benchmark_stability_score,
+        "maximum_stability_score": discovered_stability_score,
+        "search_space_shape": search_space_shape,
+        "dimension_levels": dimension_levels,
+        "gauge_levels": gauge_levels,
+        "parent_levels": parent_levels,
+        "trial_count": trial_count,
+        "discovered_kernel": discovered_kernel,
+        "runner_up_kernel": runner_up_kernel,
+        "unique_non_singular_fixed_points": unique_non_singular_fixed_points,
+        "evolutionary_frontier": evolutionary_frontier,
+        "unique_fixed_point_count": unique_fixed_point_count,
+        "certified_unique_survivor": certified_unique_survivor,
+        "benchmark_uniquely_discovered": benchmark_uniquely_discovered,
+        "mathematical_necessity": benchmark_uniquely_discovered,
+        "closure_gap": closure_gap,
+        "stability_gap": stability_gap,
+        "all_non_benchmark_configurations_singular_divergence": non_benchmark_singular_divergence,
+        "all_non_benchmark_configurations_resulted_in_singular_divergence": non_benchmark_singular_divergence,
+        "singular_divergence_confirmed": non_benchmark_singular_divergence,
+        "degenerate_branches": degenerate_branches,
+        "degenerate_branch_count": len(degenerate_branches),
+        "degenerate_branch_detected": bool(degenerate_branches),
+        "has_degenerate_branch": bool(degenerate_branches),
+        "degenerate_branch_tolerance": _DEGENERATE_BRANCH_TOLERANCE,
+        "degenerate_branch_statement": degenerate_branch_statement,
+        "singular_divergence_statement": singular_divergence_statement,
+        "statement": statement,
+        "mandatory_stability_ledger": ledger_summary,
+    }
 
 
 def _frontier_order_key(entry: _SearchFrontierEntry) -> tuple[Fraction, float, float, float, float, int, int, int]:
@@ -507,8 +813,11 @@ class SymmetrySearcher:
         return self.discover_optimal_kernel()
 
 
-def build_uniqueness_report(scan_results: dict[str, object]) -> dict[str, object]:
+def build_uniqueness_report(scan_results: list[object] | dict[str, object]) -> dict[str, object]:
     """Build the publication-facing stability ledger for a symmetry-search audit."""
+
+    if isinstance(scan_results, CollectionSequence) and not isinstance(scan_results, (str, bytes, bytearray)):
+        return _build_uniqueness_report_from_kernel_results(scan_results)
 
     raw_scan_results = _scan_mapping(scan_results)
     benchmark_coordinates = _extract_coordinates(raw_scan_results.get("benchmark_coordinates")) or _benchmark_coordinates()
