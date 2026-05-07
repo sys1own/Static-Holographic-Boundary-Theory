@@ -112,7 +112,7 @@
       "canonical_mass_upper_ev": 0.01,
       "label": "Axion",
       "note": "benchmark residue is superheavy and therefore not QCD-axion-like",
-      "observer_projected_loading": 0.0707742959452236,
+      "observer_projected_loading": 0.0707743410555207,
       "predicted_mass_ev": 7.992597724221887e+21,
       "predicted_mass_gev": 7992597724221.887,
       "superheavy_extension_supported": false,
@@ -124,7 +124,7 @@
       "canonical_mass_upper_ev": 10000000000000.0,
       "label": "WIMP",
       "note": "benchmark completion lands in a superheavy WIMPzilla-like regime rather than the canonical thermal window",
-      "observer_projected_loading": 0.0707742959452236,
+      "observer_projected_loading": 0.0707743410555207,
       "predicted_mass_ev": 7.992597724221887e+21,
       "predicted_mass_gev": 7992597724221.887,
       "superheavy_extension_supported": true,
@@ -138,10 +138,10 @@
     "dataset_label": "BK18+WMAP+Planck public tensor ceiling with archived CMB-S4 design sensitivity",
     "normalized_current_ceiling": 0.18973665961010275,
     "normalized_design_floor": 0.03162277660168379,
-    "normalized_strain_floor": 0.15499114396083408,
-    "observable_tensor_ratio": 0.02402225470628799,
-    "primordial_tensor_ratio": 0.089831589868969,
-    "tensor_tilt": -0.011228948733621125
+    "normalized_strain_floor": 0.15499114396083483,
+    "observable_tensor_ratio": 0.024022254706288226,
+    "primordial_tensor_ratio": 0.08983158986896989,
+    "tensor_tilt": -0.011228948733621236
   },
   "ligo_virgo_strain": {
     "available": false,
@@ -172,17 +172,17 @@
     "release": "NuFIT 5.3 (2024), normal ordering with SK atmospheric data"
   },
   "observer_horizon": {
-    "bekenstein_hawking_entropy_bits": 4.77906195052963e+122,
-    "coordinate_horizon_radius_m": 1.6596595363646105e+26,
+    "bekenstein_hawking_entropy_bits": 4.7782026862849455e+122,
+    "coordinate_horizon_radius_m": 1.6595954257261974e+26,
     "exposed_area_fraction": 1.0,
-    "global_horizon_radius_m": 1.6596595363646105e+26,
-    "local_available_bits": 3.312593316730926e+122,
-    "local_horizon_area_m2": 3.4613688059384698e+53,
-    "log_horizon_loading_factor": 0.012242882318890414,
+    "global_horizon_radius_m": 1.6595954257261974e+26,
+    "local_available_bits": 3.311997720142367e+122,
+    "local_horizon_area_m2": 3.4611013941314066e+53,
+    "log_horizon_loading_factor": 0.012242890122289254,
     "observer_radius_m": 0.0,
     "relative_position": 0.0,
     "remaining_horizon_fraction": 1.0,
-    "surface_bit_loading_bits_per_m2": 9.57018307626654e+68
+    "surface_bit_loading_bits_per_m2": 9.569201658634279e+68
   },
   "observer_moat": {
     "benchmark_branch": [
