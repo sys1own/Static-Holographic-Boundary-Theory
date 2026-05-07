@@ -14,12 +14,14 @@ from shbt.paths import ProjectPaths, resolve_resource_path
 
 COUNTER_UNIVERSAL_CLASSIFICATION = "Counter-Universal Scenario"
 GEOMETRIC_EMERGENCE_CLASSIFICATION = "Geometric Emergence"
+TOPOLOGICAL_EXTRACTION_CLASSIFICATION = "Topological Extraction"
 VALID_PARAMETER_CLASSIFICATIONS = frozenset(
     {
         "Topological Necessity",
         "Empirical Matching Ansatz",
         COUNTER_UNIVERSAL_CLASSIFICATION,
         GEOMETRIC_EMERGENCE_CLASSIFICATION,
+        TOPOLOGICAL_EXTRACTION_CLASSIFICATION,
     }
 )
 DEFAULT_BENCHMARK_CONFIG_PATH = resolve_resource_path("config", "benchmark_v1.yaml")
