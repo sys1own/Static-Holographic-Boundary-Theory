@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 from importlib import import_module
+from pathlib import Path
 from typing import Any
 
+
+_SRC_PACKAGE_DIR = Path(__file__).resolve().parent.parent / "src" / "shbt"
+__path__ = [str(_SRC_PACKAGE_DIR)]
 __all__ = ["DEFAULT_PRECISION", "EvolutionaryEngine", "UniverseFactory"]
 
 
