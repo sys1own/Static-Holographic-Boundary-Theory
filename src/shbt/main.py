@@ -48,6 +48,7 @@ from shbt import topological_kernel
 from shbt.audit import audit_generator as _audit_generator
 from shbt.core import algebra
 from shbt.core import engine as publication_engine
+from shbt.core import master_transport as _master_transport
 from shbt.core import noether_bridge as _noether_bridge
 from shbt.core import transport as _transport
 from shbt.core.numerics import (
@@ -115,6 +116,7 @@ SECTOR_AUDIT_MODULES: dict[str, tuple[str, ...]] = {
         "shbt.core.uniqueness_theorem",
         "shbt.core.minimality_proof",
         "shbt.core.rigidity_kernel",
+        "shbt.core.master_transport",
     ),
     "complexity": (
         "shbt.sectors.complexity_sector",
@@ -192,8 +194,8 @@ if not math.isclose(
 CONFIG_GEOMETRIC_KAPPA = _tier_3_derived_residues["GEOMETRIC_KAPPA"]
 if not math.isclose(CONFIG_GEOMETRIC_KAPPA, KAPPA_D5, rel_tol=0.0, abs_tol=1.0e-15):
     raise RuntimeError(
-        "Benchmark provenance drift: pub/config/benchmark_v1.yaml must pin geometric_kappa "
-        f"to the D5 simplex invariant {KAPPA_D5:.16f}."
+        "Benchmark provenance drift: the zero-anchor geometry bootstrap no longer reproduces the D5 simplex invariant "
+        f"{KAPPA_D5:.16f}."
     )
 PUBLISHED_GEOMETRIC_KAPPA = CONFIG_GEOMETRIC_KAPPA
 RANK_DIFFERENCE = SO10_RANK - SU3_RANK
@@ -266,8 +268,8 @@ GAUGE_EMERGENCE_ALPHA_INVERSE_CUTOFF = 200.0
 ALPHA_INV_BENCHMARK = float(G_SM * PARENT_LEVEL / (LEPTON_LEVEL + QUARK_LEVEL))
 # Required Observational Boundary Condition (OBC); see README.md for tier hierarchy.
 ALPHA_INV_TARGET = ALPHA_INV_BENCHMARK
-CODATA_FINE_STRUCTURE_ALPHA_INVERSE = 137.035999084
-HBAR_EV_SECONDS = 6.582119569e-16
+CODATA_FINE_STRUCTURE_ALPHA_INVERSE = float(_constants.CODATA_FINE_STRUCTURE_ALPHA_INVERSE)
+HBAR_EV_SECONDS = float(_constants.HBAR_EV_SECONDS)
 EV_TO_KELVIN = 11604.518121550082
 HBAR_GEV_SECONDS = HBAR_EV_SECONDS * 1.0e-9
 SECONDS_PER_JULIAN_YEAR = 365.25 * 24.0 * 60.0 * 60.0
@@ -17737,6 +17739,17 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Run only the generation-3 tau/interference audit and exit.",
     )
+    parser.add_argument(
+        "--master-transport-audit",
+        action="store_true",
+        help="Run only the zero-anchor Master Transport Equation audit and exit.",
+    )
+    parser.add_argument(
+        "--master-transport-shift",
+        type=float,
+        default=_master_transport.DEFAULT_RIGIDITY_SHIFT_FRACTION,
+        help="Forced fractional flavor detuning used by --master-transport-audit.",
+    )
     parser.add_argument("--seed", type=int, default=DEFAULT_RANDOM_SEED, help="Seed for stochastic transport and VEV ensemble audits.")
     parser.add_argument("--seed-audit", action="store_true", help="Run the stochastic pipeline across an ensemble of seeds and report relative variance.")
     parser.add_argument("--seed-audit-count", type=int, default=SEED_AUDIT_SAMPLE_COUNT, help="Number of seeds to include when --seed-audit is enabled.")
@@ -17863,6 +17876,15 @@ def _capture_sector_module_report(module_name: str, *, output_dir: Path, sector:
     return report_path
 
 
+def _write_master_transport_report(*, output_dir: Path, flavor_shift_fraction: float) -> Path:
+    audit = _master_transport.build_master_transport_audit(flavor_shift_fraction=flavor_shift_fraction)
+    report_text = _master_transport.render_master_transport_report(audit)
+    report_path = output_dir / "master_transport_audit.txt"
+    report_path.write_text(report_text + "\n", encoding="utf-8")
+    LOGGER.info("[MASTER TRANSPORT]: Wrote %s", _display_path(report_path))
+    return report_path
+
+
 def run_targeted_sector_audits(*, sector: str | None, output_dir: Path) -> tuple[Path, ...]:
     _ensure_audit_resources()
     os.makedirs(output_dir, exist_ok=True)
@@ -17897,6 +17919,14 @@ def main(argv: list[str] | None = None) -> None:
         generation3_audit.run_final_lock()
         return
 
+    if args.master_transport_audit:
+        report_path = _write_master_transport_report(
+            output_dir=output_dir,
+            flavor_shift_fraction=args.master_transport_shift,
+        )
+        print(report_path.read_text(encoding="utf-8"), end="")
+        return
+
     if args.sector is not None:
         run_targeted_sector_audits(sector=args.sector, output_dir=output_dir)
         return
@@ -17905,6 +17935,11 @@ def main(argv: list[str] | None = None) -> None:
         LOGGER.info("[SECTOR AUDIT]: No sector override supplied; running all SHBT sectors sequentially.")
         run_targeted_sector_audits(sector=None, output_dir=output_dir)
         return
+
+    _write_master_transport_report(
+        output_dir=output_dir,
+        flavor_shift_fraction=_master_transport.DEFAULT_RIGIDITY_SHIFT_FRACTION,
+    )
 
     vacuum = DEFAULT_TOPOLOGICAL_VACUUM
     resolved_branch_model = _coerce_topological_model(model=vacuum)
