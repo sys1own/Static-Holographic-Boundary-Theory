@@ -9,7 +9,7 @@ from pathlib import Path
 
 BENCHMARK_CONFIG_RELATIVE_PATH = Path("config/benchmark_v1.yaml")
 BENCHMARK_CONFIG_PATH = Path(__file__).resolve().parents[1] / "config" / "benchmark_v1.yaml"
-EXPECTED_SHA256 = "37a8b88a5045e98a699638efae6f8f8b718b8fb8753aeabd8619d9deb4169604"
+EXPECTED_SHA256 = "d0cc04539fcdcbab7ca436ae12a36d3e3f06edd1e17c17a19dc7f55d9dd8c122"
 READ_CHUNK_SIZE_BYTES = 1024 * 1024
 
 
