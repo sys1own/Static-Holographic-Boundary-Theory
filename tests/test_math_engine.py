@@ -112,6 +112,15 @@ def test_math_engine_exposes_guarded_constants_and_fraction_builder() -> None:
     _assert_close(guarded_value, Fraction(1, 2))
 
 
+def test_math_engine_to_rational_preserves_decimal_float_surface() -> None:
+    module = _load_math_engine()
+
+    rational_value = module.to_rational(0.1)
+
+    assert isinstance(rational_value, Fraction)
+    assert rational_value == Fraction(1, 10)
+
+
 def test_math_engine_guard_sum_and_zero_check_are_rationally_exact() -> None:
     module = _load_math_engine()
 
@@ -120,5 +129,5 @@ def test_math_engine_guard_sum_and_zero_check_are_rationally_exact() -> None:
     assert isinstance(guarded_sum, Fraction)
     _assert_close(guarded_sum, Fraction(1, 1))
     assert module.is_guard_zero(guarded_sum - Fraction(1, 1)) is True
-    assert module.is_guard_zero(Fraction(1, module.FIXED_POINT_DENOMINATOR * 2)) is True
-    assert module.is_guard_zero(Fraction(1, module.FIXED_POINT_DENOMINATOR // 2)) is False
+    assert module.is_guard_zero(Fraction(1, 10**module.PRECISION_GUARD)) is True
+    assert module.is_guard_zero(Fraction(1, 10 ** (module.PRECISION_GUARD - 1))) is False
