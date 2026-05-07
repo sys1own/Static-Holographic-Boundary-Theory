@@ -305,7 +305,7 @@ STRICT_BENCHMARK_TIER_DEFINITIONS = (
                 name="PLANCK2018_H0_KM_S_MPC",
                 value=PLANCK2018_H0_KM_S_MPC,
                 legacy_metadata_paths=("physical_constants.planck2018_h0_km_s_mpc",),
-                allowed_legacy_classifications=("Empirical Matching Ansatz",),
+                allowed_legacy_classifications=("Empirical Matching Ansatz", "Geometric Emergence"),
             ),
             BenchmarkConstantDefinition(
                 name="PLANCK2018_H0_SIGMA_KM_S_MPC",
