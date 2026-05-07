@@ -131,6 +131,40 @@ def test_live_bridge_fetches_ligo_events_from_gwosc_style_payload() -> None:
     assert observations[0].peak_strain == Decimal("1e-21")
 
 
+def test_live_bridge_fetches_ligo_default_parameters_from_gwosc_payload() -> None:
+    url = f"{build_gwosc_catalog_events_url('GWTC')}&include-default-parameters=true"
+    fetcher = _build_fetcher(
+        {
+            url: (
+                json.dumps(
+                    {
+                        "results": [
+                            {
+                                "commonName": "GW240109_050431",
+                                "catalog": {"shortName": "GWTC"},
+                                "default_parameters": [
+                                    {"name": "redshift", "best": "0.010"},
+                                    {"name": "luminosity_distance", "best": "43.0"},
+                                    {"name": "network_matched_filter_snr", "best": "19.8"},
+                                ],
+                            }
+                        ]
+                    }
+                ),
+                "application/json",
+            )
+        }
+    )
+
+    observations = LiveVerificationBridge(precision=50).fetch_ligo_events(url=url, fetcher=fetcher)
+
+    assert len(observations) == 1
+    assert observations[0].event_id == "GW240109_050431"
+    assert observations[0].network_snr == Decimal("19.8")
+    assert observations[0].redshift == Decimal("0.010")
+    assert observations[0].luminosity_distance_mpc == Decimal("43.0")
+
+
 def test_live_bridge_computes_theory_tension_score() -> None:
     bridge = LiveVerificationBridge(precision=50)
     jwst = (
