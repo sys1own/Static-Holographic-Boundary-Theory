@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import pytest
 
@@ -8,6 +8,7 @@ from shbt.constants import HOLOGRAPHIC_BITS, LEPTON_LEVEL, PARENT_LEVEL, QUARK_L
 from shbt.core.rigidity_kernel import (
     BENCHMARK_PARITY_CHECK_MATRIX,
     BENCHMARK_MOAT_CENTER,
+    GlobalGaugeGuardian,
     HolographicErrorCorrection,
     audit_information_conservation,
     build_guardian_report,
@@ -19,6 +20,7 @@ from shbt.core.rigidity_kernel import (
     stabilize_boundary,
 )
 from shbt.main import SECTOR_AUDIT_MODULES, TopologicalVacuum
+from shbt.runtime_config import PhysicalSingularityException
 
 
 @dataclass(frozen=True)
@@ -91,6 +93,8 @@ def test_information_conservation_audit_tracks_guardian_projection() -> None:
     assert audit.input_bit_count == pytest.approx(HOLOGRAPHIC_BITS)
     assert [sector_audit.sector for sector_audit in audit.sector_audits] == ["cosmology", "flavor", "gravity"]
     assert audit.information_conserved is True
+    assert audit.global_gauge_guardian_active is True
+    assert audit.self_healing_locked is True
     assert "quantum error-correcting code" in audit.statement
 
 
@@ -100,3 +104,67 @@ def test_rigidity_guardian_is_wired_into_rigidity_sector_and_report() -> None:
     report = build_guardian_report()
     assert "Rigidity Guardian Audit" in report
     assert "Information conserved        : True" in report
+    assert "Global Gauge Guardian        : True" in report
+    assert "Mathematically locked        : True" in report
+
+
+def test_global_gauge_guardian_heals_flavor_instability_to_fixed_point() -> None:
+    guardian = GlobalGaugeGuardian()
+    benchmark = derive_guarded_flavor_audit(TopologicalVacuum())
+    unstable = replace(
+        benchmark,
+        branch=(27, 9, 311),
+        beta_phase_lock=float("nan"),
+        ratio_fractional_error=float("inf"),
+    )
+
+    healed, audit = guardian.stabilize_sector_result(unstable, sector="flavor")
+
+    assert healed.branch == BENCHMARK_MOAT_CENTER
+    assert healed.mandatory_residue_verified is True
+    assert audit.instability_detected is True
+    assert audit.fixed_point_forced is True
+    assert audit.locked_to_fixed_point is True
+    assert audit.trigger is not None
+    assert "Global Gauge Guardian" in audit.statement
+
+
+def test_global_gauge_guardian_heals_gravity_instability_to_fixed_point() -> None:
+    guardian = GlobalGaugeGuardian()
+    unstable = replace(
+        TopologicalVacuum().verify_bulk_emergence(),
+        gmunu_consistency_score=float("nan"),
+        bulk_emergent=False,
+        parity_bit_density_constraint_satisfied=False,
+        torsion_free=False,
+        non_singular_bulk=False,
+        lambda_aligned=False,
+    )
+
+    healed, audit = guardian.stabilize_sector_result(unstable, sector="gravity")
+
+    assert healed.bulk_emergent is True
+    assert healed.parity_bit_density_constraint_satisfied is True
+    assert healed.torsion_free is True
+    assert healed.non_singular_bulk is True
+    assert healed.lambda_aligned is True
+    assert audit.instability_detected is True
+    assert audit.fixed_point_forced is True
+    assert audit.locked_to_fixed_point is True
+
+
+def test_stabilize_boundary_recovers_from_gravity_exception_with_fixed_point() -> None:
+    @stabilize_boundary(sector="gravity")
+    def emit_unstable_gravity(vacuum: TopologicalVacuum | None = None):
+        del vacuum
+        raise PhysicalSingularityException("synthetic gravity instability")
+
+    healed = emit_unstable_gravity(build_perturbed_guardian_vacuum())
+    audit = guardian_audit_of(emit_unstable_gravity)
+
+    assert healed.bulk_emergent is True
+    assert healed.lambda_aligned is True
+    assert audit.gauge_guardian is not None
+    assert audit.gauge_guardian.recovered_from_exception is True
+    assert audit.gauge_guardian.fixed_point_forced is True
+    assert audit.gauge_guardian.locked_to_fixed_point is True
