@@ -8,7 +8,8 @@ runtime residues from that stable output, and only then labels the resulting
 observables as mass-like or charge-like.
 """
 
-from collections.abc import MutableMapping
+from collections import Counter
+from collections.abc import Callable, MutableMapping, Sequence
 from dataclasses import dataclass
 from fractions import Fraction
 from functools import lru_cache
@@ -25,6 +26,10 @@ BootstrapLabel = Literal["Mass", "Charge"]
 DEFAULT_BRANCH: Final[tuple[int, int, int]] = _master_transport.DEFAULT_BRANCH
 DEFAULT_GENERATION_COUNT: Final[int] = _master_transport.DEFAULT_GENERATION_COUNT
 DEFAULT_VACUUM_PRESSURE: Final[float] = 1.5061327858
+DEFAULT_BOOTSTRAP_LEPTON_LEVELS: Final[tuple[int, ...]] = tuple(range(2, 41))
+DEFAULT_BOOTSTRAP_QUARK_LEVELS: Final[tuple[int, ...]] = tuple(range(1, 21))
+DEFAULT_BOOTSTRAP_PARENT_LEVELS: Final[tuple[int, ...]] = tuple(range(2, 401))
+DEFAULT_CLOSURE_WEIGHT: Final[float] = 64.0
 _SU2_DIMENSION: Final[int] = 3
 _SU3_DIMENSION: Final[int] = 8
 _SU2_DUAL_COXETER: Final[int] = 2
@@ -150,6 +155,261 @@ class ZeroAnchorBootstrap:
         patch = self.runtime_constants_patch
         namespace.update(patch)
         return patch
+
+
+@dataclass(frozen=True)
+class BootstrapKernelCandidate:
+    lepton_level: int
+    quark_level: int
+    parent_level: int
+    visible_support: int
+    prime_index_support: tuple[int, ...]
+    information_entropy_bits: float
+    topological_closure_penalty: float
+    delta_fr: float
+    c_dark_shift: float
+    diophantine_gap: float
+    stability_fitness: float
+
+    @property
+    def branch(self) -> tuple[int, int, int]:
+        return (self.lepton_level, self.quark_level, self.parent_level)
+
+    @property
+    def stable_fixed_point(self) -> bool:
+        return math.isclose(self.topological_closure_penalty, 0.0, rel_tol=0.0, abs_tol=1.0e-15)
+
+
+@dataclass(frozen=True)
+class BootstrapKernelLandscape:
+    lepton_levels: tuple[int, ...]
+    quark_levels: tuple[int, ...]
+    parent_levels: tuple[int, ...]
+    closure_weight: float
+    candidates: tuple[BootstrapKernelCandidate, ...]
+    global_maximum: BootstrapKernelCandidate
+    runner_up: BootstrapKernelCandidate
+
+    @property
+    def benchmark_branch(self) -> tuple[int, int, int]:
+        return DEFAULT_BRANCH
+
+    @property
+    def candidate_count(self) -> int:
+        return len(self.candidates)
+
+    @property
+    def discovery_gap(self) -> float:
+        return float(self.global_maximum.stability_fitness - self.runner_up.stability_fitness)
+
+    @property
+    def unique_global_maximum(self) -> bool:
+        return self.discovery_gap > 0.0
+
+    @property
+    def topological_closure_survivors(self) -> tuple[tuple[int, int, int], ...]:
+        return tuple(candidate.branch for candidate in self.candidates if candidate.stable_fixed_point)
+
+    @property
+    def benchmark_is_mathematical_necessity(self) -> bool:
+        return bool(
+            self.unique_global_maximum
+            and self.global_maximum.branch == self.benchmark_branch
+            and self.topological_closure_survivors == (self.benchmark_branch,)
+        )
+
+    def assert_unique_global_maximum(self) -> tuple[int, int, int]:
+        if not self.unique_global_maximum:
+            raise AssertionError("Bootstrap boundary scan did not isolate a unique global stability maximum.")
+        if len(self.topological_closure_survivors) != 1:
+            raise AssertionError(
+                "Bootstrap boundary scan did not isolate a unique topological-closure survivor: "
+                f"found {len(self.topological_closure_survivors)}."
+            )
+        return self.global_maximum.branch
+
+
+def _coerce_scan_levels(levels: Sequence[int], *, axis_name: str) -> tuple[int, ...]:
+    resolved_levels = tuple(sorted({int(level) for level in levels if int(level) > 0}))
+    if not resolved_levels:
+        raise ValueError(f"Bootstrap boundary scans require at least one positive level on the {axis_name} axis.")
+    return resolved_levels
+
+
+@lru_cache(maxsize=None)
+def _prime_factor_counts(value: int) -> tuple[tuple[int, int], ...]:
+    resolved_value = abs(int(value))
+    if resolved_value < 2:
+        return ()
+
+    counts: Counter[int] = Counter()
+    divisor = 2
+    remainder = resolved_value
+    while divisor * divisor <= remainder:
+        while remainder % divisor == 0:
+            counts[divisor] += 1
+            remainder //= divisor
+        divisor = 3 if divisor == 2 else divisor + 2
+    if remainder > 1:
+        counts[remainder] += 1
+    return tuple(sorted(counts.items()))
+
+
+@lru_cache(maxsize=None)
+def _prime_index_support(lepton_level: int, quark_level: int, parent_level: int) -> tuple[int, ...]:
+    support: set[int] = set()
+    for value in (2 * int(lepton_level), 3 * int(quark_level), int(parent_level)):
+        support.update(prime for prime, _ in _prime_factor_counts(value))
+    return tuple(sorted(support))
+
+
+@lru_cache(maxsize=None)
+def _information_entropy_bits(lepton_level: int, quark_level: int, parent_level: int) -> float:
+    prime_counts: Counter[int] = Counter()
+    for value in (2 * int(lepton_level), 3 * int(quark_level), int(parent_level)):
+        prime_counts.update(dict(_prime_factor_counts(value)))
+
+    total_count = sum(prime_counts.values())
+    if total_count == 0:
+        return 0.0
+    return float(
+        -sum(
+            (count / total_count) * math.log2(count / total_count)
+            for count in prime_counts.values()
+        )
+    )
+
+
+def _stability_fitness(
+    *,
+    topological_closure_penalty: float,
+    information_entropy_bits: float,
+    closure_weight: float,
+) -> float:
+    return float(
+        1.0 / (1.0 + float(closure_weight) * float(topological_closure_penalty) + float(information_entropy_bits))
+    )
+
+
+def _candidate_order_key(candidate: BootstrapKernelCandidate) -> tuple[float, float, float, int, int, int]:
+    return (
+        -float(candidate.stability_fitness),
+        float(candidate.topological_closure_penalty),
+        float(candidate.information_entropy_bits),
+        int(candidate.parent_level),
+        int(candidate.lepton_level),
+        int(candidate.quark_level),
+    )
+
+
+def _build_bootstrap_kernel_candidate(
+    lepton_level: int,
+    quark_level: int,
+    parent_level: int,
+    *,
+    closure_weight: float,
+    rigidity_point_builder: Callable[[int, int, int], object],
+) -> BootstrapKernelCandidate:
+    rigidity_point = rigidity_point_builder(int(lepton_level), int(quark_level), int(parent_level))
+    topological_closure_penalty = float(getattr(rigidity_point, "topological_closure_score"))
+    information_entropy = _information_entropy_bits(int(lepton_level), int(quark_level), int(parent_level))
+    return BootstrapKernelCandidate(
+        lepton_level=int(lepton_level),
+        quark_level=int(quark_level),
+        parent_level=int(parent_level),
+        visible_support=int(lepton_level) + int(quark_level),
+        prime_index_support=_prime_index_support(int(lepton_level), int(quark_level), int(parent_level)),
+        information_entropy_bits=information_entropy,
+        topological_closure_penalty=topological_closure_penalty,
+        delta_fr=float(getattr(rigidity_point, "delta_fr")),
+        c_dark_shift=float(getattr(rigidity_point, "c_dark_shift")),
+        diophantine_gap=float(getattr(rigidity_point, "diophantine_gap")),
+        stability_fitness=_stability_fitness(
+            topological_closure_penalty=topological_closure_penalty,
+            information_entropy_bits=information_entropy,
+            closure_weight=float(closure_weight),
+        ),
+    )
+
+
+def scan_boundary_configurations(
+    *,
+    lepton_levels: Sequence[int] = DEFAULT_BOOTSTRAP_LEPTON_LEVELS,
+    quark_levels: Sequence[int] = DEFAULT_BOOTSTRAP_QUARK_LEVELS,
+    parent_levels: Sequence[int] = DEFAULT_BOOTSTRAP_PARENT_LEVELS,
+    closure_weight: float = DEFAULT_CLOSURE_WEIGHT,
+) -> BootstrapKernelLandscape:
+    """Scan boundary configurations and rank them by closure-first stability fitness.
+
+    The fitness maximizes topological closure while penalizing combinatorial
+    information entropy in the prime-index support carried by ``(2k_\\ell,
+    3k_q, K)``. The global maximum is therefore the most stable low-entropy
+    survivor over the scanned integer lattice.
+    """
+
+    resolved_lepton_levels = _coerce_scan_levels(lepton_levels, axis_name="lepton")
+    resolved_quark_levels = _coerce_scan_levels(quark_levels, axis_name="quark")
+    resolved_parent_levels = _coerce_scan_levels(parent_levels, axis_name="parent")
+    resolved_closure_weight = max(float(closure_weight), 1.0)
+
+    return _scan_boundary_configurations_cached(
+        resolved_lepton_levels,
+        resolved_quark_levels,
+        resolved_parent_levels,
+        resolved_closure_weight,
+    )
+
+
+@lru_cache(maxsize=8)
+def _scan_boundary_configurations_cached(
+    lepton_levels: tuple[int, ...],
+    quark_levels: tuple[int, ...],
+    parent_levels: tuple[int, ...],
+    closure_weight: float,
+) -> BootstrapKernelLandscape:
+    from shbt.core.rigidity_landscape import build_rigidity_point
+
+    candidates = tuple(
+        _build_bootstrap_kernel_candidate(
+            lepton_level,
+            quark_level,
+            parent_level,
+            closure_weight=closure_weight,
+            rigidity_point_builder=build_rigidity_point,
+        )
+        for lepton_level in lepton_levels
+        for quark_level in quark_levels
+        for parent_level in parent_levels
+    )
+    ordered_candidates = tuple(sorted(candidates, key=_candidate_order_key))
+    global_maximum = ordered_candidates[0]
+    runner_up = ordered_candidates[1] if len(ordered_candidates) > 1 else ordered_candidates[0]
+
+    return BootstrapKernelLandscape(
+        lepton_levels=lepton_levels,
+        quark_levels=quark_levels,
+        parent_levels=parent_levels,
+        closure_weight=closure_weight,
+        candidates=ordered_candidates,
+        global_maximum=global_maximum,
+        runner_up=runner_up,
+    )
+
+
+def discover_kernel_from_bitlogic(
+    *,
+    lepton_levels: Sequence[int] = DEFAULT_BOOTSTRAP_LEPTON_LEVELS,
+    quark_levels: Sequence[int] = DEFAULT_BOOTSTRAP_QUARK_LEVELS,
+    parent_levels: Sequence[int] = DEFAULT_BOOTSTRAP_PARENT_LEVELS,
+    closure_weight: float = DEFAULT_CLOSURE_WEIGHT,
+) -> tuple[int, int, int]:
+    landscape = scan_boundary_configurations(
+        lepton_levels=lepton_levels,
+        quark_levels=quark_levels,
+        parent_levels=parent_levels,
+        closure_weight=closure_weight,
+    )
+    return landscape.assert_unique_global_maximum()
 
 
 def _surface_alpha_inverse_from_branch(
@@ -408,9 +668,15 @@ def apply_runtime_constants_patch(
 
 __all__ = [
     "BootstrapEigenvalueSearch",
+    "BootstrapKernelCandidate",
+    "BootstrapKernelLandscape",
     "BootstrapLabel",
     "BootstrapSearch",
+    "DEFAULT_BOOTSTRAP_LEPTON_LEVELS",
+    "DEFAULT_BOOTSTRAP_PARENT_LEVELS",
+    "DEFAULT_BOOTSTRAP_QUARK_LEVELS",
     "DEFAULT_BRANCH",
+    "DEFAULT_CLOSURE_WEIGHT",
     "DEFAULT_GENERATION_COUNT",
     "DEFAULT_VACUUM_PRESSURE",
     "LabeledResidue",
@@ -419,5 +685,7 @@ __all__ = [
     "bootstrap_search",
     "build_zero_anchor_bootstrap",
     "build_zero_parameter_runtime_bootstrap",
+    "discover_kernel_from_bitlogic",
     "initialize_from_geometry",
+    "scan_boundary_configurations",
 ]
