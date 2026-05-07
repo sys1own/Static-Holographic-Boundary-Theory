@@ -12,6 +12,7 @@ import pytest
 
 import shbt
 import shbt.evolutionary_engine as evolutionary_engine
+from shbt.constants import LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
 from shbt.core import derivation_api
 from shbt.core import EvolutionaryEngine as core_package_evolutionary_engine
 from shbt.core import evolutionary_engine as core_evolutionary_engine
@@ -68,6 +69,15 @@ def test_universe_factory_can_derive_proton_ratio_for_nonbenchmark_vacuum() -> N
     )
 
     assert derivation.mu_audit > 0
+
+
+def test_universe_factory_runtime_kernel_recenters_branch_sensitive_derivations() -> None:
+    derivation = UniverseFactory.derive_alpha_surface(
+        vacuum=TopologicalVacuum(lepton_level=30, quark_level=10, parent_level=360, generation_count=18)
+    )
+
+    assert derivation.visible_support == LEPTON_LEVEL + QUARK_LEVEL
+    assert derivation.level_density_ratio == Fraction(PARENT_LEVEL, LEPTON_LEVEL + QUARK_LEVEL)
 
 
 def test_universe_factory_generates_lambda_ledger() -> None:
