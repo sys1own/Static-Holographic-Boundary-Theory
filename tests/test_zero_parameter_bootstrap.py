@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 
 from shbt import constants as constants_module
+import shbt.main as main_module
 from shbt.main import (
     CODATA_FINE_STRUCTURE_ALPHA_INVERSE,
     DEFAULT_TOPOLOGICAL_VACUUM,
@@ -43,6 +46,42 @@ def test_zero_parameter_bootstrap_search_finds_unique_stable_eigenvalue() -> Non
     assert search.stable_eigenvalue == pytest.approx(0.9887710512663789, rel=0.0, abs=1.0e-12)
     assert search.stability_gap > 0.0
     assert search.runner_up_eigenvalue != pytest.approx(search.stable_eigenvalue, rel=0.0, abs=1.0e-15)
+
+
+def test_zero_parameter_runtime_bootstrap_delegates_to_core_bootstrap(monkeypatch: pytest.MonkeyPatch) -> None:
+    main_module.build_zero_parameter_runtime_bootstrap.cache_clear()
+    captured: dict[str, object] = {}
+    sentinel = SimpleNamespace(
+        search=SimpleNamespace(),
+        kernel=SimpleNamespace(branch=(26, 8, 312)),
+        emergent_constants=SimpleNamespace(
+            planck2018_h0_km_s_mpc=67.36010188502927,
+            holographic_bits=3.3e122,
+            codata_fine_structure_alpha_inverse=137.0360005617913,
+        ),
+        stable_eigenvalue=0.9887710512663789,
+        proton_electron_mass_ratio=1835.248988001927,
+        charge_observables={"codata_fine_structure_alpha_inverse": 137.0360005617913},
+        hubble_km_s_mpc=67.36010188502927,
+    )
+
+    def fake_build_zero_anchor_bootstrap(**kwargs: object):
+        captured.update(kwargs)
+        return sentinel
+
+    monkeypatch.setattr(main_module._bootstrap, "build_zero_anchor_bootstrap", fake_build_zero_anchor_bootstrap)
+
+    runtime = main_module.build_zero_parameter_runtime_bootstrap(vacuum_pressure=1.75)
+
+    assert runtime is sentinel
+    assert captured == {
+        "lepton_level": constants_module.LEPTON_LEVEL,
+        "quark_level": constants_module.QUARK_LEVEL,
+        "parent_level": constants_module.PARENT_LEVEL,
+        "generation_count": constants_module.G_SM,
+        "vacuum_pressure": 1.75,
+    }
+    main_module.build_zero_parameter_runtime_bootstrap.cache_clear()
 
 
 def test_zero_parameter_bootstrap_populates_runtime_h0_charges_and_mass_ratio() -> None:
