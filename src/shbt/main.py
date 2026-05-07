@@ -114,6 +114,7 @@ SECTOR_AUDIT_MODULES: dict[str, tuple[str, ...]] = {
     "rigidity": (
         "shbt.core.uniqueness_theorem",
         "shbt.core.minimality_proof",
+        "shbt.core.rigidity_kernel",
     ),
     "complexity": (
         "shbt.sectors.complexity_sector",
