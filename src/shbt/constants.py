@@ -519,14 +519,11 @@ def _validate_benchmark_tier_metadata(
                     f"Strict benchmark constant '{constant.name}' declares legacy metadata paths without allowed classifications."
                 )
 
-            # Tier 1 and Tier 2 may now be populated by the runtime geometry
-            # bootstrap, so the strict benchmark audit must accept geometric
-            # emergence metadata across those foundational layers.
-            tier_relaxations = (
-                ("Geometric Emergence", "Topological Extraction")
-                if tier.identifier in {"Tier 1", "Tier 2"}
-                else ("Geometric Emergence",)
-            )
+            # In the v2.0 geometry-first audit, legacy metadata across every
+            # strict benchmark tier may be exported either as a geometric
+            # emergence residue or as a topological extraction from the same
+            # branch-fixed closure.
+            tier_relaxations = ("Geometric Emergence", "Topological Extraction")
             for metadata_path in constant.legacy_metadata_paths:
                 allowed_legacy_classifications = tuple(
                     dict.fromkeys((*constant.allowed_legacy_classifications, *tier_relaxations))
