@@ -116,45 +116,16 @@ def _verify_boundary_lock(precision: int = DEFAULT_PRECISION) -> BulkChecksumVer
     return verification
 
 
-def stabilize_boundary(callable_object):
-    if getattr(callable_object, "__boundary_stabilized__", False):
-        return callable_object
+def stabilize_boundary(callable_object=None, *, sector: str | None = None):
+    from shbt.core.rigidity_kernel import stabilize_boundary as _runtime_stabilize_boundary
 
-    @wraps(callable_object)
-    def wrapped(*args, **kwargs):
-        current_depth = _STABILIZER_DEPTH.get()
-        resolved_precision = _resolve_precision_argument(callable_object, *args, **kwargs)
-        if current_depth == 0:
-            _verify_boundary_lock(resolved_precision)
-
-        token = _STABILIZER_DEPTH.set(current_depth + 1)
-        try:
-            result = callable_object(*args, **kwargs)
-        finally:
-            _STABILIZER_DEPTH.reset(token)
-
-        if current_depth == 0:
-            _verify_boundary_lock(resolved_precision)
-        return result
-
-    wrapped.__boundary_stabilized__ = True
-    return wrapped
+    return _runtime_stabilize_boundary(callable_object, sector=sector)
 
 
 def stabilize_classmethods(class_object: type) -> type:
-    if getattr(class_object, "__boundary_stabilized_class__", False):
-        return class_object
+    from shbt.core.rigidity_kernel import stabilize_classmethods as _runtime_stabilize_classmethods
 
-    for name, attribute in tuple(vars(class_object).items()):
-        if name.startswith("__"):
-            continue
-        if isinstance(attribute, classmethod):
-            setattr(class_object, name, classmethod(stabilize_boundary(attribute.__func__)))
-            continue
-        if isinstance(attribute, staticmethod):
-            setattr(class_object, name, staticmethod(stabilize_boundary(attribute.__func__)))
-    class_object.__boundary_stabilized_class__ = True
-    return class_object
+    return _runtime_stabilize_classmethods(class_object)
 
 
 def _select_checksum(audit: "HolographicErrorStabilizerAudit", law: ChecksumLaw) -> "TopologicalChecksum":
