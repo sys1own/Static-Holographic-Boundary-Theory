@@ -172,6 +172,19 @@ def holographic_smearing_fraction(
     return float(min(1.0, max(0.0, numerator / denominator)))
 
 
+def _resolve_information_smearing_fraction(
+    resolution_scale: float,
+    *,
+    uv_scale_gev: float = BENCHMARK_UV_SCALE_GEV,
+) -> float:
+    resolved_scale = float(resolution_scale)
+    if not math.isfinite(resolved_scale):
+        raise ValueError(f"resolution_scale must be finite, received {resolved_scale}")
+    if resolved_scale <= 0.0:
+        return 1.0
+    return holographic_smearing_fraction(resolved_scale, uv_scale_gev=uv_scale_gev)
+
+
 def _boundary_information_loss_budget_inverse(alpha_uv_inverse: float) -> float:
     """Return the branch-fixed inverse-coupling loss budget for the 26D -> 4D projection.
 
@@ -194,6 +207,73 @@ def _boundary_information_loss_budget_inverse(alpha_uv_inverse: float) -> float:
         * discarded_dimensions
         / visible_support_half
     )
+
+
+def calculate_information_loss(
+    resolution_scale: float,
+    *,
+    alpha_uv: float | None = None,
+    precision: int = DEFAULT_PRECISION,
+    vacuum: TopologicalVacuum | None = None,
+    uv_scale_gev: float = BENCHMARK_UV_SCALE_GEV,
+) -> float:
+    """Return the inverse-coupling information lost in the 26D -> 4D projection.
+
+    ``resolution_scale`` is interpreted as the bulk resolution energy in GeV.
+    Non-positive values are treated as the maximally coarse Thomson-limit
+    readout and therefore saturate the smearing fraction at unity.
+
+    The returned quantity is measured in inverse-coupling units so it can be
+    subtracted directly from the static ultraviolet residue ``alpha_UV^{-1}``.
+    """
+
+    if alpha_uv is None:
+        resolved_vacuum = _require_benchmark_vacuum(vacuum)
+        resolved_alpha_uv = float(
+            UniverseFactory.derive_alpha_surface(
+                precision=max(int(precision), DEFAULT_PRECISION),
+                vacuum=resolved_vacuum,
+            ).alpha_inverse_decimal
+        )
+    else:
+        resolved_alpha_uv = float(alpha_uv)
+    if resolved_alpha_uv <= 0.0:
+        raise ValueError(f"alpha_uv must be positive, received {resolved_alpha_uv}")
+
+    smearing_fraction = _resolve_information_smearing_fraction(
+        resolution_scale,
+        uv_scale_gev=uv_scale_gev,
+    )
+    information_loss_budget_inverse = _boundary_information_loss_budget_inverse(resolved_alpha_uv)
+    return float(smearing_fraction * information_loss_budget_inverse)
+
+
+def map_alpha_uv_to_ir(
+    alpha_uv: float,
+    energy_gev: float,
+    *,
+    uv_scale_gev: float = BENCHMARK_UV_SCALE_GEV,
+) -> float:
+    """Map the branch-fixed UV inverse residue to its 4D bulk image.
+
+    The SHBT benchmark quotes the electromagnetic residue using the inverse
+    coupling convention, so callers should pass the ultraviolet datum directly
+    as ``alpha_uv≈137.647`` rather than as ``1 / alpha_uv``.
+    """
+
+    resolved_alpha_uv = float(alpha_uv)
+    if resolved_alpha_uv <= 0.0:
+        raise ValueError(f"alpha_uv must be positive, received {resolved_alpha_uv}")
+
+    information_loss_inverse = calculate_information_loss(
+        energy_gev,
+        alpha_uv=resolved_alpha_uv,
+        uv_scale_gev=uv_scale_gev,
+    )
+    projected_alpha_inverse = float(resolved_alpha_uv - information_loss_inverse)
+    if projected_alpha_inverse <= 0.0:
+        raise ValueError("Information-loss transport drove the inverse coupling below zero.")
+    return projected_alpha_inverse
 
 
 def noninvertible_transport(
@@ -219,10 +299,20 @@ def noninvertible_transport(
             vacuum=resolved_vacuum,
         ).alpha_inverse_decimal
     )
-    smearing_fraction = holographic_smearing_fraction(resolved_energy)
+    smearing_fraction = _resolve_information_smearing_fraction(resolved_energy)
     information_loss_budget_inverse = _boundary_information_loss_budget_inverse(alpha_uv_inverse)
-    information_loss_inverse = float(smearing_fraction * information_loss_budget_inverse)
-    projected_alpha_inverse = float(alpha_uv_inverse - information_loss_inverse)
+    information_loss_inverse = float(
+        calculate_information_loss(
+            resolved_energy,
+            alpha_uv=alpha_uv_inverse,
+        )
+    )
+    projected_alpha_inverse = float(
+        map_alpha_uv_to_ir(
+            alpha_uv_inverse,
+            resolved_energy,
+        )
+    )
     if projected_alpha_inverse <= 0.0:
         raise ValueError("Noninvertible transport over-cooled the inverse coupling below zero.")
     projected_alpha = float(1.0 / projected_alpha_inverse)
@@ -480,11 +570,13 @@ __all__ = [
     "CODATA_ALIGNMENT_ABS_TOLERANCE",
     "CoolingPoint",
     "CoolingTrajectory",
+    "calculate_information_loss",
     "NonInvertibleTransport",
     "NonInvertibleTransportState",
     "NonInvertibleTransportVerification",
     "RunningAlphaVerification",
     "UVIRRendering",
+    "map_alpha_uv_to_ir",
     "cooling_script",
     "holographic_smearing_fraction",
     "noninvertible_transport",
