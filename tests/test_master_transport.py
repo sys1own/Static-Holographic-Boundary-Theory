@@ -36,7 +36,17 @@ def test_master_transport_equation_locks_gravity_flavor_and_cosmology() -> None:
     assert audit.kernel.dimension == 26
     assert audit.kernel.branch == (26, 8, 312)
     assert audit.zero_anchor_boot is True
+    assert audit.uses_dependency_injection is True
+    assert audit.rigidity_couples_sectors is True
     assert math.isclose(audit.emergent_constants.geometric_kappa, 0.9887710512663789, rel_tol=0.0, abs_tol=1.0e-12)
+    assert math.isclose(audit.kernel.higgs_vev_residue, 64.0 / 312.0, rel_tol=0.0, abs_tol=1.0e-12)
+    assert math.isclose(
+        audit.kernel.vev_coupling_factor,
+        audit.kernel.higgs_vev_residue * audit.kernel.geometric_kappa,
+        rel_tol=0.0,
+        abs_tol=1.0e-12,
+    )
+    assert audit.single_point_of_origin.branch == audit.kernel.branch
     assert math.isclose(audit.gravity_view.planck_mass_ev, expected_planck_mass, rel_tol=1.0e-12)
     assert math.isclose(audit.cosmology_view.lambda_si_m2, 1.0891388337006832e-52, rel_tol=5.0e-4)
     assert math.isclose(audit.cosmology_view.hubble_km_s_mpc, 67.36, rel_tol=5.0e-5)
@@ -49,6 +59,9 @@ def test_master_transport_report_and_sector_wiring_expose_zero_anchor_language()
     report = render_master_transport_report(build_master_transport_audit())
 
     assert "Master Transport Equation Audit" in report
+    assert "Zero-anchor boot             : True" in report
+    assert "Dependency injection         : True" in report
+    assert "Single-point origin" in report
     assert "Gravity sector failure        : True" in report
     assert "26-dimensional transport kernel" in report
     assert "A forced flavor-residue detuning" in report
