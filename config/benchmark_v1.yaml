@@ -71,6 +71,11 @@ geometry_origin:
   zero_anchor_boot:
     value: true
     classification: Geometric Emergence
+physical_constants:
+  planck2018_h0_km_s_mpc:
+    value: 67.36010188502927
+    classification: Geometric Emergence
+    derivation_source: shbt.core.topological_extraction
 benchmarks:
   sm_gut_yukawa:
     electron:
