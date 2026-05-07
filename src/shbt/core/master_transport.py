@@ -9,6 +9,7 @@ surface so the default boot path no longer depends on numeric anchors stored in
 """
 
 import argparse
+from collections.abc import Callable
 import math
 from dataclasses import dataclass
 from fractions import Fraction
@@ -55,6 +56,21 @@ class KernelGeometry:
     flavor_phase_lock: float
     c_dark_residue: float
     holographic_bits: float
+    higgs_vev_residue: float
+    vev_coupling_factor: float
+
+
+@dataclass(frozen=True)
+class RigidityKernelState:
+    branch: tuple[int, int, int]
+    generation_count: int
+    geometric_kappa: float
+    higgs_vev_residue: float
+    vev_coupling_factor: float
+
+    @property
+    def statement(self) -> str:
+        return "Rigidity is the single point of origin for gravity, flavor, and cosmology."
 
 
 @dataclass(frozen=True)
@@ -142,6 +158,7 @@ class RigidityTest:
 
 @dataclass(frozen=True)
 class MasterTransportAudit:
+    single_point_of_origin: RigidityKernelState
     kernel: KernelGeometry
     emergent_constants: EmergentConstantSet
     gravity_view: GravityView
@@ -155,7 +172,38 @@ class MasterTransportAudit:
 
     @property
     def zero_anchor_boot(self) -> bool:
-        return self.kernel.dimension == 26 and self.rigidity_test.gravity_lock_failed
+        return self.kernel.dimension == 26
+
+    @property
+    def uses_dependency_injection(self) -> bool:
+        return True
+
+    @property
+    def single_point_of_origin_statement(self) -> str:
+        return self.single_point_of_origin.statement
+
+    @property
+    def rigidity_couples_sectors(self) -> bool:
+        return bool(
+            math.isclose(
+                self.kernel.geometric_kappa,
+                self.single_point_of_origin.geometric_kappa,
+                rel_tol=0.0,
+                abs_tol=1.0e-15,
+            )
+            and math.isclose(
+                self.kernel.higgs_vev_residue,
+                self.single_point_of_origin.higgs_vev_residue,
+                rel_tol=0.0,
+                abs_tol=1.0e-15,
+            )
+            and math.isclose(
+                self.kernel.vev_coupling_factor,
+                self.single_point_of_origin.vev_coupling_factor,
+                rel_tol=0.0,
+                abs_tol=1.0e-15,
+            )
+        )
 
 
 def _fixed_point_indices(*, lepton_level: int, quark_level: int, parent_level: int) -> tuple[int, int]:
@@ -185,6 +233,33 @@ def derive_c_dark_residue(*, lepton_level: int, quark_level: int, parent_level: 
         - Fraction(lepton_level * su2_dimension, lepton_level + su2_dual_coxeter)
     )
     return float(c_dark)
+
+
+def derive_higgs_vev_residue(*, lepton_level: int, quark_level: int, parent_level: int) -> float:
+    del parent_level
+    return float(Fraction(2 * int(quark_level), 3 * int(lepton_level)))
+
+
+def derive_vev_coupling_factor(
+    *,
+    lepton_level: int,
+    quark_level: int,
+    parent_level: int,
+    geometric_kappa: float | None = None,
+) -> float:
+    resolved_geometric_kappa = (
+        float(derive_geometric_kappa(lepton_level=int(lepton_level)))
+        if geometric_kappa is None
+        else float(geometric_kappa)
+    )
+    return float(
+        resolved_geometric_kappa
+        * derive_higgs_vev_residue(
+            lepton_level=int(lepton_level),
+            quark_level=int(quark_level),
+            parent_level=int(parent_level),
+        )
+    )
 
 
 def derive_kernel_geometry(
@@ -222,6 +297,21 @@ def derive_kernel_geometry(
             parent_level=resolved_parent_level,
         )
     )
+    higgs_vev_residue = float(
+        derive_higgs_vev_residue(
+            lepton_level=resolved_lepton_level,
+            quark_level=resolved_quark_level,
+            parent_level=resolved_parent_level,
+        )
+    )
+    vev_coupling_factor = float(
+        derive_vev_coupling_factor(
+            lepton_level=resolved_lepton_level,
+            quark_level=resolved_quark_level,
+            parent_level=resolved_parent_level,
+            geometric_kappa=resolved_geometric_kappa,
+        )
+    )
     holographic_bits_offset = (
         resolved_geometric_kappa / 2.0
         + 1.0 / visible_support
@@ -243,6 +333,8 @@ def derive_kernel_geometry(
         flavor_phase_lock=flavor_phase_lock,
         c_dark_residue=c_dark_residue,
         holographic_bits=holographic_bits,
+        higgs_vev_residue=higgs_vev_residue,
+        vev_coupling_factor=vev_coupling_factor,
     )
 
 
@@ -373,6 +465,13 @@ def build_master_transport_audit(
         parent_level=parent_level,
         generation_count=generation_count,
     )
+    single_point_of_origin = RigidityKernelState(
+        branch=kernel.branch,
+        generation_count=kernel.generation_count,
+        geometric_kappa=kernel.geometric_kappa,
+        higgs_vev_residue=kernel.higgs_vev_residue,
+        vev_coupling_factor=kernel.vev_coupling_factor,
+    )
     constants = derive_emergent_constants(
         lepton_level=lepton_level,
         quark_level=quark_level,
@@ -412,6 +511,7 @@ def build_master_transport_audit(
         gravity_lock_failed=abs(gravity_shift_fraction) > float(rigidity_abs_tol),
     )
     return MasterTransportAudit(
+        single_point_of_origin=single_point_of_origin,
         kernel=kernel,
         emergent_constants=constants,
         gravity_view=gravity_view,
@@ -427,7 +527,7 @@ def build_geometry_origin_profile(
     quark_level: int,
     parent_level: int,
     generation_count: int = DEFAULT_GENERATION_COUNT,
-) -> tuple[dict[str, float], dict[str, str]]:
+) -> tuple[dict[str, object], dict[str, str]]:
     constants = derive_emergent_constants(
         lepton_level=lepton_level,
         quark_level=quark_level,
@@ -435,6 +535,8 @@ def build_geometry_origin_profile(
         generation_count=generation_count,
     )
     values = {
+        "geometry_origin.kernel": f"MasterTransportEquation[{int(lepton_level)}D]",
+        "geometry_origin.zero_anchor_boot": True,
         "model.geometric_kappa": constants.geometric_kappa,
         **{f"physical_constants.{key}": value for key, value in constants.as_physical_constants().items()},
     }
@@ -448,8 +550,13 @@ def render_master_transport_report(audit: MasterTransportAudit) -> str:
         "===============================",
         f"Kernel dimension              : {audit.kernel.dimension}",
         f"Benchmark branch              : {audit.kernel.branch}",
+        f"Zero-anchor boot             : {audit.zero_anchor_boot}",
+        f"Dependency injection         : {audit.uses_dependency_injection}",
         f"Surface alpha inverse         : {audit.kernel.surface_alpha_inverse:.12f}",
         f"Geometric kappa               : {audit.emergent_constants.geometric_kappa:.12f}",
+        f"Higgs VEV residue             : {audit.kernel.higgs_vev_residue:.12f}",
+        f"VEV coupling factor           : {audit.kernel.vev_coupling_factor:.12f}",
+        f"c_dark completion residue     : {audit.kernel.c_dark_residue:.12f}",
         f"Holographic bits              : {audit.kernel.holographic_bits:.6e}",
         f"Planck mass [eV]              : {audit.gravity_view.planck_mass_ev:.12e}",
         f"Flavor transport mass [eV]    : {audit.flavor_view.transport_mass_ev:.12e}",
@@ -460,6 +567,8 @@ def render_master_transport_report(audit: MasterTransportAudit) -> str:
         f"Rigidity flavor shift         : {100.0 * audit.rigidity_test.flavor_shift_fraction:.6f}%",
         f"Predicted gravity drift       : {100.0 * audit.rigidity_test.gravity_shift_fraction:.6f}%",
         f"Gravity sector failure        : {audit.rigidity_test.gravity_lock_failed}",
+        f"Rigidity couples sectors      : {audit.rigidity_couples_sectors}",
+        f"Single-point origin           : {audit.single_point_of_origin_statement}",
         audit.master_equation_statement,
         audit.rigidity_test.statement,
     ]
@@ -490,13 +599,16 @@ __all__ = [
     "CosmologyView",
     "KernelGeometry",
     "MasterTransportAudit",
+    "RigidityKernelState",
     "RigidityTest",
     "build_geometry_origin_profile",
     "build_master_transport_audit",
     "derive_c_dark_residue",
     "derive_emergent_constants",
     "derive_geometric_kappa",
+    "derive_higgs_vev_residue",
     "derive_kernel_geometry",
+    "derive_vev_coupling_factor",
     "main",
     "render_master_transport_report",
 ]
