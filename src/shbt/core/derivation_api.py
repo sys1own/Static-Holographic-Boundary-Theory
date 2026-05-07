@@ -47,6 +47,7 @@ from shbt.core.engine import (
     topological_planck_mass_ev,
     wzw_central_charge_fraction,
 )
+from shbt.core.ontic_cascade import LogicRelation, OnticAxioms, OnticCascade, evaluate_ontic_cascade
 from shbt.core.rigidity_kernel import stabilize_boundary, stabilize_classmethods
 from shbt.main import (
     derive_cosmology_anchor,
@@ -181,12 +182,13 @@ def decimal_cuberoot(value: Decimal, *, precision: int = DEFAULT_PRECISION) -> D
 
 @dataclass(frozen=True)
 class AlphaSurfaceDerivation:
-    visible_support: int
+    visible_support: int | Fraction
     level_density_ratio: Fraction
     alpha_inverse_fraction: Fraction
     alpha_inverse_decimal: Decimal
     live_alpha_inverse: Decimal
     codata_alpha_inverse: Decimal
+    ontic_cascade: OnticCascade | None = None
 
 
 @dataclass(frozen=True)
@@ -273,6 +275,14 @@ class TopologicalVacuum:
     @property
     def visible_support(self) -> int:
         return int(self.lepton_level) + int(self.quark_level)
+
+    def to_ontic_axioms(self) -> OnticAxioms:
+        return OnticAxioms(
+            lepton_level=int(self.lepton_level),
+            quark_level=int(self.quark_level),
+            parent_level=int(self.parent_level),
+            generation_count=int(self.generation_count),
+        )
 
 
 @dataclass(frozen=True)
@@ -420,19 +430,25 @@ class UniverseFactory:
         *,
         precision: int = DEFAULT_PRECISION,
         vacuum: TopologicalVacuum | None = None,
+        logic_relation: LogicRelation | None = None,
     ) -> AlphaSurfaceDerivation:
-        del precision
         resolved_vacuum = cls.benchmark_vacuum() if vacuum is None else vacuum
-        visible_support = resolved_vacuum.visible_support
-        level_density_ratio = Fraction(resolved_vacuum.parent_level, visible_support)
-        alpha_inverse_fraction = Fraction(resolved_vacuum.generation_count, 1) * level_density_ratio
-        alpha_inverse_decimal = _fraction_to_decimal(alpha_inverse_fraction)
+        ontic_cascade = cls.evaluate_ontic_cascade(
+            precision=precision,
+            vacuum=resolved_vacuum,
+            logic_relation=logic_relation,
+        )
+        visible_support = ontic_cascade.visible_support
+        level_density_ratio = ontic_cascade.level_density_ratio
+        alpha_inverse_fraction = ontic_cascade.alpha_inverse_fraction
+        alpha_inverse_decimal = ontic_cascade.alpha_inverse_decimal
         live_alpha_inverse = _decimal(
             surface_tension_gauge_alpha_inverse(
                 parent_level=resolved_vacuum.parent_level,
                 lepton_level=resolved_vacuum.lepton_level,
                 quark_level=resolved_vacuum.quark_level,
                 generation_count=resolved_vacuum.generation_count,
+                visible_support=visible_support,
             )
         )
         codata_alpha_inverse = _decimal(CODATA_FINE_STRUCTURE_ALPHA_INVERSE)
@@ -443,6 +459,23 @@ class UniverseFactory:
             alpha_inverse_decimal=alpha_inverse_decimal,
             live_alpha_inverse=live_alpha_inverse,
             codata_alpha_inverse=codata_alpha_inverse,
+            ontic_cascade=ontic_cascade,
+        )
+
+    @classmethod
+    def evaluate_ontic_cascade(
+        cls,
+        *,
+        precision: int = DEFAULT_PRECISION,
+        vacuum: TopologicalVacuum | None = None,
+        logic_relation: LogicRelation | None = None,
+    ) -> OnticCascade:
+        del cls
+        resolved_vacuum = UniverseFactory.benchmark_vacuum() if vacuum is None else vacuum
+        return evaluate_ontic_cascade(
+            resolved_vacuum.to_ontic_axioms(),
+            precision=precision,
+            logic_relation=logic_relation,
         )
 
     @classmethod
@@ -1117,6 +1150,8 @@ __all__ = [
     "LambdaSurfaceDerivation",
     "MassBridgeDerivation",
     "ObservationalBoundaryConditionDerivation",
+    "OnticAxioms",
+    "OnticCascade",
     "PhysicalLedger",
     "ProtonRatioDerivation",
     "TopologicalVacuum",
