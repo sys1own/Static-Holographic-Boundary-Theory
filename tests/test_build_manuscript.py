@@ -78,6 +78,7 @@ def test_run_entire_proof_invokes_all_sector_audits_before_full_audit(
         (*common_args, "--sector", "cosmology"),
         (*common_args, "--sector", "flavor"),
         (*common_args, "--sector", "rigidity"),
+        (*common_args, "--sector", "complexity"),
         common_args,
     ]
     assert (output_dir / "final").is_dir()
