@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from shbt import constants as constants_module
-from shbt.core.bootstrap import BootstrapSearch, build_zero_anchor_bootstrap
+from shbt.core.bootstrap import BootstrapSearch, apply_runtime_constants_patch, build_zero_anchor_bootstrap
 
 
 def test_zero_anchor_bootstrap_search_finds_unique_stable_eigenvalue() -> None:
@@ -23,6 +23,55 @@ def test_zero_anchor_bootstrap_labels_charge_and_mass_only_after_stability() -> 
     assert runtime.labels_materialize_after_stability is True
     assert runtime.charge_observables["fine_structure_alpha_inverse"] == pytest.approx(
         runtime.emergent_constants.codata_fine_structure_alpha_inverse,
+        rel=0.0,
+        abs=1.0e-15,
+    )
+
+
+def test_zero_anchor_bootstrap_exposes_runtime_constants_patch() -> None:
+    runtime = build_zero_anchor_bootstrap()
+    patch = runtime.runtime_constants_patch
+
+    assert patch["GEOMETRIC_KAPPA"] == pytest.approx(runtime.stable_eigenvalue, rel=0.0, abs=1.0e-15)
+    assert patch["KAPPA_D5"] == pytest.approx(runtime.stable_eigenvalue, rel=0.0, abs=1.0e-15)
+    assert patch["PLANCK2018_H0_KM_S_MPC"] == pytest.approx(runtime.hubble_km_s_mpc, rel=0.0, abs=1.0e-15)
+    assert patch["CODATA_FINE_STRUCTURE_ALPHA_INVERSE"] == pytest.approx(
+        runtime.charge_observables["codata_fine_structure_alpha_inverse"],
+        rel=0.0,
+        abs=1.0e-15,
+    )
+    assert patch["PDG_PROTON_TO_ELECTRON_MASS_RATIO"] == pytest.approx(
+        runtime.proton_electron_mass_ratio,
+        rel=0.0,
+        abs=1.0e-15,
+    )
+    assert patch["ALPHA_INV_BENCHMARK"] == pytest.approx(
+        runtime.charge_observables["surface_alpha_inverse"],
+        rel=0.0,
+        abs=1.0e-15,
+    )
+
+
+def test_apply_runtime_constants_patch_updates_namespace() -> None:
+    runtime = build_zero_anchor_bootstrap()
+    namespace: dict[str, object] = {"sentinel": "ok"}
+
+    applied_runtime = apply_runtime_constants_patch(namespace, bootstrap=runtime)
+
+    assert applied_runtime is runtime
+    assert namespace["sentinel"] == "ok"
+    assert namespace["PLANCK2018_H0_SI"] == pytest.approx(
+        runtime.hubble_km_s_mpc * 1.0e3 / runtime.emergent_constants.mpc_in_meters,
+        rel=0.0,
+        abs=1.0e-15,
+    )
+    assert namespace["HOLOGRAPHIC_BITS"] == pytest.approx(
+        runtime.emergent_constants.holographic_bits,
+        rel=0.0,
+        abs=1.0e-15,
+    )
+    assert namespace["PLANCK_MASS_GEV"] == pytest.approx(
+        runtime.emergent_constants.planck_mass_ev * 1.0e-9,
         rel=0.0,
         abs=1.0e-15,
     )
