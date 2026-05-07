@@ -28,6 +28,7 @@ if __package__ in (None, ""):
 
 from shbt.constants import LIGHT_SPEED_M_PER_S
 from shbt.evolutionary_engine import EvolutionaryEngine
+from shbt.http_bridge import FetchHook, stage_trigger_payload
 from shbt.paths import resolve_resource_path
 from shbt.precision_cosmology_engine import (
     DEFAULT_PRECISION as COSMOLOGY_DEFAULT_PRECISION,
@@ -297,6 +298,64 @@ class ObservationalBridge:
     def ingest_external_triggers(self) -> tuple[ExternalTrigger, ...]:
         return self.load_external_triggers()
 
+    def stage_remote_trigger(
+        self,
+        url: str,
+        *,
+        filename: str | None = None,
+        overwrite: bool = False,
+        headers: Mapping[str, str] | None = None,
+        timeout: float = 10.0,
+        fetcher: FetchHook | None = None,
+    ) -> Path:
+        return stage_trigger_payload(
+            url,
+            self.trigger_directory,
+            filename=filename,
+            overwrite=overwrite,
+            headers=headers,
+            timeout=timeout,
+            fetcher=fetcher,
+        )
+
+    def stage_remote_triggers(
+        self,
+        urls: Sequence[str],
+        *,
+        overwrite: bool = False,
+        headers: Mapping[str, str] | None = None,
+        timeout: float = 10.0,
+        fetcher: FetchHook | None = None,
+    ) -> tuple[Path, ...]:
+        return tuple(
+            self.stage_remote_trigger(
+                url,
+                overwrite=overwrite,
+                headers=headers,
+                timeout=timeout,
+                fetcher=fetcher,
+            )
+            for url in urls
+        )
+
+    def ingest_remote_triggers(
+        self,
+        urls: Sequence[str],
+        *,
+        overwrite: bool = False,
+        headers: Mapping[str, str] | None = None,
+        timeout: float = 10.0,
+        fetcher: FetchHook | None = None,
+    ) -> tuple[ExternalTrigger, ...]:
+        self.stage_remote_triggers(
+            urls,
+            overwrite=overwrite,
+            headers=headers,
+            timeout=timeout,
+            fetcher=fetcher,
+        )
+        return self.load_external_triggers()
+
     def load_external_triggers(self) -> tuple[ExternalTrigger, ...]:
         if not self.trigger_directory.exists() or not self.trigger_directory.is_dir():
             return ()
@@ -505,6 +564,56 @@ def load_external_triggers(
         precision=precision,
         high_redshift_floor=high_redshift_floor,
     ).load_external_triggers()
+
+
+def stage_remote_trigger(
+    url: str,
+    trigger_directory: Path | str | None = None,
+    *,
+    filename: str | None = None,
+    overwrite: bool = False,
+    precision: int = DEFAULT_PRECISION,
+    high_redshift_floor: Decimal | float | int | str = DEFAULT_HIGH_REDSHIFT_FLOOR,
+    headers: Mapping[str, str] | None = None,
+    timeout: float = 10.0,
+    fetcher: FetchHook | None = None,
+) -> Path:
+    return ObservationalBridge(
+        trigger_directory=trigger_directory,
+        precision=precision,
+        high_redshift_floor=high_redshift_floor,
+    ).stage_remote_trigger(
+        url,
+        filename=filename,
+        overwrite=overwrite,
+        headers=headers,
+        timeout=timeout,
+        fetcher=fetcher,
+    )
+
+
+def ingest_remote_triggers(
+    urls: Sequence[str],
+    trigger_directory: Path | str | None = None,
+    *,
+    overwrite: bool = False,
+    precision: int = DEFAULT_PRECISION,
+    high_redshift_floor: Decimal | float | int | str = DEFAULT_HIGH_REDSHIFT_FLOOR,
+    headers: Mapping[str, str] | None = None,
+    timeout: float = 10.0,
+    fetcher: FetchHook | None = None,
+) -> tuple[ExternalTrigger, ...]:
+    return ObservationalBridge(
+        trigger_directory=trigger_directory,
+        precision=precision,
+        high_redshift_floor=high_redshift_floor,
+    ).ingest_remote_triggers(
+        urls,
+        overwrite=overwrite,
+        headers=headers,
+        timeout=timeout,
+        fetcher=fetcher,
+    )
 
 
 def calculate_holographic_tension(
