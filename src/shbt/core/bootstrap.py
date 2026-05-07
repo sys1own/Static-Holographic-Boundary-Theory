@@ -8,6 +8,7 @@ runtime residues from that stable output, and only then labels the resulting
 observables as mass-like or charge-like.
 """
 
+from collections.abc import MutableMapping
 from dataclasses import dataclass
 from fractions import Fraction
 from functools import lru_cache
@@ -28,6 +29,32 @@ _SU2_DIMENSION: Final[int] = 3
 _SU3_DIMENSION: Final[int] = 8
 _SU2_DUAL_COXETER: Final[int] = 2
 _SU3_DUAL_COXETER: Final[int] = 3
+_RUNTIME_MODEL_CONSTANT_ALIASES: Final[dict[str, tuple[str, ...]]] = {
+    "geometric_kappa": (
+        "GEOMETRIC_KAPPA",
+        "KAPPA_D5",
+        "CONFIG_GEOMETRIC_KAPPA",
+        "PUBLISHED_GEOMETRIC_KAPPA",
+    ),
+}
+_RUNTIME_PHYSICAL_CONSTANT_ALIASES: Final[dict[str, tuple[str, ...]]] = {
+    "planck_mass_ev": ("PLANCK_MASS_EV",),
+    "planck_length_m": ("PLANCK_LENGTH_M",),
+    "light_speed_m_per_s": ("LIGHT_SPEED_M_PER_S",),
+    "mpc_in_meters": ("MPC_IN_METERS",),
+    "planck2018_h0_km_s_mpc": ("PLANCK2018_H0_KM_S_MPC",),
+    "planck2018_h0_sigma_km_s_mpc": ("PLANCK2018_H0_SIGMA_KM_S_MPC",),
+    "planck2018_omega_lambda": ("PLANCK2018_OMEGA_LAMBDA",),
+    "planck2018_omega_lambda_sigma": ("PLANCK2018_OMEGA_LAMBDA_SIGMA",),
+    "planck2018_lambda_si_m2": ("PLANCK2018_LAMBDA_SI_M2",),
+    "planck2018_lambda_fractional_sigma": ("PLANCK2018_LAMBDA_FRACTIONAL_SIGMA",),
+    "planck2018_alpha_em_inv_mz": ("PLANCK2018_ALPHA_EM_INV_MZ",),
+    "planck2018_sin2_theta_w_mz": ("PLANCK2018_SIN2_THETA_W_MZ",),
+    "planck2018_alpha_s_mz": ("PLANCK2018_ALPHA_S_MZ",),
+    "codata_fine_structure_alpha_inverse": ("CODATA_FINE_STRUCTURE_ALPHA_INVERSE",),
+    "hbar_ev_seconds": ("HBAR_EV_SECONDS",),
+    "holographic_bits": ("PLANCK_HOLOGRAPHIC_BITS", "HOLOGRAPHIC_BITS"),
+}
 
 
 @dataclass(frozen=True)
@@ -91,6 +118,38 @@ class ZeroAnchorBootstrap:
     @property
     def labels_materialize_after_stability(self) -> bool:
         return bool(self.search.unique and self.search.non_singular and self.labeled_residues)
+
+    @property
+    def runtime_constants_patch(self) -> dict[str, float]:
+        raw_values = {
+            **self.emergent_constants.as_model_patch(),
+            **self.emergent_constants.as_physical_constants(),
+            "holographic_bits": float(self.emergent_constants.holographic_bits),
+            "surface_alpha_inverse": float(self.charge_observables["surface_alpha_inverse"]),
+            "proton_electron_mass_ratio": float(self.proton_electron_mass_ratio),
+        }
+        patch: dict[str, float] = {}
+        for source_name, target_names in _RUNTIME_MODEL_CONSTANT_ALIASES.items():
+            value = float(raw_values[source_name])
+            for target_name in target_names:
+                patch[target_name] = value
+        for source_name, target_names in _RUNTIME_PHYSICAL_CONSTANT_ALIASES.items():
+            value = float(raw_values[source_name])
+            for target_name in target_names:
+                patch[target_name] = value
+        patch["PLANCK2018_H0_SI"] = patch["PLANCK2018_H0_KM_S_MPC"] * 1.0e3 / patch["MPC_IN_METERS"]
+        patch["PLANCK_MASS_GEV"] = patch["PLANCK_MASS_EV"] * 1.0e-9
+        patch["HBAR_GEV_SECONDS"] = patch["HBAR_EV_SECONDS"] * 1.0e-9
+        patch["HOLOGRAPHIC_BITS_FRACTIONAL_SIGMA"] = patch["PLANCK2018_LAMBDA_FRACTIONAL_SIGMA"]
+        patch["PDG_PROTON_TO_ELECTRON_MASS_RATIO"] = float(raw_values["proton_electron_mass_ratio"])
+        patch["ALPHA_INV_BENCHMARK"] = float(raw_values["surface_alpha_inverse"])
+        patch["ALPHA_INV_TARGET"] = float(raw_values["surface_alpha_inverse"])
+        return patch
+
+    def apply_runtime_constants_patch(self, namespace: MutableMapping[str, object]) -> dict[str, float]:
+        patch = self.runtime_constants_patch
+        namespace.update(patch)
+        return patch
 
 
 def _surface_alpha_inverse_from_branch(
@@ -309,6 +368,44 @@ def initialize_from_geometry(
     )
 
 
+def apply_runtime_constants_patch(
+    namespace: MutableMapping[str, object],
+    *,
+    bootstrap: ZeroAnchorBootstrap | object | None = None,
+    lepton_level: int = DEFAULT_BRANCH[0],
+    quark_level: int = DEFAULT_BRANCH[1],
+    parent_level: int = DEFAULT_BRANCH[2],
+    generation_count: int = DEFAULT_GENERATION_COUNT,
+    vacuum_pressure: float = DEFAULT_VACUUM_PRESSURE,
+) -> ZeroAnchorBootstrap | object:
+    """Apply the zero-anchor runtime constant patch into ``namespace``.
+
+    Passing ``bootstrap`` reuses an existing runtime bootstrap object. When no
+    bootstrap is supplied, the helper builds the branch-fixed benchmark runtime
+    and applies its constant aliases into the requested namespace.
+    """
+
+    resolved_bootstrap = (
+        build_zero_anchor_bootstrap(
+            lepton_level=lepton_level,
+            quark_level=quark_level,
+            parent_level=parent_level,
+            generation_count=generation_count,
+            vacuum_pressure=vacuum_pressure,
+        )
+        if bootstrap is None
+        else bootstrap
+    )
+    patch_applier = getattr(resolved_bootstrap, "apply_runtime_constants_patch", None)
+    if callable(patch_applier):
+        patch_applier(namespace)
+        return resolved_bootstrap
+    patch = getattr(resolved_bootstrap, "runtime_constants_patch", None)
+    if isinstance(patch, dict):
+        namespace.update(patch)
+    return resolved_bootstrap
+
+
 __all__ = [
     "BootstrapEigenvalueSearch",
     "BootstrapLabel",
@@ -318,6 +415,7 @@ __all__ = [
     "DEFAULT_VACUUM_PRESSURE",
     "LabeledResidue",
     "ZeroAnchorBootstrap",
+    "apply_runtime_constants_patch",
     "bootstrap_search",
     "build_zero_anchor_bootstrap",
     "build_zero_parameter_runtime_bootstrap",
