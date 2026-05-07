@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .bootstrap import SymmetrySearcher, build_uniqueness_report
+from .bootstrap import RadauIIA, SymmetrySearcher, build_uniqueness_report, evaluate_kernel
 from .observer import (
     AgentLatticeCoordinates,
     FrameDependentAlphaAudit,
@@ -25,6 +25,7 @@ __all__ = [
     "InternalObserver",
     "Observer",
     "ObserverFrameAudit",
+    "RadauIIA",
     "SelfValuationAudit",
     "SelfValuationSigma",
     "SymmetrySearcher",
@@ -32,5 +33,6 @@ __all__ = [
     "derive_frame_dependent_alpha",
     "derive_general_relativity_ui",
     "derive_observer_frame",
+    "evaluate_kernel",
     "shift_holographic_projection",
 ]
