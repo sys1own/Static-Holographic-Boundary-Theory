@@ -14,16 +14,14 @@ from shbt.main import (
 )
 
 
-def test_benchmark_tier_metadata_accepts_geometric_emergence_for_tier1_and_tier2() -> None:
+@pytest.mark.parametrize("classification", ["Geometric Emergence", "Topological Extraction"])
+def test_benchmark_tier_metadata_accepts_geometry_first_labels_for_all_tiers(classification: str) -> None:
     classifications: dict[str, str] = {}
 
     for tier in constants_module.STRICT_BENCHMARK_TIER_DEFINITIONS:
         for constant in tier.constants:
             for metadata_path in constant.legacy_metadata_paths:
-                if tier.identifier in {"Tier 1", "Tier 2"}:
-                    classifications[metadata_path] = "Geometric Emergence"
-                elif constant.allowed_legacy_classifications:
-                    classifications[metadata_path] = constant.allowed_legacy_classifications[0]
+                classifications[metadata_path] = classification
 
     constants_module._validate_benchmark_tier_metadata(
         constants_module.STRICT_BENCHMARK_TIER_DEFINITIONS,
