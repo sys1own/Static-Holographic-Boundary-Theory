@@ -193,6 +193,7 @@ def derive_kernel_geometry(
     quark_level: int = DEFAULT_BRANCH[1],
     parent_level: int = DEFAULT_BRANCH[2],
     generation_count: int = DEFAULT_GENERATION_COUNT,
+    geometric_kappa: float | None = None,
 ) -> KernelGeometry:
     resolved_lepton_level = int(lepton_level)
     resolved_quark_level = int(quark_level)
@@ -207,7 +208,13 @@ def derive_kernel_geometry(
     su2_total_quantum_dimension = float(_su2_total_quantum_dimension(resolved_lepton_level))
     flavor_phase_lock = float(0.5 * math.log(su2_total_quantum_dimension))
     surface_alpha_inverse = float(resolved_generation_count * resolved_parent_level / visible_support)
-    geometric_kappa = float(derive_geometric_kappa(lepton_level=resolved_lepton_level))
+    resolved_geometric_kappa = (
+        float(derive_geometric_kappa(lepton_level=resolved_lepton_level))
+        if geometric_kappa is None
+        else float(geometric_kappa)
+    )
+    if not math.isfinite(resolved_geometric_kappa) or resolved_geometric_kappa <= 0.0:
+        raise ValueError("geometric_kappa must be a finite positive scalar.")
     c_dark_residue = float(
         derive_c_dark_residue(
             lepton_level=resolved_lepton_level,
@@ -216,7 +223,7 @@ def derive_kernel_geometry(
         )
     )
     holographic_bits_offset = (
-        geometric_kappa / 2.0
+        resolved_geometric_kappa / 2.0
         + 1.0 / visible_support
         + 1.0 / (lepton_fixed_point_index * visible_support)
         + 8.0 / (visible_support * visible_support)
@@ -231,7 +238,7 @@ def derive_kernel_geometry(
         lepton_fixed_point_index=lepton_fixed_point_index,
         quark_fixed_point_index=quark_fixed_point_index,
         surface_alpha_inverse=surface_alpha_inverse,
-        geometric_kappa=geometric_kappa,
+        geometric_kappa=resolved_geometric_kappa,
         su2_total_quantum_dimension=su2_total_quantum_dimension,
         flavor_phase_lock=flavor_phase_lock,
         c_dark_residue=c_dark_residue,
@@ -245,6 +252,7 @@ def derive_emergent_constants(
     quark_level: int = DEFAULT_BRANCH[1],
     parent_level: int = DEFAULT_BRANCH[2],
     generation_count: int = DEFAULT_GENERATION_COUNT,
+    geometric_kappa: float | None = None,
     light_speed_m_per_s: float = DEFAULT_LIGHT_SPEED_M_PER_S,
     mpc_in_meters: float = DEFAULT_MPC_IN_METERS,
     hbar_ev_seconds: float = DEFAULT_HBAR_EV_SECONDS,
@@ -256,6 +264,7 @@ def derive_emergent_constants(
         quark_level=quark_level,
         parent_level=parent_level,
         generation_count=generation_count,
+        geometric_kappa=geometric_kappa,
     )
     visible_support = kernel.visible_support
     resolved_parent_level = kernel.branch[2]
