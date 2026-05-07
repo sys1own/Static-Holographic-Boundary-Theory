@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from shbt.config_loader import DEFAULT_CONFIG_LOADER
-from shbt.core.bootstrap import build_zero_anchor_bootstrap
+from shbt.core.bootstrap import apply_runtime_constants_patch, build_zero_anchor_bootstrap
 
 
 @dataclass(frozen=True)
@@ -167,32 +167,10 @@ _BOOTSTRAP_EMERGENT_CONSTANTS = ZERO_ANCHOR_BOOTSTRAP.emergent_constants
 # Geometry-first runtime bootstrap: the module boots from the branch-fixed
 # transport operator and only then discloses legacy constant names for
 # compatibility with the rest of the verifier stack.
-PLANCK_MASS_EV = float(_BOOTSTRAP_EMERGENT_CONSTANTS.planck_mass_ev)
-PLANCK_LENGTH_M = float(_BOOTSTRAP_EMERGENT_CONSTANTS.planck_length_m)
-LIGHT_SPEED_M_PER_S = float(_BOOTSTRAP_EMERGENT_CONSTANTS.light_speed_m_per_s)
-MPC_IN_METERS = float(_BOOTSTRAP_EMERGENT_CONSTANTS.mpc_in_meters)
-PLANCK2018_H0_KM_S_MPC = float(_BOOTSTRAP_EMERGENT_CONSTANTS.planck2018_h0_km_s_mpc)
-PLANCK2018_H0_SIGMA_KM_S_MPC = float(_BOOTSTRAP_EMERGENT_CONSTANTS.planck2018_h0_sigma_km_s_mpc)
-PLANCK2018_OMEGA_LAMBDA = float(_BOOTSTRAP_EMERGENT_CONSTANTS.planck2018_omega_lambda)
-PLANCK2018_OMEGA_LAMBDA_SIGMA = float(_BOOTSTRAP_EMERGENT_CONSTANTS.planck2018_omega_lambda_sigma)
-PLANCK2018_ALPHA_EM_INV_MZ = float(_BOOTSTRAP_EMERGENT_CONSTANTS.planck2018_alpha_em_inv_mz)
-PLANCK2018_SIN2_THETA_W_MZ = float(_BOOTSTRAP_EMERGENT_CONSTANTS.planck2018_sin2_theta_w_mz)
-PLANCK2018_ALPHA_S_MZ = float(_BOOTSTRAP_EMERGENT_CONSTANTS.planck2018_alpha_s_mz)
-PLANCK2018_H0_SI = PLANCK2018_H0_KM_S_MPC * 1.0e3 / MPC_IN_METERS
-PLANCK2018_LAMBDA_SI_M2 = float(_BOOTSTRAP_EMERGENT_CONSTANTS.planck2018_lambda_si_m2)
-PLANCK2018_LAMBDA_FRACTIONAL_SIGMA = float(_BOOTSTRAP_EMERGENT_CONSTANTS.planck2018_lambda_fractional_sigma)
-PLANCK_HOLOGRAPHIC_BITS = float(_BOOTSTRAP_EMERGENT_CONSTANTS.holographic_bits)
-HOLOGRAPHIC_BITS = PLANCK_HOLOGRAPHIC_BITS
-HOLOGRAPHIC_BITS_FRACTIONAL_SIGMA = PLANCK2018_LAMBDA_FRACTIONAL_SIGMA
-CODATA_FINE_STRUCTURE_ALPHA_INVERSE = float(_BOOTSTRAP_EMERGENT_CONSTANTS.codata_fine_structure_alpha_inverse)
-HBAR_EV_SECONDS = float(_BOOTSTRAP_EMERGENT_CONSTANTS.hbar_ev_seconds)
-HBAR_GEV_SECONDS = HBAR_EV_SECONDS * 1.0e-9
-PLANCK_MASS_GEV = PLANCK_MASS_EV * 1.0e-9
+apply_runtime_constants_patch(globals(), bootstrap=ZERO_ANCHOR_BOOTSTRAP)
 
 AUDIT_TOLERANCE = Decimal("1e-38")
 
-GEOMETRIC_KAPPA = float(BOOTSTRAP_STABLE_EIGENVALUE)
-KAPPA_D5 = GEOMETRIC_KAPPA
 PARENT_LEVEL = _BOOTSTRAP_PARENT_LEVEL
 LEPTON_FIXED_POINT_INDEX = _BOOTSTRAP_LEPTON_FIXED_POINT_INDEX
 QUARK_FIXED_POINT_INDEX = _BOOTSTRAP_QUARK_FIXED_POINT_INDEX
