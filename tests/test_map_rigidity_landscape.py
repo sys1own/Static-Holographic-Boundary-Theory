@@ -54,9 +54,12 @@ def test_main_writes_rigidity_moat_artifacts(tmp_path: Path) -> None:
     payload = json.loads(data_path.read_text(encoding="utf-8"))
     assert payload["benchmark_coordinates"] == [26, 8, 312]
     assert payload["benchmark_plane_parent_level"] == 312
-    assert payload["grid_shape"] == [5, 5, 5]
     assert payload["precision_guard_bits"] == 128
+    assert payload["benchmark_moat_depth_guard_zero"] is True
+    assert payload["stable_survivor_moat_depth_guard_zero"] is True
+    assert payload["grid_shape"] == [5, 5, 5]
     assert payload["benchmark_point"]["delta_fr"] == 0.0
+    assert payload["benchmark_point"]["moat_depth_guard_zero"] is True
     assert payload["nearest_detuned_point"]["delta_fr"] > 0.0
     assert len(payload["points"]) == 125
     assert len(payload["delta_fr_grid"]) == 5
@@ -66,13 +69,13 @@ def test_main_writes_rigidity_moat_artifacts(tmp_path: Path) -> None:
     assert len(payload["delta_fr_grid_at_benchmark_parent"][0]) == 5
 
 
-def test_write_rigidity_landscape_json_is_hash_stable_within_process(tmp_path: Path) -> None:
+def test_write_rigidity_landscape_json_is_hash_stable(tmp_path: Path) -> None:
     module = _load_script_module()
-    output_dir = tmp_path / "results"
-    output_dir.mkdir(parents=True)
-
     scan = module.build_centered_rigidity_landscape_scan()
-    path_one = module.write_rigidity_landscape_json(scan, output_dir / "rigidity_moat_a.json")
-    path_two = module.write_rigidity_landscape_json(scan, output_dir / "rigidity_moat_b.json")
+    first_path = tmp_path / "first.json"
+    second_path = tmp_path / "second.json"
 
-    assert path_one.read_text(encoding="utf-8") == path_two.read_text(encoding="utf-8")
+    module.write_rigidity_landscape_json(scan, first_path)
+    module.write_rigidity_landscape_json(scan, second_path)
+
+    assert first_path.read_bytes() == second_path.read_bytes()
