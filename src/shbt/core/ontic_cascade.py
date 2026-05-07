@@ -21,8 +21,8 @@ from inspect import Parameter, signature
 from typing import Any
 
 from shbt.constants import G_SM, LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
+from shbt.core.math_utils import verify_gko_orthogonality
 from shbt.core.noether_bridge import bulk_closure_tensor, framing_defect
-from shbt.main import verify_gko_orthogonality
 
 
 DEFAULT_PRECISION = 50
