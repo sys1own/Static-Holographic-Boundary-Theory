@@ -18160,6 +18160,7 @@ def _initialize_zero_parameter_execution_mode() -> object:
             "Zero-parameter execution bootstrap no longer reproduces the benchmark stable eigenvalue "
             f"{ZERO_PARAMETER_STABLE_EIGENVALUE:.16f}."
         )
+    bootstrap_module.apply_runtime_constants_patch(globals(), bootstrap=geometry_bootstrap)
     LOGGER.info(
         "[ZERO-PARAMETER BOOTSTRAP]: Initialized branch %s from topological extraction with kappa=%.16f.",
         extracted_branch,
