@@ -25,7 +25,6 @@ from shbt.core.rigidity_landscape import (
     DEFAULT_QUARK_HALF_WIDTH,
     EXPECTED_BENCHMARK,
     MIN_COLOR_CEILING,
-    PRECISION_GUARD,
     RigidityLandscapeScan,
     RigidityPoint,
     SymmetrySearcher,
@@ -34,6 +33,8 @@ from shbt.core.rigidity_landscape import (
     build_rigidity_landscape_scan,
     build_rigidity_point,
 )
+from shbt.math_engine import PRECISION_GUARD
+from shbt.math_engine import is_guard_zero
 from shbt.plotting_runtime import plt
 
 
@@ -43,8 +44,14 @@ DEFAULT_DATA_FILENAME = "rigidity_moat.json"
 DEFAULT_DPI = 220
 
 
-def _float_grid(grid: np.ndarray) -> list[object]:
-    return np.asarray(grid, dtype=float).tolist()
+def _guarded_float(value: float) -> float:
+    numeric_value = float(value)
+    return 0.0 if is_guard_zero(numeric_value) else numeric_value
+
+
+def _guarded_grid(values: np.ndarray) -> list:
+    resolved_values = np.asarray(values, dtype=float)
+    return np.asarray(np.vectorize(_guarded_float, otypes=[float])(resolved_values), dtype=float).tolist()
 
 
 def _benchmark_plane(scan: RigidityLandscapeScan) -> np.ndarray:
@@ -187,28 +194,34 @@ def render_rigidity_landscape_plot(
 def _point_payload(point: RigidityPoint) -> dict[str, object]:
     return {
         "coordinates": list(point.coordinates),
-        "lepton_framing_gap": float(point.lepton_framing_gap),
-        "quark_framing_gap": float(point.quark_framing_gap),
-        "delta_fr": float(point.delta_fr),
+        "lepton_framing_gap": _guarded_float(point.lepton_framing_gap),
+        "quark_framing_gap": _guarded_float(point.quark_framing_gap),
+        "delta_fr": _guarded_float(point.delta_fr),
         "delta_fr_label": point.delta_fr_label,
-        "c_dark_shift": float(point.c_dark_shift),
-        "diophantine_gap": float(point.diophantine_gap),
-        "total_residue": float(point.total_residue),
+        "c_dark_shift": _guarded_float(point.c_dark_shift),
+        "diophantine_gap": _guarded_float(point.diophantine_gap),
+        "total_residue": _guarded_float(point.total_residue),
+        "moat_depth_guard_zero": bool(is_guard_zero(point.delta_fr)),
     }
 
 
 def write_rigidity_landscape_json(scan: RigidityLandscapeScan, output_path: Path) -> Path:
     resolved_output_path = Path(output_path)
     resolved_output_path.parent.mkdir(parents=True, exist_ok=True)
+    benchmark_moat_depth_stable = bool(is_guard_zero(scan.benchmark_point.delta_fr))
+    survivor_moat_depth_stable = bool(all(is_guard_zero(point.delta_fr) for point in scan.stable_fixed_points))
+    if not benchmark_moat_depth_stable or not survivor_moat_depth_stable:
+        raise AssertionError("Rigidity moat export requires guard-zero moat depth at the certified benchmark survivor.")
     payload = {
         "benchmark_coordinates": list(scan.benchmark_coordinates),
         "benchmark_plane_parent_level": int(scan.benchmark_coordinates[2]),
+        "precision_guard_bits": int(PRECISION_GUARD),
         "grid_shape": [len(scan.lepton_levels), len(scan.quark_levels), len(scan.parent_levels)],
         "lepton_levels": list(scan.lepton_levels),
         "quark_levels": list(scan.quark_levels),
         "parent_levels": list(scan.parent_levels),
-        "precision_guard_bits": PRECISION_GUARD,
-        "residue_representation": "fractions.Fraction quantized to fixed-point lattice",
+        "benchmark_moat_depth_guard_zero": benchmark_moat_depth_stable,
+        "stable_survivor_moat_depth_guard_zero": survivor_moat_depth_stable,
         "framing_residue_definition": {
             "mathcal_E": "max(|K/(2 k_l) - Z|, |K/(3 k_q) - Z|)",
             "reported_plane": "benchmark parent plane K=312",
@@ -217,10 +230,10 @@ def write_rigidity_landscape_json(scan: RigidityLandscapeScan, output_path: Path
         "benchmark_point": _point_payload(scan.benchmark_point),
         "nearest_detuned_point": _point_payload(scan.nearest_detuned_point),
         "maximum_residue_point": _point_payload(scan.maximum_residue_point),
-        "delta_fr_grid": _float_grid(scan.delta_fr_grid),
-        "topological_closure_score_grid": scan.topological_closure_score_grid.tolist(),
+        "delta_fr_grid": _guarded_grid(scan.delta_fr_grid),
+        "topological_closure_score_grid": _guarded_grid(scan.topological_closure_score_grid),
         "topological_closure_survivors": [list(point.coordinates) for point in scan.stable_fixed_points],
-        "delta_fr_grid_at_benchmark_parent": _benchmark_plane(scan).tolist(),
+        "delta_fr_grid_at_benchmark_parent": _guarded_grid(_benchmark_plane(scan)),
         "points": [_point_payload(point) for point in scan.points],
     }
     resolved_output_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
