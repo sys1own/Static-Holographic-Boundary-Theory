@@ -13,8 +13,14 @@ from shbt.paths import ProjectPaths, resolve_resource_path
 
 
 COUNTER_UNIVERSAL_CLASSIFICATION = "Counter-Universal Scenario"
+GEOMETRIC_EMERGENCE_CLASSIFICATION = "Geometric Emergence"
 VALID_PARAMETER_CLASSIFICATIONS = frozenset(
-    {"Topological Necessity", "Empirical Matching Ansatz", COUNTER_UNIVERSAL_CLASSIFICATION}
+    {
+        "Topological Necessity",
+        "Empirical Matching Ansatz",
+        COUNTER_UNIVERSAL_CLASSIFICATION,
+        GEOMETRIC_EMERGENCE_CLASSIFICATION,
+    }
 )
 DEFAULT_BENCHMARK_CONFIG_PATH = resolve_resource_path("config", "benchmark_v1.yaml")
 DEFAULT_COMPUTE_CLUSTER_RELATIVE_PATH = Path("compute") / "hpc_cluster.yaml"
@@ -220,6 +226,7 @@ class ConfigLoader:
             for leaf_path in _iter_leaf_paths(normalized_overrides):
                 override_metadata.setdefault(leaf_path, COUNTER_UNIVERSAL_CLASSIFICATION)
             metadata.update(override_metadata)
+        benchmark_config, metadata = self._augment_with_geometric_emergence(benchmark_config, metadata)
         return benchmark_config, metadata
 
     @lru_cache(maxsize=4)
@@ -231,7 +238,7 @@ class ConfigLoader:
                 raise TypeError("Injected physics_profile must contain a top-level mapping")
             for leaf_path in _iter_leaf_paths(normalized):
                 metadata.setdefault(leaf_path, COUNTER_UNIVERSAL_CLASSIFICATION)
-            return normalized, metadata
+            return self._augment_profile_with_geometric_emergence(normalized, metadata)
 
         path = self._resolve_repo_or_config_path(self.physics_profile_path)
         if not path.is_file():
@@ -240,15 +247,94 @@ class ConfigLoader:
         normalized = self._normalize_parameter_tree(raw_constants, metadata=metadata)
         if not isinstance(normalized, dict):
             raise TypeError("Physics profile file must contain a top-level mapping")
-        return normalized, metadata
+        return self._augment_profile_with_geometric_emergence(normalized, metadata)
 
     @lru_cache(maxsize=4)
     def _load_universal_constants_bundle(self) -> tuple[dict[str, Any], dict[str, str]]:
         return self._load_physics_profile_bundle()
 
+    def _augment_profile_with_geometric_emergence(
+        self,
+        physics_profile: dict[str, Any],
+        metadata: dict[str, str],
+    ) -> tuple[dict[str, Any], dict[str, str]]:
+        if not physics_profile or "tier_1" not in physics_profile:
+            return physics_profile, metadata
+
+        tier_1 = _require_mapping(physics_profile, "tier_1")
+        tier_2 = physics_profile.setdefault("tier_2", {})
+        if not isinstance(tier_2, dict):
+            raise TypeError("Configuration section 'tier_2' must be a mapping when provided")
+
+        from shbt.core.master_transport import build_geometry_origin_profile
+
+        synthesized_values, synthesized_metadata = build_geometry_origin_profile(
+            lepton_level=int(tier_1["lepton_level"]),
+            quark_level=int(tier_1["quark_level"]),
+            parent_level=int(tier_1["parent_level"]),
+            generation_count=int(tier_1.get("g_sm", 15)),
+        )
+
+        for leaf_path, value in synthesized_values.items():
+            if not leaf_path.startswith("physical_constants."):
+                continue
+            constant_name = leaf_path.removeprefix("physical_constants.")
+            tier_2.setdefault(constant_name, value)
+            metadata.setdefault(f"tier_2.{constant_name}", synthesized_metadata[leaf_path])
+        metadata.setdefault("tier_3.geometric_kappa", synthesized_metadata["model.geometric_kappa"])
+        return physics_profile, metadata
+
+    def _augment_with_geometric_emergence(
+        self,
+        config: dict[str, Any],
+        metadata: dict[str, str],
+    ) -> tuple[dict[str, Any], dict[str, str]]:
+        model = config.get("model")
+        if not isinstance(model, dict):
+            return config, metadata
+
+        try:
+            parent_level = int(model["parent_level"])
+            lepton_fixed_point_index = int(model["lepton_fixed_point_index"])
+            quark_fixed_point_index = int(model["quark_fixed_point_index"])
+        except (KeyError, TypeError, ValueError):
+            return config, metadata
+
+        lepton_level = parent_level // (2 * lepton_fixed_point_index)
+        quark_level = parent_level // (3 * quark_fixed_point_index)
+        generation_count = int(model.get("g_sm", 15))
+
+        from shbt.core.master_transport import build_geometry_origin_profile
+
+        synthesized_values, synthesized_metadata = build_geometry_origin_profile(
+            lepton_level=lepton_level,
+            quark_level=quark_level,
+            parent_level=parent_level,
+            generation_count=generation_count,
+        )
+
+        model.setdefault("geometric_kappa", synthesized_values["model.geometric_kappa"])
+        metadata.setdefault("model.geometric_kappa", synthesized_metadata["model.geometric_kappa"])
+
+        physical_constants = config.get("physical_constants")
+        if physical_constants is None:
+            physical_constants = {}
+            config["physical_constants"] = physical_constants
+        if not isinstance(physical_constants, dict):
+            raise TypeError("Benchmark configuration section 'physical_constants' must be a mapping")
+        for leaf_path, value in synthesized_values.items():
+            if not leaf_path.startswith("physical_constants."):
+                continue
+            constant_name = leaf_path.removeprefix("physical_constants.")
+            physical_constants.setdefault(constant_name, value)
+            metadata.setdefault(leaf_path, synthesized_metadata[leaf_path])
+        return config, metadata
+
     def _translate_physics_profile(self, physics_profile: dict[str, Any]) -> dict[str, Any]:
         tier_1 = _require_mapping(physics_profile, "tier_1")
-        tier_2 = _require_mapping(physics_profile, "tier_2")
+        tier_2 = physics_profile.get("tier_2", {})
+        if not isinstance(tier_2, dict):
+            raise TypeError("Configuration section 'tier_2' must be a mapping when provided")
 
         lepton_level = int(tier_1["lepton_level"])
         quark_level = int(tier_1["quark_level"])
@@ -260,7 +346,20 @@ class ConfigLoader:
         if parent_level % (3 * quark_level) != 0:
             raise ValueError("Tier 1 constants must satisfy parent_level % (3 * quark_level) == 0.")
 
-        physical_constants = {key: value for key, value in tier_2.items()}
+        from shbt.core.master_transport import build_geometry_origin_profile
+
+        synthesized_values, _ = build_geometry_origin_profile(
+            lepton_level=lepton_level,
+            quark_level=quark_level,
+            parent_level=parent_level,
+            generation_count=int(tier_1.get("g_sm", 15)),
+        )
+        physical_constants = {
+            key.removeprefix("physical_constants."): value
+            for key, value in synthesized_values.items()
+            if key.startswith("physical_constants.")
+        }
+        physical_constants.update({key: value for key, value in tier_2.items()})
         if "planck2018_lambda_si_m2" not in physical_constants:
             hubble_si = float(physical_constants["planck2018_h0_km_s_mpc"]) * 1.0e3 / float(physical_constants["mpc_in_meters"])
             light_speed = float(physical_constants["light_speed_m_per_s"])
@@ -275,6 +374,7 @@ class ConfigLoader:
 
         return {
             "model": {
+                "geometric_kappa": float(synthesized_values["model.geometric_kappa"]),
                 "parent_level": parent_level,
                 "lepton_fixed_point_index": parent_level // (2 * lepton_level),
                 "quark_fixed_point_index": parent_level // (3 * quark_level),
@@ -291,25 +391,33 @@ class ConfigLoader:
         if not physics_profile:
             return {}
         translated = {
+            "model.geometric_kappa": metadata.get(
+                "tier_3.geometric_kappa",
+                GEOMETRIC_EMERGENCE_CLASSIFICATION,
+            ),
             "model.parent_level": metadata.get("tier_1.parent_level", "Topological Necessity"),
             "model.lepton_fixed_point_index": metadata.get("tier_1.lepton_level", "Topological Necessity"),
             "model.quark_fixed_point_index": metadata.get("tier_1.quark_level", "Topological Necessity"),
             "model.g_sm": metadata.get("tier_1.g_sm", "Topological Necessity"),
         }
-        tier_2 = _require_mapping(physics_profile, "tier_2")
+        tier_2 = physics_profile.get("tier_2", {})
+        if not isinstance(tier_2, dict):
+            raise TypeError("Configuration section 'tier_2' must be a mapping when provided")
         for name in tier_2:
             translated[f"physical_constants.{name}"] = metadata.get(
                 f"tier_2.{name}",
-                "Empirical Matching Ansatz",
+                GEOMETRIC_EMERGENCE_CLASSIFICATION,
             )
-        translated.setdefault(
-            "physical_constants.planck2018_lambda_si_m2",
-            metadata.get("tier_2.planck2018_lambda_si_m2", "Empirical Matching Ansatz"),
+        from shbt.core.master_transport import build_geometry_origin_profile
+
+        synthesized_values, synthesized_metadata = build_geometry_origin_profile(
+            lepton_level=int(_require_mapping(physics_profile, "tier_1")["lepton_level"]),
+            quark_level=int(_require_mapping(physics_profile, "tier_1")["quark_level"]),
+            parent_level=int(_require_mapping(physics_profile, "tier_1")["parent_level"]),
+            generation_count=int(_require_mapping(physics_profile, "tier_1").get("g_sm", 15)),
         )
-        translated.setdefault(
-            "physical_constants.planck2018_lambda_fractional_sigma",
-            metadata.get("tier_2.planck2018_lambda_fractional_sigma", "Empirical Matching Ansatz"),
-        )
+        for leaf_path in synthesized_values:
+            translated.setdefault(leaf_path, synthesized_metadata[leaf_path])
         return translated
 
     def _translate_universal_constants(self, universal_constants: dict[str, Any]) -> dict[str, Any]:
@@ -419,5 +527,6 @@ __all__ = [
     "DEFAULT_PHYSICS_PROFILE_PATH",
     "DEFAULT_PHYSICS_PROFILE_RELATIVE_PATH",
     "DEFAULT_UNIVERSAL_CONSTANTS_PATH",
+    "GEOMETRIC_EMERGENCE_CLASSIFICATION",
     "VALID_PARAMETER_CLASSIFICATIONS",
 ]
