@@ -23,7 +23,7 @@ from shbt.core.evolutionary_engine import DEFAULT_PRECISION as DERIVATION_DEFAUL
 from shbt.paths import ProjectPaths
 
 
-TARGET_AUDIT_SECTORS = ("gravity", "cosmology", "flavor", "rigidity")
+TARGET_AUDIT_SECTORS = ("gravity", "cosmology", "flavor", "rigidity", "complexity")
 PREFERRED_LATEX_BUILD_ORDER = ("supplementary.tex", "tn.tex", "gravity.tex")
 MANUSCRIPT_TARGET_TEX = "gravity.tex"
 MANUSCRIPT_TARGET_PDF = "gravity.pdf"
