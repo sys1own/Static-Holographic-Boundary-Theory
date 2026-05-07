@@ -290,6 +290,25 @@ def build_zero_anchor_bootstrap(
 build_zero_parameter_runtime_bootstrap = build_zero_anchor_bootstrap
 
 
+def initialize_from_geometry(
+    *,
+    lepton_level: int = DEFAULT_BRANCH[0],
+    quark_level: int = DEFAULT_BRANCH[1],
+    parent_level: int = DEFAULT_BRANCH[2],
+    generation_count: int = DEFAULT_GENERATION_COUNT,
+    vacuum_pressure: float = DEFAULT_VACUUM_PRESSURE,
+) -> ZeroAnchorBootstrap:
+    """Prime execution mode from the branch-fixed transport geometry alone."""
+
+    return build_zero_anchor_bootstrap(
+        lepton_level=lepton_level,
+        quark_level=quark_level,
+        parent_level=parent_level,
+        generation_count=generation_count,
+        vacuum_pressure=vacuum_pressure,
+    )
+
+
 __all__ = [
     "BootstrapEigenvalueSearch",
     "BootstrapLabel",
@@ -302,4 +321,5 @@ __all__ = [
     "bootstrap_search",
     "build_zero_anchor_bootstrap",
     "build_zero_parameter_runtime_bootstrap",
+    "initialize_from_geometry",
 ]
