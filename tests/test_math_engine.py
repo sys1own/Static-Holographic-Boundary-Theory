@@ -98,3 +98,27 @@ def test_math_engine_mpf_results_round_trip_through_mpmath_almosteq() -> None:
 
     assert isinstance(actual, mpmath.mpf)
     _assert_close(actual, expected)
+
+
+def test_math_engine_exposes_guarded_constants_and_fraction_builder() -> None:
+    module = _load_math_engine()
+
+    assert getattr(module, "PRECISION_GUARD") == 128
+    assert getattr(module, "FIXED_POINT_DENOMINATOR") == 2**128
+
+    guarded_value = module.guard_fraction(3, 6)
+
+    assert isinstance(guarded_value, Fraction)
+    _assert_close(guarded_value, Fraction(1, 2))
+
+
+def test_math_engine_guard_sum_and_zero_check_are_rationally_exact() -> None:
+    module = _load_math_engine()
+
+    guarded_sum = module.guard_sum((Fraction(1, 3), Fraction(1, 6), Decimal("0.5")))
+
+    assert isinstance(guarded_sum, Fraction)
+    _assert_close(guarded_sum, Fraction(1, 1))
+    assert module.is_guard_zero(guarded_sum - Fraction(1, 1)) is True
+    assert module.is_guard_zero(Fraction(1, module.FIXED_POINT_DENOMINATOR * 2)) is True
+    assert module.is_guard_zero(Fraction(1, module.FIXED_POINT_DENOMINATOR // 2)) is False
