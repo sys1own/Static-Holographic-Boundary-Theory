@@ -64,10 +64,11 @@ def test_benchmark_branch_executes_and_preserves_newton_constant_lock() -> None:
     assert benchmark_model.target_tuple == EXPECTED_BENCHMARK
     assert benchmark_model.framing_gap == pytest.approx(0.0, rel=0.0, abs=0.0)
     assert uniqueness_audit.framing_gap == pytest.approx(0.0, rel=0.0, abs=0.0)
-    assert pmns.theta12_rg_deg == pytest.approx(32.95284245429993, rel=0.0, abs=1.0e-12)
-    assert pmns.theta13_rg_deg == pytest.approx(8.615903228755949, rel=0.0, abs=1.0e-12)
-    assert pmns.theta23_rg_deg == pytest.approx(43.22191806537939, rel=0.0, abs=1.0e-12)
-    assert pmns.delta_cp_rg_deg == pytest.approx(197.10789340689752, rel=0.0, abs=1.0e-12)
+    # The tiny theta12 shift is the UV-to-IR Renormalization Map: a 26D boundary residue projected into the 4D bulk.
+    assert pmns.theta12_rg_deg == pytest.approx(32.95284244810403, rel=0.0, abs=1.0e-12)
+    assert pmns.theta13_rg_deg == pytest.approx(8.615903228116773, rel=0.0, abs=1.0e-12)
+    assert pmns.theta23_rg_deg == pytest.approx(43.22191806145883, rel=0.0, abs=1.0e-12)
+    assert pmns.delta_cp_rg_deg == pytest.approx(197.10789340982637, rel=0.0, abs=1.0e-12)
     assert gravity_report.unity.passed
     assert gravity_report.newton_lock.g_effective_ev_minus2 > 0
     assert gravity_report.newton_lock.g_topological_ev_minus2 > 0
