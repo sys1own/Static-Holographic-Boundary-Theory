@@ -48,6 +48,7 @@ from shbt import template_utils
 from shbt import topological_kernel
 from shbt.audit import audit_generator as _audit_generator
 from shbt.core import algebra
+from shbt.core import bootstrap as _bootstrap
 from shbt.core import engine as publication_engine
 from shbt.core import master_transport as _master_transport
 from shbt.core import noether_bridge as _noether_bridge
@@ -275,59 +276,14 @@ def build_zero_parameter_runtime_bootstrap(
     parent_level: int = PARENT_LEVEL,
     generation_count: int = G_SM,
     vacuum_pressure: float | None = None,
-) -> ZeroParameterRuntimeBootstrap:
-    resolved_lepton_level = int(lepton_level)
-    resolved_quark_level = int(quark_level)
-    resolved_parent_level = int(parent_level)
-    resolved_generation_count = int(generation_count)
+) -> _bootstrap.ZeroAnchorBootstrap:
     resolved_vacuum_pressure = BENCHMARK_VACUUM_PRESSURE if vacuum_pressure is None else float(vacuum_pressure)
-
-    search = _search_unique_stable_eigenvalue(
-        lepton_level=resolved_lepton_level,
-        quark_level=resolved_quark_level,
-        parent_level=resolved_parent_level,
-        generation_count=resolved_generation_count,
-    )
-    kernel = _master_transport.derive_kernel_geometry(
-        lepton_level=resolved_lepton_level,
-        quark_level=resolved_quark_level,
-        parent_level=resolved_parent_level,
-        generation_count=resolved_generation_count,
-        geometric_kappa=search.stable_eigenvalue,
-    )
-    emergent_constants = _master_transport.derive_emergent_constants(
-        lepton_level=resolved_lepton_level,
-        quark_level=resolved_quark_level,
-        parent_level=resolved_parent_level,
-        generation_count=resolved_generation_count,
-        geometric_kappa=search.stable_eigenvalue,
-    )
-    proton_electron_mass_ratio = _derive_zero_parameter_mass_ratio(
-        parent_level=resolved_parent_level,
-        lepton_level=resolved_lepton_level,
-        quark_level=resolved_quark_level,
-        stable_eigenvalue=search.stable_eigenvalue,
+    return _bootstrap.build_zero_anchor_bootstrap(
+        lepton_level=int(lepton_level),
+        quark_level=int(quark_level),
+        parent_level=int(parent_level),
+        generation_count=int(generation_count),
         vacuum_pressure=resolved_vacuum_pressure,
-    )
-    charge_observables = {
-        "surface_alpha_inverse": _surface_alpha_inverse_from_branch(
-            parent_level=resolved_parent_level,
-            lepton_level=resolved_lepton_level,
-            quark_level=resolved_quark_level,
-            generation_count=resolved_generation_count,
-        ),
-        "codata_fine_structure_alpha_inverse": float(emergent_constants.codata_fine_structure_alpha_inverse),
-        "alpha_em_inverse_mz": float(emergent_constants.planck2018_alpha_em_inv_mz),
-        "alpha_s_mz": float(emergent_constants.planck2018_alpha_s_mz),
-        "sin2_theta_w_mz": float(emergent_constants.planck2018_sin2_theta_w_mz),
-        "c_dark_completion": float(kernel.c_dark_residue),
-    }
-    return ZeroParameterRuntimeBootstrap(
-        search=search,
-        kernel=kernel,
-        emergent_constants=emergent_constants,
-        proton_electron_mass_ratio=proton_electron_mass_ratio,
-        charge_observables=charge_observables,
     )
 
 
@@ -13038,25 +12994,6 @@ def write_benchmark_diagnostics(
     return diagnostics
 
 
-def write_canonical_benchmark_manifest(
-    output_dir: Path,
-    *,
-    model: "TopologicalVacuum" | None = None,
-) -> Path:
-    """Write the architecture-stable benchmark manifest for a generated output directory."""
-
-    resolved_model = DEFAULT_TOPOLOGICAL_VACUUM if model is None else model
-    benchmark_tuple = tuple(
-        int(value)
-        for value in getattr(resolved_model, "target_tuple", (LEPTON_LEVEL, QUARK_LEVEL, PARENT_LEVEL))
-    )
-    return _export_mod.write_canonical_benchmark_manifest(
-        Path(output_dir),
-        benchmark_tuple=benchmark_tuple,
-        filename=BENCHMARK_MANIFEST_FILENAME,
-    )
-
-
 def write_holographic_curvature_audit(
     audit: HolographicCurvatureAudit | None = None,
     *,
@@ -14648,7 +14585,6 @@ def export_manuscript_artifacts(
         vacuum=vacuum,
         output_dir=manuscript_output_dir,
     )
-    write_canonical_benchmark_manifest(manuscript_output_dir, model=resolved_vacuum)
     return manuscript_output_dir
 
 
@@ -18502,7 +18438,6 @@ def main(argv: list[str] | None = None) -> None:
         vacuum=vacuum,
         output_dir=output_dir,
     )
-    write_canonical_benchmark_manifest(output_dir, model=vacuum)
     referee_summary_payload = None
     if args.referee_audit:
         referee_summary_payload = MasterAudit.peer_review_defensive_summary(
