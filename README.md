@@ -59,7 +59,7 @@ This repository treats that chain as a theorem to be audited, not as an ansatz t
 ## Repository Map
 
 - `src/shbt/` — installable SHBT package containing the verifier, shared constants, and reporting stack.
-- `src/shbt/main.py` — primary CLI entrypoint for full benchmark regeneration via `PYTHONPATH=src python -m shbt.main`.
+- `src/shbt/main.py` — primary CLI entrypoint for full benchmark regeneration via `python -m shbt.main`.
 - `src/shbt/constants.py` — strict benchmark tier catalog and shared branch-fixed constants.
 - `src/shbt/core/` — gravity, flavor, topology, transport, uniqueness, and geometry/evolution proof engines, including `differential_geometry.py` for metric-tensor operations and `evolutionary_engine.py` for reusable universe-derivation APIs.
 - `src/shbt/audit/` — publication-facing audit modules and artifact generators.
@@ -144,7 +144,7 @@ The repository includes a production-grade diagnostic stack to ensure the mathem
 Run the universal verifier from the repository root:
 
 ```bash
-PYTHONPATH=src python -m shbt.main --output-dir results/
+python -m shbt.main --output-dir results/
 ```
 
 To go from the branch-fixed integer inputs to the compiled manuscript PDFs in one command, run:
@@ -194,7 +194,7 @@ The benchmark now uses a split configuration model: `config/physics_profiles/sta
 - **Python requirement:** `>=3.11`
 - **Pinned scientific stack:** `PyYAML==6.0.3`, `Jinja2==3.1.6`, `mpmath==1.3.0`, `numpy==1.26.4`, `scipy==1.12.0`, `matplotlib==3.8.3`, `sympy==1.12`
 - **Link Ledger:** `src/shbt/core/evolutionary_engine.py` is the canonical reusable derivation API, while `python scripts/derive_universe.py` remains the compatibility CLI that prints the branch-fixed gauge-density residue `alpha_surf^-1 = 2340/17`; together with the `Derivation Ledger` above, this makes explicit that the benchmark's physical constants are derived residues disclosed against external comparators, not fit parameters reopened by hand.
-- **Paper Sync:** `PYTHONPATH=src python scripts/sync_system.py` refreshes the machine-managed derivation table and residual ledger in `README.md`, plus the synchronized audit macros in `papers/physics_constants.tex`, from `results/residuals.json` and `config/physics_profiles/standard_model.yaml`.
+- **Paper Sync:** `python scripts/sync_system.py` refreshes the machine-managed derivation table and residual ledger in `README.md`, plus the synchronized audit macros in `papers/physics_constants.tex`, from `results/residuals.json` and `config/physics_profiles/standard_model.yaml`.
 
 ### Constant Tiers
 
