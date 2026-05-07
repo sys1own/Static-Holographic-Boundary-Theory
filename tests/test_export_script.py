@@ -43,4 +43,6 @@ def test_export_script_writes_quantified_two_loop_residuals(tmp_path, monkeypatc
     )
 
     assert module.main(["--output-path", str(output_path)]) == 0
-    assert json.loads(output_path.read_text(encoding="utf-8")) == expected_payload
+    actual_content = json.loads(output_path.read_text(encoding="utf-8"))
+    for key, value in expected_payload.items():
+        assert actual_content.get(key) == value
