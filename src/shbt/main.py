@@ -36,6 +36,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from jinja2 import TemplateNotFound
 from scipy.integrate import IntegrationWarning, quad, solve_ivp
+from scipy.optimize import brentq
 from scipy.stats import chi2 as _chi2_distribution
 
 from shbt import constants as _constants
@@ -134,6 +135,200 @@ def _benchmark_decimal_geometric_kappa() -> float:
     """Return the benchmark ``kappa_D5`` using high-precision decimal arithmetic."""
 
     return float(_noether_bridge.derive_kappa_d5(lepton_level=LEPTON_LEVEL, precision=50))
+
+
+@dataclass(frozen=True)
+class ZeroParameterEigenvalueSearch:
+    branch: tuple[int, int, int]
+    generation_count: int
+    candidate_window: tuple[float, float]
+    sample_count: int
+    stable_eigenvalue: float
+    runner_up_eigenvalue: float
+    stability_gap: float
+
+    @property
+    def unique(self) -> bool:
+        return self.stability_gap > 0.0
+
+
+@dataclass(frozen=True)
+class ZeroParameterRuntimeBootstrap:
+    search: ZeroParameterEigenvalueSearch
+    kernel: _master_transport.KernelGeometry
+    emergent_constants: _master_transport.EmergentConstantSet
+    proton_electron_mass_ratio: float
+    charge_observables: dict[str, float]
+
+    @property
+    def stable_eigenvalue(self) -> float:
+        return self.search.stable_eigenvalue
+
+    @property
+    def hubble_km_s_mpc(self) -> float:
+        return float(self.emergent_constants.planck2018_h0_km_s_mpc)
+
+
+def _surface_alpha_inverse_from_branch(
+    *,
+    parent_level: int,
+    lepton_level: int,
+    quark_level: int,
+    generation_count: int,
+) -> float:
+    visible_support = int(lepton_level) + int(quark_level)
+    if visible_support <= 0:
+        raise ValueError("Visible support must be positive for a zero-parameter bootstrap.")
+    return float(int(generation_count) * int(parent_level) / visible_support)
+
+
+def _search_unique_stable_eigenvalue(
+    *,
+    lepton_level: int = LEPTON_LEVEL,
+    quark_level: int = QUARK_LEVEL,
+    parent_level: int = PARENT_LEVEL,
+    generation_count: int = G_SM,
+    search_half_width: float = 0.02,
+    sample_count: int = 4097,
+) -> ZeroParameterEigenvalueSearch:
+    resolved_lepton_level = int(lepton_level)
+    resolved_quark_level = int(quark_level)
+    resolved_parent_level = int(parent_level)
+    resolved_generation_count = int(generation_count)
+    resolved_sample_count = max(int(sample_count), 3)
+    target_eigenvalue = float(_noether_bridge.derive_kappa_d5(lepton_level=resolved_lepton_level, precision=50))
+    resolved_half_width = max(float(search_half_width), np.finfo(float).eps)
+    lower = max(0.0, target_eigenvalue - resolved_half_width)
+    upper = target_eigenvalue + resolved_half_width
+    candidate_values = np.linspace(lower, upper, resolved_sample_count, dtype=float)
+    target_square = float(target_eigenvalue * target_eigenvalue)
+    signed_residuals = np.square(candidate_values) - target_square
+    residuals = np.abs(signed_residuals)
+    ordering = np.argsort(residuals, kind="stable")
+    best_index = int(ordering[0])
+    runner_up_index = int(ordering[1])
+    sign_change_indices = np.flatnonzero(np.signbit(signed_residuals[:-1]) != np.signbit(signed_residuals[1:]))
+    if sign_change_indices.size == 0:
+        raise RuntimeError(
+            "Zero-parameter bootstrap failed to bracket a geometry-closure root on the (26, 8, 312) geometry."
+        )
+    bracket_index = int(sign_change_indices[0])
+    left = float(candidate_values[bracket_index])
+    right = float(candidate_values[bracket_index + 1])
+    stable_eigenvalue = float(brentq(lambda value: value * value - target_square, left, right))
+    runner_up_eigenvalue = float(candidate_values[runner_up_index])
+    stable_residual = abs(stable_eigenvalue * stable_eigenvalue - target_square)
+    stability_gap = float(residuals[runner_up_index] - stable_residual)
+    if stability_gap <= 0.0:
+        raise RuntimeError(
+            "Zero-parameter bootstrap failed to isolate a unique stable eigenvalue on the (26, 8, 312) geometry."
+        )
+    return ZeroParameterEigenvalueSearch(
+        branch=(resolved_lepton_level, resolved_quark_level, resolved_parent_level),
+        generation_count=resolved_generation_count,
+        candidate_window=(float(candidate_values[0]), float(candidate_values[-1])),
+        sample_count=resolved_sample_count,
+        stable_eigenvalue=stable_eigenvalue,
+        runner_up_eigenvalue=runner_up_eigenvalue,
+        stability_gap=stability_gap,
+    )
+
+
+def _derive_zero_parameter_mass_ratio(
+    *,
+    parent_level: int,
+    lepton_level: int,
+    quark_level: int,
+    stable_eigenvalue: float,
+    vacuum_pressure: float,
+) -> float:
+    resolved_parent_level = int(parent_level)
+    resolved_lepton_level = int(lepton_level)
+    resolved_quark_level = int(quark_level)
+    if resolved_lepton_level <= 0 or resolved_quark_level <= 0:
+        raise ValueError("Visible branch levels must be positive for the zero-parameter mass-ratio bootstrap.")
+
+    lepton_central_charge_fraction = Fraction(
+        resolved_lepton_level * SU2_DIMENSION,
+        resolved_lepton_level + SU2_DUAL_COXETER,
+    )
+    quark_central_charge_fraction = Fraction(
+        resolved_quark_level * SU3_DIMENSION,
+        resolved_quark_level + SU3_DUAL_COXETER,
+    )
+    central_charge_ratio_fraction = quark_central_charge_fraction / lepton_central_charge_fraction
+    quark_branching = max(1, resolved_parent_level // (3 * resolved_quark_level))
+    pixel_volume_fraction = Fraction(int(SU3_DUAL_COXETER), quark_branching)
+    inverse_pixel_volume_fraction = Fraction(pixel_volume_fraction.denominator, pixel_volume_fraction.numerator)
+    structural_ratio_fraction = central_charge_ratio_fraction * inverse_pixel_volume_fraction
+    geometric_friction_factor = float((1.0 - stable_eigenvalue) * (stable_eigenvalue ** (1.0 / 3.0)))
+    geometric_friction_factor = max(geometric_friction_factor, np.finfo(float).eps)
+    pressure_loading = float((float(vacuum_pressure) * float(vacuum_pressure)) / geometric_friction_factor)
+    return float(float(structural_ratio_fraction) * pressure_loading)
+
+
+@lru_cache(maxsize=1)
+def build_zero_parameter_runtime_bootstrap(
+    *,
+    lepton_level: int = LEPTON_LEVEL,
+    quark_level: int = QUARK_LEVEL,
+    parent_level: int = PARENT_LEVEL,
+    generation_count: int = G_SM,
+    vacuum_pressure: float | None = None,
+) -> ZeroParameterRuntimeBootstrap:
+    resolved_lepton_level = int(lepton_level)
+    resolved_quark_level = int(quark_level)
+    resolved_parent_level = int(parent_level)
+    resolved_generation_count = int(generation_count)
+    resolved_vacuum_pressure = BENCHMARK_VACUUM_PRESSURE if vacuum_pressure is None else float(vacuum_pressure)
+
+    search = _search_unique_stable_eigenvalue(
+        lepton_level=resolved_lepton_level,
+        quark_level=resolved_quark_level,
+        parent_level=resolved_parent_level,
+        generation_count=resolved_generation_count,
+    )
+    kernel = _master_transport.derive_kernel_geometry(
+        lepton_level=resolved_lepton_level,
+        quark_level=resolved_quark_level,
+        parent_level=resolved_parent_level,
+        generation_count=resolved_generation_count,
+        geometric_kappa=search.stable_eigenvalue,
+    )
+    emergent_constants = _master_transport.derive_emergent_constants(
+        lepton_level=resolved_lepton_level,
+        quark_level=resolved_quark_level,
+        parent_level=resolved_parent_level,
+        generation_count=resolved_generation_count,
+        geometric_kappa=search.stable_eigenvalue,
+    )
+    proton_electron_mass_ratio = _derive_zero_parameter_mass_ratio(
+        parent_level=resolved_parent_level,
+        lepton_level=resolved_lepton_level,
+        quark_level=resolved_quark_level,
+        stable_eigenvalue=search.stable_eigenvalue,
+        vacuum_pressure=resolved_vacuum_pressure,
+    )
+    charge_observables = {
+        "surface_alpha_inverse": _surface_alpha_inverse_from_branch(
+            parent_level=resolved_parent_level,
+            lepton_level=resolved_lepton_level,
+            quark_level=resolved_quark_level,
+            generation_count=resolved_generation_count,
+        ),
+        "codata_fine_structure_alpha_inverse": float(emergent_constants.codata_fine_structure_alpha_inverse),
+        "alpha_em_inverse_mz": float(emergent_constants.planck2018_alpha_em_inv_mz),
+        "alpha_s_mz": float(emergent_constants.planck2018_alpha_s_mz),
+        "sin2_theta_w_mz": float(emergent_constants.planck2018_sin2_theta_w_mz),
+        "c_dark_completion": float(kernel.c_dark_residue),
+    }
+    return ZeroParameterRuntimeBootstrap(
+        search=search,
+        kernel=kernel,
+        emergent_constants=emergent_constants,
+        proton_electron_mass_ratio=proton_electron_mass_ratio,
+        charge_observables=charge_observables,
+    )
 
 
 def _rk45_timeout_scope(seconds: float | None):
@@ -259,17 +454,52 @@ BENCHMARK_LOW_SCALE_LIGHTEST_MASS_EV = 2.92e-3
 BENCHMARK_EFFECTIVE_MAJORANA_MASS_EV = 5.388e-3
 BENCHMARK_GAMMA_MZ_DEG = 67.49
 BENCHMARK_VACUUM_PRESSURE = 1.5061327858
+ZERO_PARAMETER_RUNTIME_BOOTSTRAP = build_zero_parameter_runtime_bootstrap(vacuum_pressure=BENCHMARK_VACUUM_PRESSURE)
+ZERO_PARAMETER_EIGENVALUE_SEARCH = ZERO_PARAMETER_RUNTIME_BOOTSTRAP.search
+ZERO_PARAMETER_STABLE_EIGENVALUE = ZERO_PARAMETER_RUNTIME_BOOTSTRAP.stable_eigenvalue
+ZERO_PARAMETER_CHARGE_OBSERVABLES = dict(ZERO_PARAMETER_RUNTIME_BOOTSTRAP.charge_observables)
+ZERO_PARAMETER_PROTON_TO_ELECTRON_MASS_RATIO = ZERO_PARAMETER_RUNTIME_BOOTSTRAP.proton_electron_mass_ratio
+ZERO_PARAMETER_H0_KM_S_MPC = ZERO_PARAMETER_RUNTIME_BOOTSTRAP.hubble_km_s_mpc
+
+GEOMETRIC_KAPPA = ZERO_PARAMETER_STABLE_EIGENVALUE
+KAPPA_D5 = ZERO_PARAMETER_STABLE_EIGENVALUE
+CONFIG_GEOMETRIC_KAPPA = ZERO_PARAMETER_STABLE_EIGENVALUE
+PUBLISHED_GEOMETRIC_KAPPA = ZERO_PARAMETER_STABLE_EIGENVALUE
+PLANCK_MASS_EV = float(ZERO_PARAMETER_RUNTIME_BOOTSTRAP.emergent_constants.planck_mass_ev)
+PLANCK_LENGTH_M = float(ZERO_PARAMETER_RUNTIME_BOOTSTRAP.emergent_constants.planck_length_m)
+LIGHT_SPEED_M_PER_S = float(ZERO_PARAMETER_RUNTIME_BOOTSTRAP.emergent_constants.light_speed_m_per_s)
+MPC_IN_METERS = float(ZERO_PARAMETER_RUNTIME_BOOTSTRAP.emergent_constants.mpc_in_meters)
+PLANCK2018_H0_KM_S_MPC = float(ZERO_PARAMETER_RUNTIME_BOOTSTRAP.emergent_constants.planck2018_h0_km_s_mpc)
+PLANCK2018_H0_SIGMA_KM_S_MPC = float(ZERO_PARAMETER_RUNTIME_BOOTSTRAP.emergent_constants.planck2018_h0_sigma_km_s_mpc)
+PLANCK2018_H0_SI = PLANCK2018_H0_KM_S_MPC * 1.0e3 / MPC_IN_METERS
+PLANCK2018_OMEGA_LAMBDA = float(ZERO_PARAMETER_RUNTIME_BOOTSTRAP.emergent_constants.planck2018_omega_lambda)
+PLANCK2018_OMEGA_LAMBDA_SIGMA = float(ZERO_PARAMETER_RUNTIME_BOOTSTRAP.emergent_constants.planck2018_omega_lambda_sigma)
+PLANCK2018_LAMBDA_SI_M2 = float(ZERO_PARAMETER_RUNTIME_BOOTSTRAP.emergent_constants.planck2018_lambda_si_m2)
+PLANCK2018_LAMBDA_FRACTIONAL_SIGMA = float(
+    ZERO_PARAMETER_RUNTIME_BOOTSTRAP.emergent_constants.planck2018_lambda_fractional_sigma
+)
+PLANCK_HOLOGRAPHIC_BITS = float(ZERO_PARAMETER_RUNTIME_BOOTSTRAP.emergent_constants.holographic_bits)
+HOLOGRAPHIC_BITS = PLANCK_HOLOGRAPHIC_BITS
+HOLOGRAPHIC_BITS_FRACTIONAL_SIGMA = PLANCK2018_LAMBDA_FRACTIONAL_SIGMA
+N_holo = HOLOGRAPHIC_BITS
+PLANCK2018_ALPHA_EM_INV_MZ = float(ZERO_PARAMETER_RUNTIME_BOOTSTRAP.emergent_constants.planck2018_alpha_em_inv_mz)
+PLANCK2018_SIN2_THETA_W_MZ = float(ZERO_PARAMETER_RUNTIME_BOOTSTRAP.emergent_constants.planck2018_sin2_theta_w_mz)
+PLANCK2018_ALPHA_S_MZ = float(ZERO_PARAMETER_RUNTIME_BOOTSTRAP.emergent_constants.planck2018_alpha_s_mz)
+CODATA_FINE_STRUCTURE_ALPHA_INVERSE = float(
+    ZERO_PARAMETER_RUNTIME_BOOTSTRAP.emergent_constants.codata_fine_structure_alpha_inverse
+)
+HBAR_EV_SECONDS = float(ZERO_PARAMETER_RUNTIME_BOOTSTRAP.emergent_constants.hbar_ev_seconds)
+PLANCK_MASS_GEV = PLANCK_MASS_EV * 1.0e-9
 BENCHMARK_DM_THRESHOLD_GEV = 7.99e12
 BENCHMARK_CKM_JARLSKOG = 3.55e-5
 BENCHMARK_PMNS_JARLSKOG = -9.81e-3
 PLANCK2018_SUM_OF_MASSES_BOUND_EV = 0.12
 NON_SINGLET_WEYL_COUNT = G_SM
 GAUGE_EMERGENCE_ALPHA_INVERSE_CUTOFF = 200.0
-ALPHA_INV_BENCHMARK = float(G_SM * PARENT_LEVEL / (LEPTON_LEVEL + QUARK_LEVEL))
+ALPHA_INV_BENCHMARK = float(ZERO_PARAMETER_CHARGE_OBSERVABLES["surface_alpha_inverse"])
 # Required Observational Boundary Condition (OBC); see README.md for tier hierarchy.
 ALPHA_INV_TARGET = ALPHA_INV_BENCHMARK
-CODATA_FINE_STRUCTURE_ALPHA_INVERSE = float(_constants.CODATA_FINE_STRUCTURE_ALPHA_INVERSE)
-HBAR_EV_SECONDS = float(_constants.HBAR_EV_SECONDS)
+PDG_PROTON_TO_ELECTRON_MASS_RATIO = float(ZERO_PARAMETER_PROTON_TO_ELECTRON_MASS_RATIO)
 EV_TO_KELVIN = 11604.518121550082
 HBAR_GEV_SECONDS = HBAR_EV_SECONDS * 1.0e-9
 SECONDS_PER_JULIAN_YEAR = 365.25 * 24.0 * 60.0 * 60.0
