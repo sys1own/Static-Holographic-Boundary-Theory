@@ -842,6 +842,43 @@ class UniverseFactory:
         )
 
     @classmethod
+    def generate_residual_payload(
+        cls,
+        *,
+        precision: int = DEFAULT_PRECISION,
+    ) -> dict[str, object]:
+        from shbt.main import build_quantified_two_loop_residuals
+
+        resolved_precision = max(int(precision), DEFAULT_PRECISION)
+        physical_ledger = cls.calculate_physical_ledger(precision=resolved_precision)
+        lambda_surface = cls.derive_lambda_surface(precision=resolved_precision)
+
+        benchmark_tuple = [
+            int(physical_ledger.vacuum.lepton_level),
+            int(physical_ledger.vacuum.quark_level),
+            int(physical_ledger.vacuum.parent_level),
+        ]
+        derivation_residues = {
+            "precision": resolved_precision,
+            "benchmark_tuple": benchmark_tuple,
+            "alpha_inverse_decimal": float(physical_ledger.alpha_surface.alpha_inverse_decimal),
+            "codata_alpha_inverse": float(physical_ledger.alpha_surface.codata_alpha_inverse),
+            "m_nu_ev": float(physical_ledger.mass_bridge.neutrino_floor_ev),
+            "m_nu_mev": float(physical_ledger.mass_bridge.neutrino_floor_mev),
+            "epsilon_lambda": float(physical_ledger.unity_of_scale.epsilon_lambda),
+            "decimal_tolerance": float(physical_ledger.unity_of_scale.decimal_tolerance),
+            "register_noise_floor": float(physical_ledger.unity_of_scale.register_noise_floor),
+            "lambda_holo_si_m2": float(lambda_surface.lambda_holo_si_m2),
+            "lambda_obs_si_m2": float(lambda_surface.anchor_lambda_si_m2),
+        }
+
+        payload = dict(build_quantified_two_loop_residuals())
+        payload["artifact"] = "Quantified Two-Loop Residuals"
+        payload["benchmark_tuple"] = benchmark_tuple
+        payload["derivation_residues"] = derivation_residues
+        return payload
+
+    @classmethod
     def build_residue_dictionary(cls, *, precision: int = DEFAULT_PRECISION) -> dict[str, int | Decimal | bool]:
         return cls.calculate_physical_ledger(precision=precision).residues
 
