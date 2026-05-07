@@ -124,6 +124,49 @@ SECTOR_AUDIT_MODULES: dict[str, tuple[str, ...]] = {
         "shbt.sectors.complexity_sector",
     ),
 }
+_LOGICAL_ENTANGLEMENT_SECTORS: Final[frozenset[str]] = frozenset(TARGET_AUDIT_SECTORS)
+_METRIC_LOCK_DEPENDENT_SECTORS: Final[frozenset[str]] = frozenset({"flavor"})
+_METRIC_LOCK_FIELDS: Final[tuple[str, ...]] = (
+    "bulk_emergent",
+    "torsion_free",
+    "non_singular_bulk",
+    "lambda_aligned",
+    "parity_bit_density_constraint_satisfied",
+)
+_BENCHMARK_HIGGS_MATCHING_THRESHOLD_GEV: Final[float] = 7_992_597_724_221.887
+_BENCHMARK_DIRAC_HIGGS_MASS_GEV: Final[float] = 1.0e15
+_BENCHMARK_HIGGS_POLE_MASS_GEV: Final[float] = 125.0
+_BENCHMARK_LAMBDA_OBS_SI_M2: Final[float] = 1.0892229828054038e-52
+_BENCHMARK_VEV_RESIDUE: Final[Fraction] = Fraction(8, 39)
+_GLOBAL_PARITY_BENCHMARKS: Final[dict[str, float]] = {
+    "m_126_gev": _BENCHMARK_HIGGS_MATCHING_THRESHOLD_GEV,
+    "matching_threshold_scale_gev": _BENCHMARK_HIGGS_MATCHING_THRESHOLD_GEV,
+    "matching_m126_gev": _BENCHMARK_HIGGS_MATCHING_THRESHOLD_GEV,
+    "higgs_vev_matching_m126_gev": _BENCHMARK_HIGGS_MATCHING_THRESHOLD_GEV,
+    "m_10_gev": _BENCHMARK_DIRAC_HIGGS_MASS_GEV,
+    "dirac_higgs_benchmark_mass_gev": _BENCHMARK_DIRAC_HIGGS_MASS_GEV,
+    "higgs_pole_mass_gev": _BENCHMARK_HIGGS_POLE_MASS_GEV,
+    "lambda_si_m2": _BENCHMARK_LAMBDA_OBS_SI_M2,
+    "lambda_anchor_si_m2": _BENCHMARK_LAMBDA_OBS_SI_M2,
+    "lambda_obs_si_m2": _BENCHMARK_LAMBDA_OBS_SI_M2,
+    "unity_residue_lambda_obs_si_m2": _BENCHMARK_LAMBDA_OBS_SI_M2,
+    "observed_lambda_si_m2": _BENCHMARK_LAMBDA_OBS_SI_M2,
+}
+_GLOBAL_PARITY_ABSOLUTE_TOLERANCES: Final[dict[str, float]] = {
+    "m_126_gev": 1.0e-6,
+    "matching_threshold_scale_gev": 1.0e-6,
+    "matching_m126_gev": 1.0e-6,
+    "higgs_vev_matching_m126_gev": 1.0e-6,
+    "m_10_gev": 1.0e-6,
+    "dirac_higgs_benchmark_mass_gev": 1.0e-6,
+    "higgs_pole_mass_gev": 1.0e-12,
+    "lambda_si_m2": 1.0e-64,
+    "lambda_anchor_si_m2": 1.0e-64,
+    "lambda_obs_si_m2": 1.0e-64,
+    "unity_residue_lambda_obs_si_m2": 1.0e-64,
+    "observed_lambda_si_m2": 1.0e-64,
+}
+_GLOBAL_PARITY_RELATIVE_TOLERANCE: Final[float] = 1.0e-12
 
 
 def derive_su2_total_dim(level: int) -> float:
@@ -572,6 +615,201 @@ class QuadratureConvergenceError(RuntimeError):
 
 class BenchmarkExecutionError(RuntimeError):
     pass
+
+
+class RigidityGuardian:
+    def __init__(self, *, model: Any | None = None) -> None:
+        self.model = DEFAULT_TOPOLOGICAL_VACUUM if model is None else model
+        self.metric_tensor_locked = False
+        self.metric_tensor_signature: tuple[bool, ...] | None = None
+
+    def ensure_metric_tensor_locked(self) -> Any:
+        if self.metric_tensor_locked:
+            return self.metric_tensor_signature
+        LOGGER.info("[LOGICAL ENTANGLEMENT]: Locking the gravity metric tensor before dependent sector initialization.")
+        return self.calculate(
+            self.model.verify_bulk_emergence,
+            sector_name="gravity",
+            label="metric tensor lock",
+        )
+
+    def calculate(
+        self,
+        operation: Any,
+        *args: Any,
+        sector_name: str,
+        label: str,
+        **kwargs: Any,
+    ) -> Any:
+        resolved_sector_name = str(sector_name).lower()
+        if resolved_sector_name not in _LOGICAL_ENTANGLEMENT_SECTORS:
+            raise ValueError(f"Unsupported logical-entanglement sector: {sector_name}")
+        if resolved_sector_name in _METRIC_LOCK_DEPENDENT_SECTORS and not self.metric_tensor_locked:
+            raise BenchmarkExecutionError(
+                "Flavor sector initialization is blocked until the Gravity sector locks the metric tensor."
+            )
+
+        self._global_parity_checkpoint(sector_name=resolved_sector_name, label=label)
+        self._preflight_manual_tuning_check(sector_name=resolved_sector_name, label=label, kwargs=kwargs)
+        result = operation(*args, **kwargs)
+        self._validate_result_parity(result=result, sector_name=resolved_sector_name, label=label)
+        if resolved_sector_name == "gravity":
+            self._lock_metric_tensor(result=result, label=label)
+        self._global_parity_checkpoint(sector_name=resolved_sector_name, label=label)
+        return result
+
+    def _global_parity_checkpoint(self, *, sector_name: str, label: str) -> None:
+        matching_threshold_gev = float(
+            derive_topological_threshold_gev(
+                parent_level=int(getattr(self.model, "parent_level", PARENT_LEVEL)),
+                lepton_level=int(getattr(self.model, "lepton_level", LEPTON_LEVEL)),
+                quark_level=int(getattr(self.model, "quark_level", QUARK_LEVEL)),
+            )
+        )
+        self._assert_parity_value(
+            "matching_threshold_scale_gev",
+            matching_threshold_gev,
+            sector_name=sector_name,
+            label=label,
+        )
+        self._assert_parity_value(
+            "dirac_higgs_benchmark_mass_gev",
+            float(DIRAC_HIGGS_BENCHMARK_MASS_GEV),
+            sector_name=sector_name,
+            label=label,
+        )
+        self._assert_parity_value(
+            "higgs_pole_mass_gev",
+            float(HIGGS_POLE_MASS_GEV),
+            sector_name=sector_name,
+            label=label,
+        )
+        self._assert_parity_value(
+            "lambda_anchor_si_m2",
+            float(derive_cosmology_anchor().lambda_si_m2),
+            sector_name=sector_name,
+            label=label,
+        )
+        observed_vev_residue = derive_lie_algebraic_vev_residue(
+            parent_level=int(getattr(self.model, "parent_level", PARENT_LEVEL)),
+            lepton_level=int(getattr(self.model, "lepton_level", LEPTON_LEVEL)),
+            quark_level=int(getattr(self.model, "quark_level", QUARK_LEVEL)),
+        )
+        if observed_vev_residue != _BENCHMARK_VEV_RESIDUE:
+            self._raise_global_parity_failure(
+                parameter="lie_algebraic_vev_residue",
+                observed=str(observed_vev_residue),
+                expected=str(_BENCHMARK_VEV_RESIDUE),
+                sector_name=sector_name,
+                label=label,
+            )
+        try:
+            verify_so10_vev_alignment_residue(
+                parent_level=int(getattr(self.model, "parent_level", PARENT_LEVEL)),
+                lepton_level=int(getattr(self.model, "lepton_level", LEPTON_LEVEL)),
+                quark_level=int(getattr(self.model, "quark_level", QUARK_LEVEL)),
+            )
+        except BenchmarkExecutionError as exc:
+            self._raise_global_parity_failure(
+                parameter="so10_vev_alignment_residue",
+                observed=str(exc),
+                expected="Exact benchmark 64/312 residue closure.",
+                sector_name=sector_name,
+                label=label,
+            )
+
+    def _preflight_manual_tuning_check(
+        self,
+        *,
+        sector_name: str,
+        label: str,
+        kwargs: Mapping[str, Any],
+    ) -> None:
+        for parameter, expected_value in _GLOBAL_PARITY_BENCHMARKS.items():
+            if parameter not in kwargs or kwargs[parameter] is None:
+                continue
+            self._assert_parity_value(
+                parameter,
+                float(kwargs[parameter]),
+                sector_name=sector_name,
+                label=label,
+                expected_value=expected_value,
+            )
+
+    def _validate_result_parity(self, *, result: Any, sector_name: str, label: str) -> None:
+        for parameter in _GLOBAL_PARITY_BENCHMARKS:
+            if not hasattr(result, parameter):
+                continue
+            observed_value = getattr(result, parameter)
+            if observed_value is None:
+                continue
+            self._assert_parity_value(
+                parameter,
+                float(observed_value),
+                sector_name=sector_name,
+                label=label,
+            )
+
+    def _lock_metric_tensor(self, *, result: Any, label: str) -> None:
+        signature = tuple(bool(getattr(result, field, False)) for field in _METRIC_LOCK_FIELDS)
+        if not all(signature):
+            raise BenchmarkExecutionError(
+                "Gravity sector failed to lock the metric tensor; logical entanglement forbids flavor initialization."
+            )
+        if self.metric_tensor_signature is not None and self.metric_tensor_signature != signature:
+            self._raise_global_parity_failure(
+                parameter="metric_tensor_signature",
+                observed=str(signature),
+                expected=str(self.metric_tensor_signature),
+                sector_name="gravity",
+                label=label,
+            )
+        self.metric_tensor_signature = signature
+        self.metric_tensor_locked = True
+        LOGGER.info("[LOGICAL ENTANGLEMENT]: Gravity sector locked the metric tensor.")
+
+    def _assert_parity_value(
+        self,
+        parameter: str,
+        observed_value: float,
+        *,
+        sector_name: str,
+        label: str,
+        expected_value: float | None = None,
+    ) -> None:
+        resolved_expected_value = _GLOBAL_PARITY_BENCHMARKS.get(parameter) if expected_value is None else expected_value
+        if resolved_expected_value is None:
+            return
+        if math.isfinite(observed_value) and math.isclose(
+            observed_value,
+            resolved_expected_value,
+            rel_tol=_GLOBAL_PARITY_RELATIVE_TOLERANCE,
+            abs_tol=_GLOBAL_PARITY_ABSOLUTE_TOLERANCES.get(parameter, 0.0),
+        ):
+            return
+        self._raise_global_parity_failure(
+            parameter=parameter,
+            observed=f"{observed_value:.16e}",
+            expected=f"{resolved_expected_value:.16e}",
+            sector_name=sector_name,
+            label=label,
+        )
+
+    def _raise_global_parity_failure(
+        self,
+        *,
+        parameter: str,
+        observed: str,
+        expected: str,
+        sector_name: str,
+        label: str,
+    ) -> None:
+        message = (
+            f"Global parity-check failure in {sector_name}::{label}: manual tuning of {parameter} is forbidden. "
+            f"Expected {expected}; observed {observed}."
+        )
+        LOGGER.error("[GLOBAL PARITY-CHECK FAILURE]: %s", message)
+        raise BenchmarkExecutionError(message)
 
 
 class MonteCarloYieldWarning(Warning):
@@ -18080,10 +18318,22 @@ def run_targeted_sector_audits(*, sector: str | None, output_dir: Path) -> tuple
     _ensure_audit_resources()
     os.makedirs(output_dir, exist_ok=True)
     resolved_sectors = TARGET_AUDIT_SECTORS if sector is None else (sector,)
+    guardian = RigidityGuardian()
     report_paths: list[Path] = []
     for sector_name in resolved_sectors:
+        if sector_name in {"gravity", "flavor"}:
+            guardian.ensure_metric_tensor_locked()
         for module_name in SECTOR_AUDIT_MODULES[sector_name]:
-            report_paths.append(_capture_sector_module_report(module_name, output_dir=output_dir, sector=sector_name))
+            report_paths.append(
+                guardian.calculate(
+                    _capture_sector_module_report,
+                    module_name,
+                    output_dir=output_dir,
+                    sector=sector_name,
+                    sector_name=sector_name,
+                    label=module_name,
+                )
+            )
         if sector_name == "rigidity":
             LOGGER.info("[ALGEBRAIC RIGIDITY GATE PASSED]")
     return tuple(report_paths)
@@ -18140,19 +18390,33 @@ def main(argv: list[str] | None = None) -> None:
     if args.zero_parameter:
         _initialize_zero_parameter_execution_mode()
 
+    guardian = RigidityGuardian(model=DEFAULT_TOPOLOGICAL_VACUUM)
+
     if args.residue_check:
         run_residue_check(output_dir=output_dir)
         return
 
     if args.audit_generation_3:
-        generation3_audit = DEFAULT_TOPOLOGICAL_VACUUM.derive_generation3_audit()
-        generation3_audit.run_final_lock()
+        guardian.ensure_metric_tensor_locked()
+        generation3_audit = guardian.calculate(
+            DEFAULT_TOPOLOGICAL_VACUUM.derive_generation3_audit,
+            sector_name="flavor",
+            label="generation-3 audit",
+        )
+        guardian.calculate(
+            generation3_audit.run_final_lock,
+            sector_name="rigidity",
+            label="generation-3 final lock",
+        )
         return
 
     if args.master_transport_audit:
-        report_path = _write_master_transport_report(
+        report_path = guardian.calculate(
+            _write_master_transport_report,
             output_dir=output_dir,
             flavor_shift_fraction=args.master_transport_shift,
+            sector_name="rigidity",
+            label="master transport audit",
         )
         print(report_path.read_text(encoding="utf-8"), end="")
         return
@@ -18166,9 +18430,12 @@ def main(argv: list[str] | None = None) -> None:
         run_targeted_sector_audits(sector=None, output_dir=output_dir)
         return
 
-    _write_master_transport_report(
+    guardian.calculate(
+        _write_master_transport_report,
         output_dir=output_dir,
         flavor_shift_fraction=_master_transport.DEFAULT_RIGIDITY_SHIFT_FRACTION,
+        sector_name="rigidity",
+        label="master transport audit",
     )
 
     vacuum = DEFAULT_TOPOLOGICAL_VACUUM
@@ -18185,9 +18452,26 @@ def main(argv: list[str] | None = None) -> None:
             "Delta_fr != 0 for the current branch labels; continuing so the driver can still export the disclosed numerical results.",
         )
     scales = vacuum.derive_scales()
-    interface = vacuum.derive_boundary_bulk_interface()
-    pmns = vacuum.derive_pmns()
-    ckm = vacuum.derive_ckm()
+    gravity_audit = guardian.calculate(
+        vacuum.verify_bulk_emergence,
+        sector_name="gravity",
+        label="metric tensor lock",
+    )
+    interface = guardian.calculate(
+        vacuum.derive_boundary_bulk_interface,
+        sector_name="flavor",
+        label="boundary-bulk interface",
+    )
+    pmns = guardian.calculate(
+        vacuum.derive_pmns,
+        sector_name="flavor",
+        label="pmns transport",
+    )
+    ckm = guardian.calculate(
+        vacuum.derive_ckm,
+        sector_name="flavor",
+        label="ckm transport",
+    )
     parent = vacuum.derive_parent_selection()
     framing = vacuum.verify_framing_anomaly()
     level_scanner = vacuum.level_scanner()
@@ -18199,17 +18483,55 @@ def main(argv: list[str] | None = None) -> None:
     algebraic_unique = report_algebraic_uniqueness(global_audit)
     audit = vacuum.derive_audit()
     derived_uniqueness_audit = verify_derived_uniqueness_theorem(model=vacuum)
-    gravity_audit = vacuum.verify_bulk_emergence()
-    gauge_audit = vacuum.verify_gauge_holography()
-    benchmark_defense_report = MasterAudit.benchmark_defense(model=vacuum)
-    gauge_renormalization_report = MasterAudit.gauge_renormalization(gauge_audit=gauge_audit, model=vacuum)
-    dark_energy_audit = vacuum.verify_dark_energy_tension()
-    bit_balance_audit = vacuum.verify_bit_balance_identity()
-    complexity_audit = vacuum.derive_computational_complexity_audit()
-    unitary_audit = vacuum.verify_unitary_bounds()
+    gauge_audit = guardian.calculate(
+        vacuum.verify_gauge_holography,
+        sector_name="gravity",
+        label="gauge holography",
+    )
+    benchmark_defense_report = guardian.calculate(
+        MasterAudit.benchmark_defense,
+        model=vacuum,
+        sector_name="rigidity",
+        label="benchmark defense",
+    )
+    gauge_renormalization_report = guardian.calculate(
+        MasterAudit.gauge_renormalization,
+        gauge_audit=gauge_audit,
+        model=vacuum,
+        sector_name="rigidity",
+        label="gauge renormalization",
+    )
+    dark_energy_audit = guardian.calculate(
+        vacuum.verify_dark_energy_tension,
+        sector_name="cosmology",
+        label="dark-energy tension",
+    )
+    bit_balance_audit = guardian.calculate(
+        vacuum.verify_bit_balance_identity,
+        sector_name="gravity",
+        label="bit-balance identity",
+    )
+    complexity_audit = guardian.calculate(
+        vacuum.derive_computational_complexity_audit,
+        sector_name="complexity",
+        label="complexity audit",
+    )
+    unitary_audit = guardian.calculate(
+        vacuum.verify_unitary_bounds,
+        sector_name="complexity",
+        label="unitary bounds",
+    )
     support_overlap = audit.calculate_support_overlap()
-    sensitivity = vacuum.derive_sensitivity()
-    geometric_sensitivity = vacuum.derive_geometric_sensitivity()
+    sensitivity = guardian.calculate(
+        vacuum.derive_sensitivity,
+        sector_name="flavor",
+        label="sensitivity audit",
+    )
+    geometric_sensitivity = guardian.calculate(
+        vacuum.derive_geometric_sensitivity,
+        sector_name="rigidity",
+        label="geometric sensitivity",
+    )
     detuning_sensitivity = (
         vacuum.derive_detuning_sensitivity_scan()
         if hasattr(vacuum, "derive_detuning_sensitivity_scan")
@@ -18222,8 +18544,16 @@ def main(argv: list[str] | None = None) -> None:
     )
     nonlinearity_audit = vacuum.derive_nonlinearity_audit()
     step_size_convergence = vacuum.derive_step_size_convergence_audit()
-    transport_covariance = vacuum.derive_transport_parametric_covariance(pmns, ckm, rng=np.random.default_rng(args.seed))
-    pull_table = derive_pull_table(
+    transport_covariance = guardian.calculate(
+        vacuum.derive_transport_parametric_covariance,
+        pmns,
+        ckm,
+        rng=np.random.default_rng(args.seed),
+        sector_name="flavor",
+        label="transport covariance",
+    )
+    pull_table = guardian.calculate(
+        derive_pull_table,
         pmns,
         ckm,
         transport_covariance=transport_covariance,
@@ -18232,20 +18562,49 @@ def main(argv: list[str] | None = None) -> None:
         effective_correlation_length=chi2_landscape_audit.effective_correlation_length,
         lepton_correlation_length=chi2_landscape_audit.lepton_correlation_length,
         quark_correlation_length=chi2_landscape_audit.quark_correlation_length,
+        sector_name="flavor",
+        label="predictive pull table",
     )
-    physics_audit = vacuum.derive_physics_audit()
+    physics_audit = guardian.calculate(
+        vacuum.derive_physics_audit,
+        sector_name="rigidity",
+        label="physics audit",
+    )
     search_window = physics_audit.search_window
     geometric_kappa = physics_audit.geometric_kappa
     modular_horizon = physics_audit.modular_horizon
     syndrome_gauge_audit = complexity_audit.check_syndrome_gauge_link(geometric_kappa.derived_kappa)
     atomic_lock_audit = complexity_audit.derive_mp_me_rigidity(pi_vac=ckm.vacuum_pressure)
-    weight_profile = vacuum.generate_ckm_phase_tilt_profile(pmns, output_path=output_dir / CKM_PHASE_TILT_PROFILE_FIGURE_FILENAME)
-    threshold_sensitivity = vacuum.derive_threshold_sensitivity(ckm)
-    mass_ratio_stability_audit = vacuum.derive_mass_ratio_stability_audit(seed=args.seed)
+    weight_profile = guardian.calculate(
+        vacuum.generate_ckm_phase_tilt_profile,
+        pmns,
+        output_path=output_dir / CKM_PHASE_TILT_PROFILE_FIGURE_FILENAME,
+        sector_name="flavor",
+        label="ckm phase tilt profile",
+    )
+    threshold_sensitivity = guardian.calculate(
+        vacuum.derive_threshold_sensitivity,
+        ckm,
+        sector_name="flavor",
+        label="threshold sensitivity",
+    )
+    mass_ratio_stability_audit = guardian.calculate(
+        vacuum.derive_mass_ratio_stability_audit,
+        seed=args.seed,
+        sector_name="flavor",
+        label="mass-ratio stability",
+    )
     ghost_character_audit = vacuum.derive_ghost_character_audit(audit)
-    framing_gap_stability = vacuum.derive_framing_gap_stability_audit(ckm, audit)
+    framing_gap_stability = guardian.calculate(
+        vacuum.derive_framing_gap_stability_audit,
+        ckm,
+        audit,
+        sector_name="rigidity",
+        label="framing-gap stability",
+    )
     dm_fingerprint = derive_dm_fingerprint_inputs(weight_profile, geometric_kappa, framing_gap_stability)
-    topological_integrity = MasterAudit.topological_integrity_assertions(
+    topological_integrity = guardian.calculate(
+        MasterAudit.topological_integrity_assertions,
         pmns=pmns,
         ckm=ckm,
         pull_table=pull_table,
@@ -18253,6 +18612,8 @@ def main(argv: list[str] | None = None) -> None:
         dark_energy_audit=dark_energy_audit,
         dm_fingerprint=dm_fingerprint,
         model=vacuum,
+        sector_name="rigidity",
+        label="topological integrity assertions",
     )
     if not topological_integrity.hard_anomaly_filter:
         log_disclosed_detuning_event(
@@ -18306,17 +18667,31 @@ def main(argv: list[str] | None = None) -> None:
         vacuum=vacuum,
         output_dir=output_dir,
     )
-    higgs_cg_correction = verify_so10_vev_alignment_residue(
+    higgs_cg_correction = guardian.calculate(
+        verify_so10_vev_alignment_residue,
         parent_level=resolved_branch_model.parent_level,
         lepton_level=resolved_branch_model.lepton_level,
         quark_level=resolved_branch_model.quark_level,
         clebsch_126=ckm.so10_threshold_correction.clebsch_126,
         clebsch_10=ckm.so10_threshold_correction.clebsch_10,
+        sector_name="rigidity",
+        label="so10 vev alignment residue",
     )
     relic_density_audit = RelicDensityAudit(vacuum)
     relic_density_report = relic_density_audit.evaluate()
-    planck_audit = vacuum.derive_planck_scale_audit(audit=audit)
-    cp_audit = vacuum.derive_jarlskog_residue_audit(pmns=pmns, ckm=ckm)
+    planck_audit = guardian.calculate(
+        vacuum.derive_planck_scale_audit,
+        audit=audit,
+        sector_name="gravity",
+        label="planck-scale audit",
+    )
+    cp_audit = guardian.calculate(
+        vacuum.derive_jarlskog_residue_audit,
+        pmns=pmns,
+        ckm=ckm,
+        sector_name="flavor",
+        label="jarlskog residue audit",
+    )
     gravity_residues = planck_audit.derive_gravity_residues()
     cp_residues = cp_audit.derive_cp_residues()
     gravity_cp_residue_lock_pass = MasterAudit.gravity_cp_residue_lock(
@@ -18324,16 +18699,50 @@ def main(argv: list[str] | None = None) -> None:
         planck_audit=planck_audit,
         cp_audit=cp_audit,
     )
-    precision_audit = vacuum.derive_precision_physics_audit()
-    generation3_audit = vacuum.derive_generation3_audit()
-    complexity_minimization_audit = vacuum.derive_complexity_minimization_audit(audit=audit)
-    astrophysical_flavor_audit = vacuum.derive_astrophysical_flavor_audit()
-    gauge_strong_audit = vacuum.derive_gauge_strong_audit()
-    holographic_curvature_audit = vacuum.derive_holographic_curvature_audit()
-    hubble_skew_audit = vacuum.derive_hubble_skew_audit()
+    precision_audit = guardian.calculate(
+        vacuum.derive_precision_physics_audit,
+        sector_name="rigidity",
+        label="precision physics audit",
+    )
+    generation3_audit = guardian.calculate(
+        vacuum.derive_generation3_audit,
+        sector_name="flavor",
+        label="generation-3 audit",
+    )
+    complexity_minimization_audit = guardian.calculate(
+        vacuum.derive_complexity_minimization_audit,
+        audit=audit,
+        sector_name="complexity",
+        label="complexity minimization audit",
+    )
+    astrophysical_flavor_audit = guardian.calculate(
+        vacuum.derive_astrophysical_flavor_audit,
+        sector_name="flavor",
+        label="astrophysical flavor audit",
+    )
+    gauge_strong_audit = guardian.calculate(
+        vacuum.derive_gauge_strong_audit,
+        sector_name="gravity",
+        label="gauge-strong audit",
+    )
+    holographic_curvature_audit = guardian.calculate(
+        vacuum.derive_holographic_curvature_audit,
+        sector_name="gravity",
+        label="holographic curvature audit",
+    )
+    hubble_skew_audit = guardian.calculate(
+        vacuum.derive_hubble_skew_audit,
+        sector_name="cosmology",
+        label="hubble skew audit",
+    )
+    inflationary_sector = guardian.calculate(
+        vacuum.derive_inflationary_sector,
+        sector_name="cosmology",
+        label="inflationary sector",
+    )
     corollary_audit = CorollaryAudit(
         delta_mod=hubble_skew_audit.benchmark_modularity_gap,
-        n_s=vacuum.derive_inflationary_sector().n_s_locked,
+        n_s=inflationary_sector.n_s_locked,
         h0_cmb=PLANCK2018_H0_KM_S_MPC,
         kappa_d5=bit_balance_audit.geometric_residue,
         c_dark=bit_balance_audit.c_dark_completion,
@@ -18356,16 +18765,34 @@ def main(argv: list[str] | None = None) -> None:
         and gravity_lock_pass
         and atomic_decoder_lock_pass
     )
-    gauge_matching_audit = derive_gauge_unification_existence_proof(m_126_gev=framing_gap_stability.matching_m126_gev)
+    gauge_matching_audit = guardian.calculate(
+        derive_gauge_unification_existence_proof,
+        m_126_gev=framing_gap_stability.matching_m126_gev,
+        sector_name="rigidity",
+        label="gauge unification existence proof",
+    )
     gut_scale_consistency_pass = math.isclose(
         gravity_audit.baryon_stability.gut_scale_gev,
         gauge_matching_audit.m_gut_gev,
         rel_tol=0.0,
         abs_tol=1.0,
     )
-    rhn_threshold = vacuum.derive_rhn_threshold_data("lepton")
+    rhn_threshold = guardian.calculate(
+        vacuum.derive_rhn_threshold_data,
+        "lepton",
+        sector_name="flavor",
+        label="rhn threshold data",
+    )
     seed_robustness_audit = (
-        vacuum.derive_seed_robustness_audit(pmns, ckm, seed=args.seed, seed_count=args.seed_audit_count)
+        guardian.calculate(
+            vacuum.derive_seed_robustness_audit,
+            pmns,
+            ckm,
+            seed=args.seed,
+            seed_count=args.seed_audit_count,
+            sector_name="flavor",
+            label="seed robustness audit",
+        )
         if args.seed_audit
         else None
     )
@@ -18493,9 +18920,12 @@ def main(argv: list[str] | None = None) -> None:
         validate_text=args.validate_text,
         require_referee_evidence=args.referee_audit,
     )
-    inflationary_sector = vacuum.derive_inflationary_sector()
     thermal_audit = ThermalHistoryAudit(vacuum)
-    reheat_data = thermal_audit.calculate_reheating_bath()
+    reheat_data = guardian.calculate(
+        thermal_audit.calculate_reheating_bath,
+        sector_name="cosmology",
+        label="reheating bath",
+    )
     if not reheat_data["is_bbn_safe"]:
         raise BenchmarkExecutionError(
             f"Cosmological Failure: T_rh ({float(reheat_data['T_rh_MeV']):.2f} MeV) below BBN limit."
