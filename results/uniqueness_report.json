@@ -1,0 +1,5629 @@
+{
+  "alternative_kernel_failures": {
+    "10:10:58": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.44809391645561636,
+      "closure_metric": 1.034553406837145,
+      "coordinates": [
+        10,
+        10,
+        58
+      ],
+      "diophantine_gap": 0.03333333333333333,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.4615384615384615,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.9012200735038116
+    },
+    "10:10:59": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.4401087234360501,
+      "closure_metric": 0.9639431855649339,
+      "coordinates": [
+        10,
+        10,
+        59
+      ],
+      "diophantine_gap": 0.016666666666666666,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.4615384615384615,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.8972765188982672
+    },
+    "10:10:60": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.43237786800556477,
+      "closure_metric": 0.8935099796100323,
+      "coordinates": [
+        10,
+        10,
+        60
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.4615384615384615,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.8935099796100323
+    },
+    "10:10:61": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.42488938874289195,
+      "closure_metric": 0.9565770304606788,
+      "coordinates": [
+        10,
+        10,
+        61
+      ],
+      "diophantine_gap": 0.016666666666666666,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.4615384615384615,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.8899103637940121
+    },
+    "10:10:62": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.41763206273556586,
+      "closure_metric": 1.0198016084263828,
+      "coordinates": [
+        10,
+        10,
+        62
+      ],
+      "diophantine_gap": 0.03333333333333333,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.4615384615384615,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.8864682750930494
+    },
+    "10:11:658": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.1319189577618709,
+      "closure_metric": 0.9365739313555197,
+      "coordinates": [
+        10,
+        11,
+        658
+      ],
+      "diophantine_gap": 0.0030303030303030303,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.5282051282051281,
+      "minimal_parent_level": 660,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.8335436283252167
+    },
+    "10:11:659": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.13185035763248232,
+      "closure_metric": 0.8850479257432572,
+      "coordinates": [
+        10,
+        11,
+        659
+      ],
+      "diophantine_gap": 0.0015151515151515152,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.5282051282051281,
+      "minimal_parent_level": 660,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.8335327742281057
+    },
+    "10:11:660": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.13178196450431434,
+      "closure_metric": 0.8335219583629486,
+      "coordinates": [
+        10,
+        11,
+        660
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.5282051282051281,
+      "minimal_parent_level": 660,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.8335219583629486
+    },
+    "10:11:661": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.13171377744183754,
+      "closure_metric": 0.8850263320475943,
+      "coordinates": [
+        10,
+        11,
+        661
+      ],
+      "diophantine_gap": 0.0015151515151515152,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.5282051282051281,
+      "minimal_parent_level": 660,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.8335111805324428
+    },
+    "10:11:662": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.13164579551515176,
+      "closure_metric": 0.9365307435709219,
+      "coordinates": [
+        10,
+        11,
+        662
+      ],
+      "diophantine_gap": 0.0030303030303030303,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.5282051282051281,
+      "minimal_parent_level": 660,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.8335004405406189
+    },
+    "10:12:178": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.366735158074849,
+      "closure_metric": 1.0527898461075897,
+      "coordinates": [
+        10,
+        12,
+        178
+      ],
+      "diophantine_gap": 0.011111111111111112,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.594871794871795,
+      "minimal_parent_level": 180,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.9416787349964787
+    },
+    "10:12:179": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.365822442797493,
+      "closure_metric": 0.9968792105386378,
+      "coordinates": [
+        10,
+        12,
+        179
+      ],
+      "diophantine_gap": 0.005555555555555556,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.594871794871795,
+      "minimal_parent_level": 180,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.9413236549830822
+    },
+    "10:12:180": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.3649197136092823,
+      "closure_metric": 0.9409731989579004,
+      "coordinates": [
+        10,
+        12,
+        180
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.594871794871795,
+      "minimal_parent_level": 180,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.9409731989579004
+    },
+    "10:12:181": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.36402680751324024,
+      "closure_metric": 0.996182835813079,
+      "coordinates": [
+        10,
+        12,
+        181
+      ],
+      "diophantine_gap": 0.005555555555555556,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.594871794871795,
+      "minimal_parent_level": 180,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.9406272802575234
+    },
+    "10:12:182": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.36314356504054657,
+      "closure_metric": 1.0513969254286204,
+      "coordinates": [
+        10,
+        12,
+        182
+      ],
+      "diophantine_gap": 0.011111111111111112,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.594871794871795,
+      "minimal_parent_level": 180,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.9402858143175092
+    },
+    "10:13:778": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.3392272808976855,
+      "closure_metric": 1.0778076596524357,
+      "coordinates": [
+        10,
+        13,
+        778
+      ],
+      "diophantine_gap": 0.002564102564102564,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.6615384615384616,
+      "minimal_parent_level": 780,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.9752435570883331
+    },
+    "10:13:779": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.3391781351297256,
+      "closure_metric": 1.0265085146674262,
+      "coordinates": [
+        10,
+        13,
+        779
+      ],
+      "diophantine_gap": 0.001282051282051282,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.6615384615384616,
+      "minimal_parent_level": 780,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.9752264633853749
+    },
+    "10:13:780": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.33912911492591125,
+      "closure_metric": 0.9752094155244295,
+      "coordinates": [
+        10,
+        13,
+        780
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.6615384615384616,
+      "minimal_parent_level": 780,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.9752094155244295
+    },
+    "10:13:781": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.3390802198056442,
+      "closure_metric": 1.0264744646039103,
+      "coordinates": [
+        10,
+        13,
+        781
+      ],
+      "diophantine_gap": 0.001282051282051282,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.6615384615384616,
+      "minimal_parent_level": 780,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.975192413321859
+    },
+    "10:13:782": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.339031449290776,
+      "closure_metric": 1.077739559159105,
+      "coordinates": [
+        10,
+        13,
+        782
+      ],
+      "diophantine_gap": 0.002564102564102564,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.6615384615384616,
+      "minimal_parent_level": 780,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.9751754565950025
+    },
+    "10:14:418": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.4603332739527406,
+      "closure_metric": 1.1727418405728212,
+      "coordinates": [
+        10,
+        14,
+        418
+      ],
+      "diophantine_gap": 0.004761904761904762,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.7282051282051283,
+      "minimal_parent_level": 420,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.0679799358109163
+    },
+    "10:14:419": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.46016425316366605,
+      "closure_metric": 1.1202880457539268,
+      "coordinates": [
+        10,
+        14,
+        419
+      ],
+      "diophantine_gap": 0.002380952380952381,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.7282051282051283,
+      "minimal_parent_level": 420,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.0679070933729744
+    },
+    "10:14:420": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.4599960319074452,
+      "closure_metric": 1.0678346171375208,
+      "coordinates": [
+        10,
+        14,
+        420
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.7282051282051283,
+      "minimal_parent_level": 420,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.0678346171375208
+    },
+    "10:14:421": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.45982860452431606,
+      "closure_metric": 1.1201434567448303,
+      "coordinates": [
+        10,
+        14,
+        421
+      ],
+      "diophantine_gap": 0.002380952380952381,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.7282051282051283,
+      "minimal_parent_level": 420,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.0677625043638779
+    },
+    "10:14:422": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.45966196540781046,
+      "closure_metric": 1.1724526571004326,
+      "coordinates": [
+        10,
+        14,
+        422
+      ],
+      "diophantine_gap": 0.004761904761904762,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.7282051282051283,
+      "minimal_parent_level": 420,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.0676907523385277
+    },
+    "10:15:178": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.6334018247415159,
+      "closure_metric": 1.3075269056035541,
+      "coordinates": [
+        10,
+        15,
+        178
+      ],
+      "diophantine_gap": 0.011111111111111112,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.7948717948717949,
+      "minimal_parent_level": 180,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.196415794492443
+    },
+    "10:15:179": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.6324891094641596,
+      "closure_metric": 1.2514883945209665,
+      "coordinates": [
+        10,
+        15,
+        179
+      ],
+      "diophantine_gap": 0.005555555555555556,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.7948717948717949,
+      "minimal_parent_level": 180,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.195932838965411
+    },
+    "10:15:180": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.6315863802759492,
+      "closure_metric": 1.195455661024355,
+      "coordinates": [
+        10,
+        15,
+        180
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.7948717948717949,
+      "minimal_parent_level": 180,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.195455661024355
+    },
+    "10:15:181": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.6306934741799068,
+      "closure_metric": 1.250539714487473,
+      "coordinates": [
+        10,
+        15,
+        181
+      ],
+      "diophantine_gap": 0.005555555555555556,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.7948717948717949,
+      "minimal_parent_level": 180,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.1949841589319175
+    },
+    "10:15:182": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.6298102317072132,
+      "closure_metric": 1.3056293444119658,
+      "coordinates": [
+        10,
+        15,
+        182
+      ],
+      "diophantine_gap": 0.011111111111111112,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.7948717948717949,
+      "minimal_parent_level": 180,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.1945182333008546
+    },
+    "10:16:238": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.6622323071624647,
+      "closure_metric": 1.3649923407025453,
+      "coordinates": [
+        10,
+        16,
+        238
+      ],
+      "diophantine_gap": 0.008333333333333333,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.8615384615384616,
+      "minimal_parent_level": 240,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.2566590073692119
+    },
+    "10:16:239": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.6617170642009751,
+      "closure_metric": 1.310554228371736,
+      "coordinates": [
+        10,
+        16,
+        239
+      ],
+      "diophantine_gap": 0.004166666666666667,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.8615384615384616,
+      "minimal_parent_level": 240,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.2563875617050693
+    },
+    "10:16:240": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.6612060654503182,
+      "closure_metric": 1.2561185028255664,
+      "coordinates": [
+        10,
+        16,
+        240
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.8615384615384616,
+      "minimal_parent_level": 240,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.2561185028255664
+    },
+    "10:16:241": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.6606992586841971,
+      "closure_metric": 1.3100184662745262,
+      "coordinates": [
+        10,
+        16,
+        241
+      ],
+      "diophantine_gap": 0.004166666666666667,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.8615384615384616,
+      "minimal_parent_level": 240,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.2558517996078595
+    },
+    "10:16:242": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.6601965925296964,
+      "closure_metric": 1.3639207547979935,
+      "coordinates": [
+        10,
+        16,
+        242
+      ],
+      "diophantine_gap": 0.008333333333333333,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.8615384615384616,
+      "minimal_parent_level": 240,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.25558742146466
+    },
+    "10:17:1018": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.630193858907361,
+      "closure_metric": 1.3892450463449375,
+      "coordinates": [
+        10,
+        17,
+        1018
+      ],
+      "diophantine_gap": 0.00196078431372549,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.9282051282051282,
+      "minimal_parent_level": 1020,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.287284262031212
+    },
+    "10:17:1019": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.6301650971846477,
+      "closure_metric": 1.3382505740450428,
+      "coordinates": [
+        10,
+        17,
+        1019
+      ],
+      "diophantine_gap": 0.000980392156862745,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.9282051282051282,
+      "minimal_parent_level": 1020,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.28727018188818
+    },
+    "10:17:1020": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.6301363917031075,
+      "closure_metric": 1.287256129764898,
+      "coordinates": [
+        10,
+        17,
+        1020
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.9282051282051282,
+      "minimal_parent_level": 1020,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.287256129764898
+    },
+    "10:17:1021": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.6301077422979391,
+      "closure_metric": 1.338222497734713,
+      "coordinates": [
+        10,
+        17,
+        1021
+      ],
+      "diophantine_gap": 0.000980392156862745,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.9282051282051282,
+      "minimal_parent_level": 1020,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.2872421055778502
+    },
+    "10:17:1022": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.6300791488049844,
+      "closure_metric": 1.3891888935575787,
+      "coordinates": [
+        10,
+        17,
+        1022
+      ],
+      "diophantine_gap": 0.00196078431372549,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.9282051282051282,
+      "minimal_parent_level": 1020,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.2872281092438531
+    },
+    "10:18:538": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.713421399964367,
+      "closure_metric": 1.4810677418580824,
+      "coordinates": [
+        10,
+        18,
+        538
+      ],
+      "diophantine_gap": 0.003703703703703704,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.9948717948717949,
+      "minimal_parent_level": 540,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.3773640381543788
+    },
+    "10:18:539": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.7133190126188671,
+      "closure_metric": 1.4291628600984914,
+      "coordinates": [
+        10,
+        18,
+        539
+      ],
+      "diophantine_gap": 0.001851851851851852,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.9948717948717949,
+      "minimal_parent_level": 540,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.3773110082466395
+    },
+    "10:18:540": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.7132170025302313,
+      "closure_metric": 1.3772581792721463,
+      "coordinates": [
+        10,
+        18,
+        540
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.9948717948717949,
+      "minimal_parent_level": 540,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.3772581792721463
+    },
+    "10:18:541": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.7131153676172297,
+      "closure_metric": 1.4290574019443847,
+      "coordinates": [
+        10,
+        18,
+        541
+      ],
+      "diophantine_gap": 0.001851851851851852,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.9948717948717949,
+      "minimal_parent_level": 540,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.3772055500925329
+    },
+    "10:18:542": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.7130141058139123,
+      "closure_metric": 1.4808568232817092,
+      "coordinates": [
+        10,
+        18,
+        542
+      ],
+      "diophantine_gap": 0.003703703703703704,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.9948717948717949,
+      "minimal_parent_level": 540,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.3771531195780056
+    },
+    "10:19:1138": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.7361933871876718,
+      "closure_metric": 1.5395430770133203,
+      "coordinates": [
+        10,
+        19,
+        1138
+      ],
+      "diophantine_gap": 0.0017543859649122807,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.0615384615384615,
+      "minimal_parent_level": 1140,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.437788691048408
+    },
+    "10:19:1139": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.7361703557067638,
+      "closure_metric": 1.4886540913186548,
+      "coordinates": [
+        10,
+        19,
+        1139
+      ],
+      "diophantine_gap": 0.0008771929824561404,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.0615384615384615,
+      "minimal_parent_level": 1140,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.4377768983361987
+    },
+    "10:19:1140": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.7361473645329775,
+      "closure_metric": 1.437765126533776,
+      "coordinates": [
+        10,
+        19,
+        1140
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.0615384615384615,
+      "minimal_parent_level": 1140,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.437765126533776
+    },
+    "10:19:1141": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.736124413560594,
+      "closure_metric": 1.4886305685680483,
+      "coordinates": [
+        10,
+        19,
+        1141
+      ],
+      "diophantine_gap": 0.0008771929824561404,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.0615384615384615,
+      "minimal_parent_level": 1140,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.4377533755855922
+    },
+    "10:19:1142": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.7361015026842634,
+      "closure_metric": 1.539496031401208,
+      "coordinates": [
+        10,
+        19,
+        1142
+      ],
+      "diophantine_gap": 0.0017543859649122807,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.0615384615384615,
+      "minimal_parent_level": 1140,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.4377416454362957
+    },
+    "10:1:58": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 3.7057522373905374,
+      "closure_metric": 4.128336901283266,
+      "coordinates": [
+        10,
+        1,
+        58
+      ],
+      "diophantine_gap": 0.03333333333333333,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.3333333333333333,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.13846153846153847,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 3.7616702346165996
+    },
+    "10:1:59": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 3.7137374304101036,
+      "closure_metric": 4.119536975691387,
+      "coordinates": [
+        10,
+        1,
+        59
+      ],
+      "diophantine_gap": 0.016666666666666666,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.3333333333333333,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.13846153846153847,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 3.7695369756913872
+    },
+    "10:1:60": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 3.7214682858405888,
+      "closure_metric": 3.777153625627745,
+      "coordinates": [
+        10,
+        1,
+        60
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.13846153846153847,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 3.777153625627745
+    },
+    "10:1:61": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 3.7289567651032622,
+      "closure_metric": 4.134531921530708,
+      "coordinates": [
+        10,
+        1,
+        61
+      ],
+      "diophantine_gap": 0.016666666666666666,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.3333333333333333,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.13846153846153847,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 3.784531921530708
+    },
+    "10:1:62": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 3.7362140911105883,
+      "closure_metric": 4.158349544188051,
+      "coordinates": [
+        10,
+        1,
+        62
+      ],
+      "diophantine_gap": 0.03333333333333333,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.3333333333333333,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.13846153846153847,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 3.791682877521385
+    },
+    "10:20:58": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.2507695017398974,
+      "closure_metric": 1.9321281713383276,
+      "coordinates": [
+        10,
+        20,
+        58
+      ],
+      "diophantine_gap": 0.03333333333333333,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.1282051282051282,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.7987948380049943
+    },
+    "10:20:59": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.242784308720331,
+      "closure_metric": 1.8599182833541335,
+      "coordinates": [
+        10,
+        20,
+        59
+      ],
+      "diophantine_gap": 0.016666666666666666,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.1282051282051282,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.7932516166874668
+    },
+    "10:20:60": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.2350534532898456,
+      "closure_metric": 1.7879025575332441,
+      "coordinates": [
+        10,
+        20,
+        60
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.1282051282051282,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.7879025575332441
+    },
+    "10:20:61": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.2275649740271728,
+      "closure_metric": 1.8494045296765584,
+      "coordinates": [
+        10,
+        20,
+        61
+      ],
+      "diophantine_gap": 0.016666666666666666,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.1282051282051282,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.7827378630098918
+    },
+    "10:20:62": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.220307648019847,
+      "closure_metric": 1.9110817065758665,
+      "coordinates": [
+        10,
+        20,
+        62
+      ],
+      "diophantine_gap": 0.03333333333333333,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.1282051282051282,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.7777483732425332
+    },
+    "10:21:1258": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.8245995582984222,
+      "closure_metric": 1.6846459704838432,
+      "coordinates": [
+        10,
+        21,
+        1258
+      ],
+      "diophantine_gap": 0.0015873015873015873,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.1948717948717948,
+      "minimal_parent_level": 1260,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.5830586688965416
+    },
+    "10:21:1259": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.8245807007747044,
+      "closure_metric": 1.6338424970749776,
+      "coordinates": [
+        10,
+        21,
+        1259
+      ],
+      "diophantine_gap": 0.0007936507936507937,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.1948717948717948,
+      "minimal_parent_level": 1260,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.5830488462813268
+    },
+    "10:21:1260": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.8245618731172031,
+      "closure_metric": 1.5830390393862963,
+      "coordinates": [
+        10,
+        21,
+        1260
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.1948717948717948,
+      "minimal_parent_level": 1260,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.5830390393862963
+    },
+    "10:21:1261": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.8245430752550227,
+      "closure_metric": 1.6338228989674004,
+      "coordinates": [
+        10,
+        21,
+        1261
+      ],
+      "diophantine_gap": 0.0007936507936507937,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.1948717948717948,
+      "minimal_parent_level": 1260,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.5830292481737496
+    },
+    "10:21:1262": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.824524307117491,
+      "closure_metric": 1.6846067741934083,
+      "coordinates": [
+        10,
+        21,
+        1262
+      ],
+      "diophantine_gap": 0.0015873015873015873,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.1948717948717948,
+      "minimal_parent_level": 1260,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.5830194726061066
+    },
+    "10:22:658": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.8862046720475851,
+      "closure_metric": 1.7689323776259827,
+      "coordinates": [
+        10,
+        22,
+        658
+      ],
+      "diophantine_gap": 0.0030303030303030303,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.2615384615384615,
+      "minimal_parent_level": 660,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.6659020745956796
+    },
+    "10:22:659": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.8861360719181965,
+      "closure_metric": 1.7173807341291367,
+      "coordinates": [
+        10,
+        22,
+        659
+      ],
+      "diophantine_gap": 0.0015151515151515152,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.2615384615384615,
+      "minimal_parent_level": 660,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.6658655826139852
+    },
+    "10:22:660": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.8860676787900286,
+      "closure_metric": 1.6658292027634676,
+      "coordinates": [
+        10,
+        22,
+        660
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.2615384615384615,
+      "minimal_parent_level": 660,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.6658292027634676
+    },
+    "10:22:661": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.885999491727552,
+      "closure_metric": 1.7173080860435403,
+      "coordinates": [
+        10,
+        22,
+        661
+      ],
+      "diophantine_gap": 0.0015151515151515152,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.2615384615384615,
+      "minimal_parent_level": 660,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.6657929345283888
+    },
+    "10:22:662": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.885931509800866,
+      "closure_metric": 1.7687870804264698,
+      "coordinates": [
+        10,
+        22,
+        662
+      ],
+      "diophantine_gap": 0.0030303030303030303,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.2615384615384615,
+      "minimal_parent_level": 660,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.6657567773961668
+    },
+    "10:23:1378": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.8994547537476045,
+      "closure_metric": 1.8252646448471017,
+      "coordinates": [
+        10,
+        23,
+        1378
+      ],
+      "diophantine_gap": 0.0014492753623188406,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.3282051282051284,
+      "minimal_parent_level": 1380,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.7238153694847829
+    },
+    "10:23:1379": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.8994390303861841,
+      "closure_metric": 1.7745318030609862,
+      "coordinates": [
+        10,
+        23,
+        1379
+      ],
+      "diophantine_gap": 0.0007246376811594203,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.3282051282051284,
+      "minimal_parent_level": 1380,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.7238071653798268
+    },
+    "10:23:1380": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.8994233297661078,
+      "closure_metric": 1.723798973244951,
+      "coordinates": [
+        10,
+        23,
+        1380
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.3282051282051284,
+      "minimal_parent_level": 1380,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.723798973244951
+    },
+    "10:23:1381": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.8994076518380738,
+      "closure_metric": 1.7745154307351403,
+      "coordinates": [
+        10,
+        23,
+        1381
+      ],
+      "diophantine_gap": 0.0007246376811594203,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.3282051282051284,
+      "minimal_parent_level": 1380,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.7237907930539809
+    },
+    "10:23:1382": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.8993919965529225,
+      "closure_metric": 1.8252319001431367,
+      "coordinates": [
+        10,
+        23,
+        1382
+      ],
+      "diophantine_gap": 0.0014492753623188406,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.3282051282051284,
+      "minimal_parent_level": 1380,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.723782624780818
+    },
+    "10:24:358": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.9950649118962545,
+      "closure_metric": 1.9315383633766907,
+      "coordinates": [
+        10,
+        24,
+        358
+      ],
+      "diophantine_gap": 0.005555555555555556,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.394871794871795,
+      "minimal_parent_level": 360,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.825982807821135
+    },
+    "10:24:359": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.9948350919261488,
+      "closure_metric": 1.8786353559308397,
+      "coordinates": [
+        10,
+        24,
+        359
+      ],
+      "diophantine_gap": 0.002777777777777778,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.394871794871795,
+      "minimal_parent_level": 360,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.825857578153062
+    },
+    "10:24:360": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.9946065388844518,
+      "closure_metric": 1.8257330590102607,
+      "coordinates": [
+        10,
+        24,
+        360
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.394871794871795,
+      "minimal_parent_level": 360,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.8257330590102607
+    },
+    "10:24:361": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.9943792423236546,
+      "closure_metric": 1.878387022149481,
+      "coordinates": [
+        10,
+        24,
+        361
+      ],
+      "diophantine_gap": 0.002777777777777778,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.394871794871795,
+      "minimal_parent_level": 360,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.8256092443717031
+    },
+    "10:24:362": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.9941531919108046,
+      "closure_metric": 1.931041683839662,
+      "coordinates": [
+        10,
+        24,
+        362
+      ],
+      "diophantine_gap": 0.005555555555555556,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.394871794871795,
+      "minimal_parent_level": 360,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.8254861282841064
+    },
+    "10:25:298": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.0433965017848887,
+      "closure_metric": 2.0101273691597727,
+      "coordinates": [
+        10,
+        25,
+        298
+      ],
+      "diophantine_gap": 0.006666666666666667,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.4615384615384617,
+      "minimal_parent_level": 300,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.9034607024931063
+    },
+    "10:25:299": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.0430660360085582,
+      "closure_metric": 1.9566129085595303,
+      "coordinates": [
+        10,
+        25,
+        299
+      ],
+      "diophantine_gap": 0.0033333333333333335,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.4615384615384617,
+      "minimal_parent_level": 300,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.903279575226197
+    },
+    "10:25:300": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.0427377529767392,
+      "closure_metric": 1.903099684063235,
+      "coordinates": [
+        10,
+        25,
+        300
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.4615384615384617,
+      "minimal_parent_level": 300,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.903099684063235
+    },
+    "10:25:301": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.0424116311348581,
+      "closure_metric": 1.9562543497509464,
+      "coordinates": [
+        10,
+        25,
+        301
+      ],
+      "diophantine_gap": 0.0033333333333333335,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.4615384615384617,
+      "minimal_parent_level": 300,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.9029210164176131
+    },
+    "10:25:302": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.0420876492112128,
+      "closure_metric": 2.0094102265393987,
+      "coordinates": [
+        10,
+        25,
+        302
+      ],
+      "diophantine_gap": 0.006666666666666667,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.4615384615384617,
+      "minimal_parent_level": 300,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.9027435598727322
+    },
+    "10:26:778": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.0116410740011337,
+      "closure_metric": 2.0409191494843033,
+      "coordinates": [
+        10,
+        26,
+        778
+      ],
+      "diophantine_gap": 0.002564102564102564,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.5282051282051283,
+      "minimal_parent_level": 780,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.9383550469202007
+    },
+    "10:26:779": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.0115919282331738,
+      "closure_metric": 1.9896114491350985,
+      "coordinates": [
+        10,
+        26,
+        779
+      ],
+      "diophantine_gap": 0.001282051282051282,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.5282051282051283,
+      "minimal_parent_level": 780,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.9383293978530471
+    },
+    "10:26:780": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.0115429080293594,
+      "closure_metric": 1.938303815220756,
+      "coordinates": [
+        10,
+        26,
+        780
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.5282051282051283,
+      "minimal_parent_level": 780,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.938303815220756
+    },
+    "10:26:781": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.0114940129090926,
+      "closure_metric": 1.9895603500476815,
+      "coordinates": [
+        10,
+        26,
+        781
+      ],
+      "diophantine_gap": 0.001282051282051282,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.5282051282051283,
+      "minimal_parent_level": 780,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.9382782987656302
+    },
+    "10:26:782": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.0114452423942242,
+      "closure_metric": 2.040816950795405,
+      "coordinates": [
+        10,
+        26,
+        782
+      ],
+      "diophantine_gap": 0.002564102564102564,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.5282051282051283,
+      "minimal_parent_level": 780,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.9382528482313024
+    },
+    "10:27:1618": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.0193145188712918,
+      "closure_metric": 2.096481380178299,
+      "coordinates": [
+        10,
+        27,
+        1618
+      ],
+      "diophantine_gap": 0.0012345679012345679,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.594871794871795,
+      "minimal_parent_level": 1620,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.9952468122770644
+    },
+    "10:27:1619": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.0193031060081357,
+      "closure_metric": 2.045858265746502,
+      "coordinates": [
+        10,
+        27,
+        1619
+      ],
+      "diophantine_gap": 0.0006172839506172839,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.594871794871795,
+      "minimal_parent_level": 1620,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.995240981795885
+    },
+    "10:27:1620": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.0192917072106256,
+      "closure_metric": 1.995235158548567,
+      "coordinates": [
+        10,
+        27,
+        1620
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.594871794871795,
+      "minimal_parent_level": 1620,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.995235158548567
+    },
+    "10:27:1621": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.0192803224527753,
+      "closure_metric": 2.0458466264722754,
+      "coordinates": [
+        10,
+        27,
+        1621
+      ],
+      "diophantine_gap": 0.0006172839506172839,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.594871794871795,
+      "minimal_parent_level": 1620,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.995229342521658
+    },
+    "10:27:1622": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.0192689517086617,
+      "closure_metric": 2.096458101602972,
+      "coordinates": [
+        10,
+        27,
+        1622
+      ],
+      "diophantine_gap": 0.0012345679012345679,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.594871794871795,
+      "minimal_parent_level": 1620,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.9952235337017374
+    },
+    "10:28:418": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.0979044314479967,
+      "closure_metric": 2.193899504635867,
+      "coordinates": [
+        10,
+        28,
+        418
+      ],
+      "diophantine_gap": 0.004761904761904762,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.6615384615384616,
+      "minimal_parent_level": 420,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.089137599873962
+    },
+    "10:28:419": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.097735410658922,
+      "closure_metric": 2.1414297317129485,
+      "coordinates": [
+        10,
+        28,
+        419
+      ],
+      "diophantine_gap": 0.002380952380952381,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.6615384615384616,
+      "minimal_parent_level": 420,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.0890487793319963
+    },
+    "10:28:420": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.0975671894027013,
+      "closure_metric": 2.0889603887741233,
+      "coordinates": [
+        10,
+        28,
+        420
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.6615384615384616,
+      "minimal_parent_level": 420,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.0889603887741233
+    },
+    "10:28:421": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.0973997620195723,
+      "closure_metric": 2.1412533774693308,
+      "coordinates": [
+        10,
+        28,
+        421
+      ],
+      "diophantine_gap": 0.002380952380952381,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.6615384615384616,
+      "minimal_parent_level": 420,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.0888724250883786
+    },
+    "10:28:422": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.0972331229030665,
+      "closure_metric": 2.193546789954635,
+      "coordinates": [
+        10,
+        28,
+        422
+      ],
+      "diophantine_gap": 0.004761904761904762,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.6615384615384616,
+      "minimal_parent_level": 420,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.08878488519273
+    },
+    "10:29:1738": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.0680385964512116,
+      "closure_metric": 2.228540108755339,
+      "coordinates": [
+        10,
+        29,
+        1738
+      ],
+      "diophantine_gap": 0.0011494252873563218,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.7282051282051283,
+      "minimal_parent_level": 1740,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.1273906834679828
+    },
+    "10:29:1739": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.0680287023998787,
+      "closure_metric": 2.177960428903629,
+      "coordinates": [
+        10,
+        29,
+        1739
+      ],
+      "diophantine_gap": 0.0005747126436781609,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.7282051282051283,
+      "minimal_parent_level": 1740,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.127385716259951
+    },
+    "10:29:1740": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.0680188197027491,
+      "closure_metric": 2.1273807547865404,
+      "coordinates": [
+        10,
+        29,
+        1740
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.7282051282051283,
+      "minimal_parent_level": 1740,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.1273807547865404
+    },
+    "10:29:1741": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.0680089483402895,
+      "closure_metric": 2.177950511681504,
+      "coordinates": [
+        10,
+        29,
+        1741
+      ],
+      "diophantine_gap": 0.0005747126436781609,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.7282051282051283,
+      "minimal_parent_level": 1740,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.127375799037826
+    },
+    "10:29:1742": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.067999088293011,
+      "closure_metric": 2.228520274291262,
+      "coordinates": [
+        10,
+        29,
+        1742
+      ],
+      "diophantine_gap": 0.0011494252873563218,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.7282051282051283,
+      "minimal_parent_level": 1740,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.127370849003906
+    },
+    "10:2:58": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 2.505752237390537,
+      "closure_metric": 2.9516890051090483,
+      "coordinates": [
+        10,
+        2,
+        58
+      ],
+      "diophantine_gap": 0.03333333333333333,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.3333333333333333,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.07179487179487179,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.5850223384423816
+    },
+    "10:2:59": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 2.5137374304101034,
+      "closure_metric": 2.7760967402224432,
+      "coordinates": [
+        10,
+        2,
+        59
+      ],
+      "diophantine_gap": 0.016666666666666666,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.16666666666666666,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.07179487179487179,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.59276340688911
+    },
+    "10:2:60": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 2.5214682858405895,
+      "closure_metric": 2.600259320059889,
+      "coordinates": [
+        10,
+        2,
+        60
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.07179487179487179,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.600259320059889
+    },
+    "10:2:61": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 2.528956765103262,
+      "closure_metric": 2.790854864370036,
+      "coordinates": [
+        10,
+        2,
+        61
+      ],
+      "diophantine_gap": 0.016666666666666666,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.16666666666666666,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.07179487179487179,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.607521531036703
+    },
+    "10:2:62": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 2.536214091110588,
+      "closure_metric": 2.981227457890757,
+      "coordinates": [
+        10,
+        2,
+        62
+      ],
+      "diophantine_gap": 0.03333333333333333,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.3333333333333333,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.07179487179487179,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.6145607912240902
+    },
+    "10:30:178": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.2394624308021218,
+      "closure_metric": 2.381843061130443,
+      "coordinates": [
+        10,
+        30,
+        178
+      ],
+      "diophantine_gap": 0.011111111111111112,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.794871794871795,
+      "minimal_parent_level": 180,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.2707319500193317
+    },
+    "10:30:179": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.2385497155247658,
+      "closure_metric": 2.3257894354223785,
+      "coordinates": [
+        10,
+        30,
+        179
+      ],
+      "diophantine_gap": 0.005555555555555556,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.794871794871795,
+      "minimal_parent_level": 180,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.270233879866823
+    },
+    "10:30:180": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.2376469863365551,
+      "closure_metric": 2.2697415126521894,
+      "coordinates": [
+        10,
+        30,
+        180
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.794871794871795,
+      "minimal_parent_level": 180,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.2697415126521894
+    },
+    "10:30:181": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.2367540802405128,
+      "closure_metric": 2.3248103068913872,
+      "coordinates": [
+        10,
+        30,
+        181
+      ],
+      "diophantine_gap": 0.005555555555555556,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.794871794871795,
+      "minimal_parent_level": 180,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.269254751335832
+    },
+    "10:30:182": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.2358708377678191,
+      "closure_metric": 2.379884612171458,
+      "coordinates": [
+        10,
+        30,
+        182
+      ],
+      "diophantine_gap": 0.011111111111111112,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.794871794871795,
+      "minimal_parent_level": 180,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.268773501060347
+    },
+    "10:31:1858": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.1110448854850385,
+      "closure_metric": 2.3589809118394807,
+      "coordinates": [
+        10,
+        31,
+        1858
+      ],
+      "diophantine_gap": 0.001075268817204301,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.8615384615384618,
+      "minimal_parent_level": 1860,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.2579056430222764
+    },
+    "10:31:1859": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.1110362260692812,
+      "closure_metric": 2.308439016415276,
+      "coordinates": [
+        10,
+        31,
+        1859
+      ],
+      "diophantine_gap": 0.0005376344086021505,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.8615384615384618,
+      "minimal_parent_level": 1860,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.257901382006674
+    },
+    "10:31:1860": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.1110275759507289,
+      "closure_metric": 2.2578971255910507,
+      "coordinates": [
+        10,
+        31,
+        1860
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.8615384615384618,
+      "minimal_parent_level": 1860,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.2578971255910507
+    },
+    "10:31:1861": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.111018935114417,
+      "closure_metric": 2.3084305081765653,
+      "coordinates": [
+        10,
+        31,
+        1861
+      ],
+      "diophantine_gap": 0.0005376344086021505,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.8615384615384618,
+      "minimal_parent_level": 1860,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.257892873767963
+    },
+    "10:31:1862": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.1110103035454129,
+      "closure_metric": 2.358963895347186,
+      "coordinates": [
+        10,
+        31,
+        1862
+      ],
+      "diophantine_gap": 0.001075268817204301,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.8615384615384618,
+      "minimal_parent_level": 1860,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.2578886265299816
+    },
+    "10:32:478": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.177486903840407,
+      "closure_metric": 2.4499804138756422,
+      "coordinates": [
+        10,
+        32,
+        478
+      ],
+      "diophantine_gap": 0.004166666666666667,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.9282051282051282,
+      "minimal_parent_level": 480,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.3458137472089757
+    },
+    "10:32:479": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.1773573975387015,
+      "closure_metric": 2.39783207721407,
+      "coordinates": [
+        10,
+        32,
+        479
+      ],
+      "diophantine_gap": 0.0020833333333333333,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.9282051282051282,
+      "minimal_parent_level": 480,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.3457487438807365
+    },
+    "10:32:480": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.177228427718229,
+      "closure_metric": 2.3456840151450242,
+      "coordinates": [
+        10,
+        32,
+        480
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.9282051282051282,
+      "minimal_parent_level": 480,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.3456840151450242
+    },
+    "10:32:481": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.1770999910523086,
+      "closure_metric": 2.3977028925999875,
+      "coordinates": [
+        10,
+        32,
+        481
+      ],
+      "diophantine_gap": 0.0020833333333333333,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.9282051282051282,
+      "minimal_parent_level": 480,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.345619559266654
+    },
+    "10:32:482": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.1769720842417075,
+      "closure_metric": 2.4497220411916887,
+      "coordinates": [
+        10,
+        32,
+        482
+      ],
+      "diophantine_gap": 0.004166666666666667,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 1.9282051282051282,
+      "minimal_parent_level": 480,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.345555374525022
+    },
+    "10:3:178": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 2.0332648419251504,
+      "closure_metric": 2.362319929660125,
+      "coordinates": [
+        10,
+        3,
+        178
+      ],
+      "diophantine_gap": 0.011111111111111112,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.2222222222222222,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.00512820512820511,
+      "minimal_parent_level": 180,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.1289865963267918
+    },
+    "10:3:179": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 2.0341775572025074,
+      "closure_metric": 2.246524958703156,
+      "coordinates": [
+        10,
+        3,
+        179
+      ],
+      "diophantine_gap": 0.005555555555555556,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1111111111111111,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.00512820512820511,
+      "minimal_parent_level": 180,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.1298582920364892
+    },
+    "10:3:180": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 2.0350802863907176,
+      "closure_metric": 2.130720484246199,
+      "coordinates": [
+        10,
+        3,
+        180
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.00512820512820511,
+      "minimal_parent_level": 180,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.130720484246199
+    },
+    "10:3:181": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 2.0359731924867597,
+      "closure_metric": 2.248239994153891,
+      "coordinates": [
+        10,
+        3,
+        181
+      ],
+      "diophantine_gap": 0.005555555555555556,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1111111111111111,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.00512820512820511,
+      "minimal_parent_level": 180,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.1315733274872244
+    },
+    "10:3:182": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 2.036856434959453,
+      "closure_metric": 2.365750306292882,
+      "coordinates": [
+        10,
+        3,
+        182
+      ],
+      "diophantine_gap": 0.011111111111111112,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.2222222222222222,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.00512820512820511,
+      "minimal_parent_level": 180,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 2.1324169729595486
+    },
+    "10:4:58": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.1343236659619662,
+      "closure_metric": 1.4995648782774593,
+      "coordinates": [
+        10,
+        4,
+        58
+      ],
+      "diophantine_gap": 0.03333333333333333,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.16666666666666666,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.06153846153846154,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.2995648782774594
+    },
+    "10:4:59": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.1423088589815324,
+      "closure_metric": 1.4065405554358443,
+      "coordinates": [
+        10,
+        4,
+        59
+      ],
+      "diophantine_gap": 0.016666666666666666,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.08333333333333333,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.06153846153846154,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.3065405554358442
+    },
+    "10:4:60": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.1500397144120176,
+      "closure_metric": 1.3133050058595637,
+      "coordinates": [
+        10,
+        4,
+        60
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.06153846153846154,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.3133050058595637
+    },
+    "10:4:61": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.1575281936746906,
+      "closure_metric": 1.4198674982143873,
+      "coordinates": [
+        10,
+        4,
+        61
+      ],
+      "diophantine_gap": 0.016666666666666666,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.08333333333333333,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.06153846153846154,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.3198674982143872
+    },
+    "10:4:62": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 1.1647855196820163,
+      "closure_metric": 1.5262367814805236,
+      "coordinates": [
+        10,
+        4,
+        62
+      ],
+      "diophantine_gap": 0.03333333333333333,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.16666666666666666,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.06153846153846154,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.3262367814805236
+    },
+    "10:5:58": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.7057522373905374,
+      "closure_metric": 1.1221322531334088,
+      "coordinates": [
+        10,
+        5,
+        58
+      ],
+      "diophantine_gap": 0.03333333333333333,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.13333333333333333,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.1282051282051282,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.9554655864667422
+    },
+    "10:5:59": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.7137374304101036,
+      "closure_metric": 1.0447122315357558,
+      "coordinates": [
+        10,
+        5,
+        59
+      ],
+      "diophantine_gap": 0.016666666666666666,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.06666666666666667,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.1282051282051282,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.9613788982024225
+    },
+    "10:5:60": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.7214682858405892,
+      "closure_metric": 0.96713223181437,
+      "coordinates": [
+        10,
+        5,
+        60
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.1282051282051282,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.96713223181437
+    },
+    "10:5:61": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.7289567651032618,
+      "closure_metric": 1.0560646588956892,
+      "coordinates": [
+        10,
+        5,
+        61
+      ],
+      "diophantine_gap": 0.016666666666666666,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.06666666666666667,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.1282051282051282,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.972731325562356
+    },
+    "10:5:62": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.7362140911105879,
+      "closure_metric": 1.1448483748836396,
+      "coordinates": [
+        10,
+        5,
+        62
+      ],
+      "diophantine_gap": 0.03333333333333333,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.13333333333333333,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.1282051282051282,
+      "minimal_parent_level": 60,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.9781817082169729
+    },
+    "10:6:178": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.6999315085918174,
+      "closure_metric": 1.0846518791834805,
+      "coordinates": [
+        10,
+        6,
+        178
+      ],
+      "diophantine_gap": 0.011111111111111112,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1111111111111111,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.1948717948717949,
+      "minimal_parent_level": 180,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.9624296569612583
+    },
+    "10:6:179": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.7008442238691739,
+      "closure_metric": 1.0242047483083114,
+      "coordinates": [
+        10,
+        6,
+        179
+      ],
+      "diophantine_gap": 0.005555555555555556,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05555555555555555,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.1948717948717949,
+      "minimal_parent_level": 180,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.9630936371972003
+    },
+    "10:6:180": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.7017469530573841,
+      "closure_metric": 0.9637507530499109,
+      "coordinates": [
+        10,
+        6,
+        180
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.1948717948717949,
+      "minimal_parent_level": 180,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.9637507530499109
+    },
+    "10:6:181": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.7026398591534266,
+      "closure_metric": 1.0255122203753504,
+      "coordinates": [
+        10,
+        6,
+        181
+      ],
+      "diophantine_gap": 0.005555555555555556,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05555555555555555,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.1948717948717949,
+      "minimal_parent_level": 180,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.9644011092642393
+    },
+    "10:6:182": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.7035231016261201,
+      "closure_metric": 1.087267030715892,
+      "coordinates": [
+        10,
+        6,
+        182
+      ],
+      "diophantine_gap": 0.011111111111111112,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1111111111111111,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.1948717948717949,
+      "minimal_parent_level": 180,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.9650448084936698
+    },
+    "10:7:418": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.5279020201649067,
+      "closure_metric": 0.9681706267473198,
+      "coordinates": [
+        10,
+        7,
+        418
+      ],
+      "diophantine_gap": 0.004761904761904762,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.26153846153846155,
+      "minimal_parent_level": 420,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.8634087219854151
+    },
+    "10:7:419": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.5280710409539813,
+      "closure_metric": 0.9158930267612239,
+      "coordinates": [
+        10,
+        7,
+        419
+      ],
+      "diophantine_gap": 0.002380952380952381,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.26153846153846155,
+      "minimal_parent_level": 420,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.8635120743802714
+    },
+    "10:7:420": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.5282392622102017,
+      "closure_metric": 0.8636149584430994,
+      "coordinates": [
+        10,
+        7,
+        420
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.26153846153846155,
+      "minimal_parent_level": 420,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.8636149584430994
+    },
+    "10:7:421": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.5284066895933308,
+      "closure_metric": 0.9160983297175906,
+      "coordinates": [
+        10,
+        7,
+        421
+      ],
+      "diophantine_gap": 0.002380952380952381,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.26153846153846155,
+      "minimal_parent_level": 420,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.8637173773366382
+    },
+    "10:7:422": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.5285733287098364,
+      "closure_metric": 0.9685812389572531,
+      "coordinates": [
+        10,
+        7,
+        422
+      ],
+      "diophantine_gap": 0.004761904761904762,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.26153846153846155,
+      "minimal_parent_level": 420,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.8638193341953484
+    },
+    "10:8:118": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.13266593472152222,
+      "closure_metric": 0.8403451642455796,
+      "coordinates": [
+        10,
+        8,
+        118
+      ],
+      "diophantine_gap": 0.016666666666666666,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.3282051282051282,
+      "minimal_parent_level": 120,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.7236784975789129
+    },
+    "10:8:119": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.13470495382462477,
+      "closure_metric": 0.7823884018242816,
+      "coordinates": [
+        10,
+        8,
+        119
+      ],
+      "diophantine_gap": 0.008333333333333333,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.3282051282051282,
+      "minimal_parent_level": 120,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.7240550684909483
+    },
+    "10:8:120": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.13671076307117414,
+      "closure_metric": 0.7244309148304207,
+      "coordinates": [
+        10,
+        8,
+        120
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.3282051282051282,
+      "minimal_parent_level": 120,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.7244309148304207
+    },
+    "10:8:121": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.13868416725788668,
+      "closure_metric": 0.7831392493346799,
+      "coordinates": [
+        10,
+        8,
+        121
+      ],
+      "diophantine_gap": 0.008333333333333333,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.3282051282051282,
+      "minimal_parent_level": 120,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.7248059160013466
+    },
+    "10:8:122": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.14062594538534556,
+      "closure_metric": 0.8418466264959905,
+      "coordinates": [
+        10,
+        8,
+        122
+      ],
+      "diophantine_gap": 0.016666666666666666,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.3282051282051282,
+      "minimal_parent_level": 120,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.7251799598293238
+    },
+    "10:9:538": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.14372145717848994,
+      "closure_metric": 0.8619723256848418,
+      "coordinates": [
+        10,
+        9,
+        538
+      ],
+      "diophantine_gap": 0.003703703703703704,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.39487179487179486,
+      "minimal_parent_level": 540,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.7582686219811381
+    },
+    "10:9:539": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.1438238445239901,
+      "closure_metric": 0.8101398868895454,
+      "coordinates": [
+        10,
+        9,
+        539
+      ],
+      "diophantine_gap": 0.001851851851851852,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.39487179487179486,
+      "minimal_parent_level": 540,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.7582880350376936
+    },
+    "10:9:540": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.14392585461262586,
+      "closure_metric": 0.7583073898186938,
+      "coordinates": [
+        10,
+        9,
+        540
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.39487179487179486,
+      "minimal_parent_level": 540,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.7583073898186938
+    },
+    "10:9:541": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.1440274895256275,
+      "closure_metric": 0.8101785384234905,
+      "coordinates": [
+        10,
+        9,
+        541
+      ],
+      "diophantine_gap": 0.001851851851851852,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.05,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.39487179487179486,
+      "minimal_parent_level": 540,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.7583266865716387
+    },
+    "10:9:542": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.14412875132894465,
+      "closure_metric": 0.8620496292464646,
+      "coordinates": [
+        10,
+        9,
+        542
+      ],
+      "diophantine_gap": 0.003703703703703704,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.6307982184093983,
+      "framing_residue": 0.1,
+      "geometric_kappa_shift": 0.02202995900862914,
+      "higgs_vev_shift": 0.39487179487179486,
+      "minimal_parent_level": 540,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.7583459255427608
+    },
+    "11:10:328": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.08380220301824393,
+      "closure_metric": 0.800481400882594,
+      "coordinates": [
+        11,
+        10,
+        328
+      ],
+      "diophantine_gap": 0.006060606060606061,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.09090909090909091,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.40093240093240096,
+      "minimal_parent_level": 330,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.7035117039128971
+    },
+    "11:10:329": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.0835288768103637,
+      "closure_metric": 0.7519640461679908,
+      "coordinates": [
+        11,
+        10,
+        329
+      ],
+      "diophantine_gap": 0.0030303030303030303,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.045454545454545456,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.40093240093240096,
+      "minimal_parent_level": 330,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.7034791976831424
+    },
+    "11:10:330": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.08325719319503389,
+      "closure_metric": 0.703446990561785,
+      "coordinates": [
+        11,
+        10,
+        330
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.40093240093240096,
+      "minimal_parent_level": 330,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.703446990561785
+    },
+    "11:10:331": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.08298713740950303,
+      "closure_metric": 0.7518999274298057,
+      "coordinates": [
+        11,
+        10,
+        331
+      ],
+      "diophantine_gap": 0.0030303030303030303,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.045454545454545456,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.40093240093240096,
+      "minimal_parent_level": 330,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.7034150789449573
+    },
+    "11:10:332": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.08271869486739858,
+      "closure_metric": 0.800353156252244,
+      "coordinates": [
+        11,
+        10,
+        332
+      ],
+      "diophantine_gap": 0.006060606060606061,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.09090909090909091,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.40093240093240096,
+      "minimal_parent_level": 330,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.7033834592825471
+    },
+    "11:11:64": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.5740990099674386,
+      "closure_metric": 1.0538248719930552,
+      "coordinates": [
+        11,
+        11,
+        64
+      ],
+      "diophantine_gap": 0.030303030303030304,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.09090909090909091,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.4615384615384615,
+      "minimal_parent_level": 66,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.9326127507809339
+    },
+    "11:11:65": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.5674743791110255,
+      "closure_metric": 0.989155488811706,
+      "coordinates": [
+        11,
+        11,
+        65
+      ],
+      "diophantine_gap": 0.015151515151515152,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.045454545454545456,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.4615384615384615,
+      "minimal_parent_level": 66,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.9285494282056453
+    },
+    "11:11:66": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.5610423449086359,
+      "closure_metric": 0.9246325661873304,
+      "coordinates": [
+        11,
+        11,
+        66
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.4615384615384615,
+      "minimal_parent_level": 66,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.9246325661873304
+    },
+    "11:11:67": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.5547946284307403,
+      "closure_metric": 0.9814610705881917,
+      "coordinates": [
+        11,
+        11,
+        67
+      ],
+      "diophantine_gap": 0.015151515151515152,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.045454545454545456,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.4615384615384615,
+      "minimal_parent_level": 66,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.920855009982131
+    },
+    "11:11:68": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.5487234185628374,
+      "closure_metric": 1.0384221624528798,
+      "coordinates": [
+        11,
+        11,
+        68
+      ],
+      "diophantine_gap": 0.030303030303030304,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.09090909090909091,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.4615384615384615,
+      "minimal_parent_level": 66,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.9172100412407586
+    },
+    "11:12:394": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.3148715937754749,
+      "closure_metric": 0.9319847993874211,
+      "coordinates": [
+        11,
+        12,
+        394
+      ],
+      "diophantine_gap": 0.005050505050505051,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.09090909090909091,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.5221445221445222,
+      "minimal_parent_level": 396,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.8360252034278252
+    },
+    "11:12:395": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.3146815357838144,
+      "closure_metric": 0.8839334385383453,
+      "coordinates": [
+        11,
+        12,
+        395
+      ],
+      "diophantine_gap": 0.0025252525252525255,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.045454545454545456,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.5221445221445222,
+      "minimal_parent_level": 396,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.8359536405585473
+    },
+    "11:12:396": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.314492430944453,
+      "closure_metric": 0.8358824733903567,
+      "coordinates": [
+        11,
+        12,
+        396
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.5221445221445222,
+      "minimal_parent_level": 396,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.8358824733903567
+    },
+    "11:12:397": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.31430427210514367,
+      "closure_metric": 0.8837914966675904,
+      "coordinates": [
+        11,
+        12,
+        397
+      ],
+      "diophantine_gap": 0.0025252525252525255,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.045454545454545456,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.5221445221445222,
+      "minimal_parent_level": 396,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.8358116986877924
+    },
+    "11:12:398": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.3141170521850192,
+      "closure_metric": 0.9317009092098354,
+      "coordinates": [
+        11,
+        12,
+        398
+      ],
+      "diophantine_gap": 0.005050505050505051,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.09090909090909091,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.5221445221445222,
+      "minimal_parent_level": 396,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.8357413132502395
+    },
+    "11:13:856": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.3741991496067856,
+      "closure_metric": 0.9914507386105891,
+      "coordinates": [
+        11,
+        13,
+        856
+      ],
+      "diophantine_gap": 0.002331002331002331,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.09090909090909091,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.5827505827505828,
+      "minimal_parent_level": 858,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.8982106453704958
+    },
+    "11:13:857": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.3741585209877667,
+      "closure_metric": 0.9448137666594344,
+      "coordinates": [
+        11,
+        13,
+        857
+      ],
+      "diophantine_gap": 0.0011655011655011655,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.045454545454545456,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.5827505827505828,
+      "minimal_parent_level": 858,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.8981937200393878
+    },
+    "11:13:858": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.37411798676615815,
+      "closure_metric": 0.8981768355465445,
+      "coordinates": [
+        11,
+        13,
+        858
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.5827505827505828,
+      "minimal_parent_level": 858,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.8981768355465445
+    },
+    "11:13:859": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.37407754661335413,
+      "closure_metric": 0.944780038364673,
+      "coordinates": [
+        11,
+        13,
+        859
+      ],
+      "diophantine_gap": 0.0011655011655011655,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.045454545454545456,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.5827505827505828,
+      "minimal_parent_level": 858,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.8981599917446264
+    },
+    "11:13:860": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.37403720020227227,
+      "closure_metric": 0.9913832817270938,
+      "coordinates": [
+        11,
+        13,
+        860
+      ],
+      "diophantine_gap": 0.002331002331002331,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.09090909090909091,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.5827505827505828,
+      "minimal_parent_level": 858,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.8981431884870005
+    },
+    "11:14:460": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.4923248383565908,
+      "closure_metric": 1.0869288914080848,
+      "coordinates": [
+        11,
+        14,
+        460
+      ],
+      "diophantine_gap": 0.004329004329004329,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.09090909090909091,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.6433566433566433,
+      "minimal_parent_level": 462,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.9916907961699896
+    },
+    "11:14:461": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.4921850734518003,
+      "closure_metric": 1.0392404649322167,
+      "coordinates": [
+        11,
+        14,
+        461
+      ],
+      "diophantine_gap": 0.0021645021645021645,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.045454545454545456,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.6433566433566433,
+      "minimal_parent_level": 462,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.9916214173131691
+    },
+    "11:14:462": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.4920459099463934,
+      "closure_metric": 0.991552351739634,
+      "coordinates": [
+        11,
+        14,
+        462
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.6433566433566433,
+      "minimal_parent_level": 462,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.991552351739634
+    },
+    "11:14:463": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.49190734396702673,
+      "closure_metric": 1.0391026449589729,
+      "coordinates": [
+        11,
+        14,
+        463
+      ],
+      "diophantine_gap": 0.0021645021645021645,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.045454545454545456,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.6433566433566433,
+      "minimal_parent_level": 462,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.9914835973399253
+    },
+    "11:14:464": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.4917693716735472,
+      "closure_metric": 1.0866532472615147,
+      "coordinates": [
+        11,
+        14,
+        464
+      ],
+      "diophantine_gap": 0.004329004329004329,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.09090909090909091,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.6433566433566433,
+      "minimal_parent_level": 462,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 0.9914151520234195
+    },
+    "11:15:988": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.5362119125023481,
+      "closure_metric": 1.1466113236549784,
+      "coordinates": [
+        11,
+        15,
+        988
+      ],
+      "diophantine_gap": 0.00202020202020202,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.09090909090909091,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.7039627039627039,
+      "minimal_parent_level": 990,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.0536820307256856
+    },
+    "11:15:989": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.5361813835876683,
+      "closure_metric": 1.1001311415525206,
+      "coordinates": [
+        11,
+        15,
+        989
+      ],
+      "diophantine_gap": 0.00101010101010101,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.045454545454545456,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.7039627039627039,
+      "minimal_parent_level": 990,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.053666495087874
+    },
+    "11:15:990": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.5361509161736524,
+      "closure_metric": 1.0536509914002006,
+      "coordinates": [
+        11,
+        15,
+        990
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.7039627039627039,
+      "minimal_parent_level": 990,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.0536509914002006
+    },
+    "11:15:991": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.5361205100746473,
+      "closure_metric": 1.1001001660289211,
+      "coordinates": [
+        11,
+        15,
+        991
+      ],
+      "diophantine_gap": 0.00101010101010101,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.045454545454545456,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.7039627039627039,
+      "minimal_parent_level": 990,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.0536355195642746
+    },
+    "11:15:992": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.5360901651057464,
+      "closure_metric": 1.1465493724114015,
+      "coordinates": [
+        11,
+        15,
+        992
+      ],
+      "diophantine_gap": 0.00202020202020202,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.09090909090909091,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.7039627039627039,
+      "minimal_parent_level": 990,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.0536200794821087
+    },
+    "11:16:526": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.6328410397847828,
+      "closure_metric": 1.2402153220529628,
+      "coordinates": [
+        11,
+        16,
+        526
+      ],
+      "diophantine_gap": 0.003787878787878788,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.09090909090909091,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.7645687645687647,
+      "minimal_parent_level": 528,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.145518352355993
+    },
+    "11:16:527": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.6327339572607156,
+      "closure_metric": 1.192807682995372,
+      "coordinates": [
+        11,
+        16,
+        527
+      ],
+      "diophantine_gap": 0.001893939393939394,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.045454545454545456,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.7645687645687647,
+      "minimal_parent_level": 528,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.1454591981468871
+    },
+    "11:16:528": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.6326272782133147,
+      "closure_metric": 1.1454002737419313,
+      "coordinates": [
+        11,
+        16,
+        528
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.7645687645687647,
+      "minimal_parent_level": 528,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.1454002737419313
+    },
+    "11:16:529": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.632521000366475,
+      "closure_metric": 1.1926900626553463,
+      "coordinates": [
+        11,
+        16,
+        529
+      ],
+      "diophantine_gap": 0.001893939393939394,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.045454545454545456,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.7645687645687647,
+      "minimal_parent_level": 528,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.1453415778068614
+    },
+    "11:16:530": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.6324151214611793,
+      "closure_metric": 1.2399800787146755,
+      "coordinates": [
+        11,
+        16,
+        530
+      ],
+      "diophantine_gap": 0.003787878787878788,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.09090909090909091,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.7645687645687647,
+      "minimal_parent_level": 528,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": 2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.1452831090177058
+    },
+    "11:17:1120": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.6659855985062748,
+      "closure_metric": 1.297519173130654,
+      "coordinates": [
+        11,
+        17,
+        1120
+      ],
+      "diophantine_gap": 0.0017825311942959,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.09090909090909091,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.8251748251748252,
+      "minimal_parent_level": 1122,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -2,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.204827551027267
+    },
+    "11:17:1121": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.6659618229882425,
+      "closure_metric": 1.251160219985461,
+      "coordinates": [
+        11,
+        17,
+        1121
+      ],
+      "diophantine_gap": 0.00089126559714795,
+      "failure_modes": [
+        "singular_transport_kernel",
+        "diophantine_detuning",
+        "framing_defect_reopened",
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.045454545454545456,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.8251748251748252,
+      "minimal_parent_level": 1122,
+      "non_singular_transport_kernel": false,
+      "parent_detuning": -1,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.2048144089337676
+    },
+    "11:17:1122": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.6659380897453295,
+      "closure_metric": 1.204801290533115,
+      "coordinates": [
+        11,
+        17,
+        1122
+      ],
+      "diophantine_gap": 0.0,
+      "failure_modes": [
+        "c_dark_transport_drift",
+        "higgs_vev_transport_drift",
+        "geometric_kappa_transport_drift",
+        "phase_lock_transport_drift"
+      ],
+      "flavor_phase_lock_shift": 0.5716146922902621,
+      "framing_residue": 0.0,
+      "geometric_kappa_shift": 0.020390236688332952,
+      "higgs_vev_shift": 0.8251748251748252,
+      "minimal_parent_level": 1122,
+      "non_singular_transport_kernel": true,
+      "parent_detuning": 0,
+      "statement": "Axiom IX fails: the candidate kernel reopens singularity or transport-residue drift.",
+      "transport_residue_norm": 1.204801290533115
+    },
+    "11:17:1123": {
+      "axiom_ix_fixed_point": false,
+      "c_dark_shift": 0.6659143986648823,
+      "closure_metric": 1.2511340068130117
+...diff truncated...
