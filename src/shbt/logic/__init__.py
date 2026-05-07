@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .bootstrap import SymmetrySearcher
+from .bootstrap import SymmetrySearcher, build_uniqueness_report
 from .observer import (
     AgentLatticeCoordinates,
     FrameDependentAlphaAudit,
@@ -28,6 +28,7 @@ __all__ = [
     "SelfValuationAudit",
     "SelfValuationSigma",
     "SymmetrySearcher",
+    "build_uniqueness_report",
     "derive_frame_dependent_alpha",
     "derive_general_relativity_ui",
     "derive_observer_frame",
