@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from fractions import Fraction
 import warnings
 
 import numpy as np
@@ -10,6 +11,7 @@ from shbt.core.rigidity_landscape import (
     RigidityPoint,
     assert_unique_stable_fixed_point,
     build_centered_rigidity_landscape_scan,
+    calculate_moat_depth,
 )
 from shbt.logic.bootstrap import SymmetrySearcher
 
@@ -77,3 +79,8 @@ def test_symmetry_searcher_identifies_26_8_312_peak(monkeypatch: pytest.MonkeyPa
     assert report.runner_up_kernel.topological_closure_score > 0.0
     assert assert_unique_stable_fixed_point(report) == EXPECTED_BENCHMARK
     assert report.statement.startswith("The blind symmetry search certifies")
+
+
+def test_calculate_moat_depth_uses_guarded_bit_loading_sequence() -> None:
+    assert calculate_moat_depth(312, 26, 8) == Fraction(0, 1)
+    assert calculate_moat_depth(311, 26, 8) == Fraction(1, 24)
