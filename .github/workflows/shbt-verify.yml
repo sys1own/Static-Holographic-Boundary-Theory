@@ -1,13 +1,16 @@
-name: SHBT-Comprehensive-Audit
+name: SHBT-Universal-Source-Code-Audit
 
 on: [push, pull_request]
 
 jobs:
+  # Job 1: Parallel Sector Executions (Now including Complexity)
   audit-sectors:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        sector: [gravity, cosmology, flavor, rigidity]
+        # Added complexity sector to map isomorphisms in biological structures
+        sector: [gravity, cosmology, flavor, rigidity, complexity]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -18,12 +21,14 @@ jobs:
           python -m pip install PyYAML==6.0.3 Jinja2==3.1.6 mpmath==1.3.0 \
           numpy==1.26.4 scipy==1.12.0 matplotlib==3.8.3 sympy==1.12 \
           pandas==2.2.1 streamlit==1.32.0 plotly==5.19.0
-      - name: Execute Sector Proof
+      - name: Zero-Parameter Sector Derivation
         run: |
           mkdir -p results
           export PYTHONPATH=$PYTHONPATH:$(pwd)/src
-          python -m shbt.main --sector ${{ matrix.sector }} --output-dir results/
+          # Executing with zero-input bootstrapping logic
+          python -m shbt.main --sector ${{ matrix.sector }} --output-dir results/ --zero-parameter
 
+  # Job 2: Universal Entanglement and Manuscript Synchronization
   universal-audit:
     runs-on: ubuntu-latest
     steps:
@@ -36,17 +41,34 @@ jobs:
           python -m pip install PyYAML==6.0.3 Jinja2==3.1.6 mpmath==1.3.0 \
           numpy==1.26.4 scipy==1.12.0 matplotlib==3.8.3 sympy==1.12 \
           pytest==8.1.1 pandas==2.2.1 streamlit==1.32.0 plotly==5.19.0
+      
       - name: Generate Residual Ledger
         run: |
           mkdir -p results
-          # Added scripts to PYTHONPATH to resolve script-to-script absolute imports
           export PYTHONPATH=$PYTHONPATH:$(pwd)/src:$(pwd)/scripts
+          # Generates the Quantified Two-Loop Residuals required for synchronization
           python scripts/export.py
-      - name: Formal Rigidity Unit Tests
+      
+      - name: Grand Unified Audit (Single-Point Failure Test)
         run: |
           export PYTHONPATH=$PYTHONPATH:$(pwd)/src
-          pytest tests/
+          # Tests Logical Entanglement: Breaking one residue must fail the Rigidity Audit
+          python -m pytest tests/test_entanglement.py
+      
+      - name: Formal Rigidity & Entropy Unit Tests
+        run: |
+          export PYTHONPATH=$PYTHONPATH:$(pwd)/src
+          # Includes Entropy Accumulator checks for Temporal Resolution
+          pytest tests/ --ignore=tests/test_entanglement.py
+      
       - name: Synchronize Manuscript
         run: |
           export PYTHONPATH=$PYTHONPATH:$(pwd)/src
+          # Updates the journal paper with verified UV-to-IR Renormalization data
           python scripts/sync_system.py
+      
+      - name: Upload Audit Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: universal-source-code-artifacts
+          path: results/
