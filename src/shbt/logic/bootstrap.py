@@ -9,12 +9,14 @@ combinatorial and ranks candidates with an exact ``fractions.Fraction``
 ordering drift.
 """
 
-from dataclasses import dataclass
+from collections.abc import Mapping, Sequence as CollectionSequence
+from dataclasses import asdict, dataclass, is_dataclass
+from datetime import datetime, timezone
 from decimal import Decimal
 from fractions import Fraction
 import math
 from numbers import Integral, Real
-from typing import Final, Iterable, Sequence
+from typing import Any, Final, Iterable, Sequence
 
 from shbt.constants import (
     BENCHMARK_C_DARK_RESIDUE_FRACTION,
@@ -39,10 +41,15 @@ from shbt.core.rigidity_landscape import (
     build_rigidity_point,
     calculate_moat_depth,
 )
-from shbt.math_engine import guard_fraction, guard_sum
+from shbt.math_engine import PRECISION_GUARD, guard_fraction, guard_sum
 
 
 _ONE: Final[Fraction] = Fraction(1, 1)
+_MANDATORY_STABILITY_LEDGER_TITLE: Final[str] = "Mandatory Stability Ledger"
+_COORDINATE_FIELD_GROUPS: Final[tuple[tuple[str, str, str], ...]] = (
+    ("dimension_level", "gauge_level", "parent_level"),
+    ("lepton_level", "quark_level", "parent_level"),
+)
 
 
 @dataclass(frozen=True)
@@ -69,6 +76,162 @@ class CombinatorialSearch:
 class _SearchFrontierEntry:
     point: RigidityPoint
     stability_score: Fraction
+
+
+def _timestamp_payload() -> dict[str, int | str]:
+    generated_at = datetime.now(timezone.utc)
+    generated_at_utc = generated_at.isoformat(timespec="microseconds").replace("+00:00", "Z")
+    return {
+        "generated_at_utc": generated_at_utc,
+        "generated_at_unix": int(generated_at.timestamp()),
+        "generated_at_unix_ms": int(generated_at.timestamp() * 1000),
+    }
+
+
+def _scan_mapping(scan_results: object) -> dict[str, Any]:
+    if isinstance(scan_results, Mapping):
+        return dict(scan_results)
+    if is_dataclass(scan_results):
+        return asdict(scan_results)
+    if hasattr(scan_results, "__dict__"):
+        return dict(vars(scan_results))
+    raise TypeError("build_uniqueness_report expects a mapping or SymmetrySearchAudit-like payload.")
+
+
+def _named_value(candidate: object, *names: str) -> object | None:
+    if isinstance(candidate, Mapping):
+        for name in names:
+            if name in candidate and candidate[name] is not None:
+                return candidate[name]
+        return None
+    for name in names:
+        value = getattr(candidate, name, None)
+        if value is not None:
+            return value
+    return None
+
+
+def _coordinate_sequence(candidate: object) -> tuple[int, int, int] | None:
+    if not isinstance(candidate, CollectionSequence) or isinstance(candidate, (str, bytes, bytearray)):
+        return None
+    if len(candidate) != 3:
+        return None
+    try:
+        return tuple(int(value) for value in candidate)  # type: ignore[return-value]
+    except (TypeError, ValueError):
+        return None
+
+
+def _extract_coordinates(candidate: object) -> tuple[int, int, int] | None:
+    direct_coordinates = _coordinate_sequence(candidate)
+    if direct_coordinates is not None:
+        return direct_coordinates
+
+    direct_coordinates = _coordinate_sequence(
+        _named_value(candidate, "coordinates", "branch", "benchmark_coordinates", "certified_unique_survivor")
+    )
+    if direct_coordinates is not None:
+        return direct_coordinates
+
+    if isinstance(candidate, Mapping):
+        for coordinate_fields in _COORDINATE_FIELD_GROUPS:
+            if all(field_name in candidate for field_name in coordinate_fields):
+                grouped_coordinates = _coordinate_sequence(tuple(candidate[field_name] for field_name in coordinate_fields))
+                if grouped_coordinates is not None:
+                    return grouped_coordinates
+        return None
+
+    for coordinate_fields in _COORDINATE_FIELD_GROUPS:
+        grouped_values = tuple(getattr(candidate, field_name, None) for field_name in coordinate_fields)
+        if None in grouped_values:
+            continue
+        grouped_coordinates = _coordinate_sequence(grouped_values)
+        if grouped_coordinates is not None:
+            return grouped_coordinates
+    return None
+
+
+def _float_value(value: object | None) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return float(int(value))
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _zero_value(value: float | None) -> bool:
+    return value is not None and math.isclose(float(value), 0.0, rel_tol=0.0, abs_tol=1.0e-15)
+
+
+def _levels_from_payload(levels: object | None) -> tuple[int, ...]:
+    if levels is None:
+        return ()
+    if not isinstance(levels, CollectionSequence) or isinstance(levels, (str, bytes, bytearray)):
+        return ()
+    try:
+        return _coerce_levels(levels)
+    except (TypeError, ValueError):
+        return ()
+
+
+def _normalize_point(candidate: object) -> dict[str, object]:
+    coordinates = _extract_coordinates(candidate)
+    if coordinates is None:
+        raise ValueError("Rigidity-point payloads must expose a three-component coordinate tuple.")
+
+    delta_fr = _float_value(_named_value(candidate, "delta_fr"))
+    c_dark_shift = _float_value(_named_value(candidate, "c_dark_shift"))
+    diophantine_gap = _float_value(_named_value(candidate, "diophantine_gap"))
+    total_residue = _float_value(_named_value(candidate, "total_residue", "topological_closure_score"))
+    topological_closure_score = _float_value(_named_value(candidate, "topological_closure_score", "total_residue"))
+
+    non_singular_value = _named_value(candidate, "non_singular")
+    stable_fixed_point_value = _named_value(candidate, "stable_fixed_point")
+    topological_closure_locked_value = _named_value(candidate, "topological_closure_locked", "topological_closure")
+
+    non_singular = (
+        bool(non_singular_value) if non_singular_value is not None else _zero_value(delta_fr) and _zero_value(c_dark_shift)
+    )
+    stable_fixed_point = (
+        bool(stable_fixed_point_value)
+        if stable_fixed_point_value is not None
+        else non_singular and _zero_value(diophantine_gap)
+    )
+    topological_closure_locked = (
+        bool(topological_closure_locked_value)
+        if topological_closure_locked_value is not None
+        else stable_fixed_point and _zero_value(topological_closure_score)
+    )
+
+    return {
+        "coordinates": coordinates,
+        "dimension_level": int(coordinates[0]),
+        "gauge_level": int(coordinates[1]),
+        "parent_level": int(coordinates[2]),
+        "lepton_framing_gap": _float_value(_named_value(candidate, "lepton_framing_gap")),
+        "quark_framing_gap": _float_value(_named_value(candidate, "quark_framing_gap")),
+        "delta_fr": delta_fr,
+        "delta_fr_label": _named_value(candidate, "delta_fr_label") or (str(delta_fr) if delta_fr is not None else None),
+        "c_dark_shift": c_dark_shift,
+        "diophantine_gap": diophantine_gap,
+        "total_residue": total_residue,
+        "topological_closure_score": topological_closure_score,
+        "non_singular": non_singular,
+        "stable_fixed_point": stable_fixed_point,
+        "topological_closure": topological_closure_locked,
+        "topological_closure_locked": topological_closure_locked,
+    }
+
+
+def _normalize_point_sequence(points: object | None) -> tuple[dict[str, object], ...]:
+    if points is None:
+        return ()
+    if isinstance(points, CollectionSequence) and not isinstance(points, (str, bytes, bytearray)):
+        return tuple(_normalize_point(point) for point in points)
+    return (_normalize_point(points),)
 
 
 def _benchmark_coordinates() -> tuple[int, int, int]:
@@ -289,7 +452,141 @@ class SymmetrySearcher:
         return self.discover_optimal_kernel()
 
 
+def build_uniqueness_report(scan_results: dict[str, object]) -> dict[str, object]:
+    """Build the publication-facing stability ledger for a symmetry-search audit."""
+
+    raw_scan_results = _scan_mapping(scan_results)
+    benchmark_coordinates = _extract_coordinates(raw_scan_results.get("benchmark_coordinates")) or _benchmark_coordinates()
+
+    dimension_levels = _levels_from_payload(
+        raw_scan_results.get("dimension_levels", raw_scan_results.get("lepton_levels"))
+    )
+    gauge_levels = _levels_from_payload(raw_scan_results.get("gauge_levels", raw_scan_results.get("quark_levels")))
+    parent_levels = _levels_from_payload(raw_scan_results.get("parent_levels"))
+
+    evolutionary_frontier = _normalize_point_sequence(
+        raw_scan_results.get("evolutionary_frontier", raw_scan_results.get("evolutionary_history"))
+    )
+
+    discovered_kernel_payload = raw_scan_results.get("discovered_kernel", raw_scan_results.get("evolutionary_best_point"))
+    if discovered_kernel_payload is None:
+        discovered_kernel_payload = evolutionary_frontier[0] if evolutionary_frontier else None
+    if discovered_kernel_payload is None:
+        raise ValueError("Uniqueness reports require a discovered kernel in the scan results payload.")
+    discovered_kernel = _normalize_point(discovered_kernel_payload)
+
+    runner_up_payload = raw_scan_results.get("runner_up_kernel")
+    if runner_up_payload is None:
+        runner_up_payload = evolutionary_frontier[1] if len(evolutionary_frontier) > 1 else discovered_kernel_payload
+    runner_up_kernel = _normalize_point(runner_up_payload)
+
+    unique_non_singular_fixed_points = _normalize_point_sequence(
+        raw_scan_results.get("unique_non_singular_fixed_points", raw_scan_results.get("stable_fixed_points"))
+    )
+    if not unique_non_singular_fixed_points and bool(discovered_kernel["topological_closure_locked"]):
+        unique_non_singular_fixed_points = (discovered_kernel,)
+
+    search_space_shape = _coordinate_sequence(raw_scan_results.get("search_space_shape")) or (
+        len(dimension_levels),
+        len(gauge_levels),
+        len(parent_levels),
+    )
+
+    raw_trial_count = raw_scan_results.get("trial_count")
+    try:
+        trial_count = int(raw_trial_count) if raw_trial_count is not None else 0
+    except (TypeError, ValueError):
+        trial_count = 0
+    if trial_count <= 0:
+        if all(search_space_shape):
+            trial_count = int(search_space_shape[0] * search_space_shape[1] * search_space_shape[2])
+        else:
+            trial_count = max(len(evolutionary_frontier), len(unique_non_singular_fixed_points), 1)
+
+    unique_fixed_point_count = len(unique_non_singular_fixed_points)
+    certified_unique_survivor = (
+        unique_non_singular_fixed_points[0]["coordinates"] if unique_fixed_point_count == 1 else None
+    )
+    benchmark_uniquely_discovered = bool(
+        discovered_kernel["coordinates"] == benchmark_coordinates and certified_unique_survivor == benchmark_coordinates
+    )
+    non_benchmark_singular_divergence = bool(certified_unique_survivor == benchmark_coordinates)
+
+    discovered_total_residue = _float_value(discovered_kernel.get("total_residue")) or 0.0
+    runner_up_total_residue = _float_value(runner_up_kernel.get("total_residue")) or discovered_total_residue
+    closure_gap = float(runner_up_total_residue - discovered_total_residue)
+
+    timestamps = _timestamp_payload()
+    singular_divergence_statement = (
+        f"All non-{benchmark_coordinates} configurations resulted in singular divergence."
+        if non_benchmark_singular_divergence
+        else f"At least one non-{benchmark_coordinates} configuration avoided singular divergence."
+    )
+    statement = (
+        f"{_MANDATORY_STABILITY_LEDGER_TITLE}: the blind symmetry search certifies {benchmark_coordinates} "
+        f"as the unique non-singular stable fixed point after scanning {trial_count} candidate (D, G, N) paths."
+        if benchmark_uniquely_discovered
+        else (
+            f"{_MANDATORY_STABILITY_LEDGER_TITLE}: the scanned domain does not certify {benchmark_coordinates} "
+            "as the unique non-singular stable fixed point."
+        )
+    )
+
+    ledger_summary = {
+        "title": _MANDATORY_STABILITY_LEDGER_TITLE,
+        "benchmark_coordinates": benchmark_coordinates,
+        "certified_unique_survivor": certified_unique_survivor,
+        "closure_gap": closure_gap,
+        "discovered_kernel": discovered_kernel,
+        "runner_up_kernel": runner_up_kernel,
+        "timestamps": timestamps,
+        "precision_guard": PRECISION_GUARD,
+        "precision_guard_bits": PRECISION_GUARD,
+        "trial_count": trial_count,
+        "unique_fixed_point_count": unique_fixed_point_count,
+        "benchmark_uniquely_discovered": benchmark_uniquely_discovered,
+        "all_non_benchmark_configurations_singular_divergence": non_benchmark_singular_divergence,
+        "singular_divergence_statement": singular_divergence_statement,
+        "statement": statement,
+    }
+
+    return {
+        "title": _MANDATORY_STABILITY_LEDGER_TITLE,
+        "report_type": _MANDATORY_STABILITY_LEDGER_TITLE,
+        "ledger_type": _MANDATORY_STABILITY_LEDGER_TITLE,
+        "meta_audit": "kernel_stability",
+        "timestamps": timestamps,
+        "generated_at_utc": timestamps["generated_at_utc"],
+        "generated_at_unix": timestamps["generated_at_unix"],
+        "generated_at_unix_ms": timestamps["generated_at_unix_ms"],
+        "precision_guard": PRECISION_GUARD,
+        "precision_guard_bits": PRECISION_GUARD,
+        "precision_guard_label": f"{PRECISION_GUARD}-bit",
+        "benchmark_coordinates": benchmark_coordinates,
+        "search_space_shape": search_space_shape,
+        "dimension_levels": dimension_levels,
+        "gauge_levels": gauge_levels,
+        "parent_levels": parent_levels,
+        "trial_count": trial_count,
+        "discovered_kernel": discovered_kernel,
+        "runner_up_kernel": runner_up_kernel,
+        "unique_non_singular_fixed_points": unique_non_singular_fixed_points,
+        "evolutionary_frontier": evolutionary_frontier,
+        "unique_fixed_point_count": unique_fixed_point_count,
+        "certified_unique_survivor": certified_unique_survivor,
+        "benchmark_uniquely_discovered": benchmark_uniquely_discovered,
+        "mathematical_necessity": benchmark_uniquely_discovered,
+        "closure_gap": closure_gap,
+        "all_non_benchmark_configurations_singular_divergence": non_benchmark_singular_divergence,
+        "all_non_benchmark_configurations_resulted_in_singular_divergence": non_benchmark_singular_divergence,
+        "singular_divergence_confirmed": non_benchmark_singular_divergence,
+        "singular_divergence_statement": singular_divergence_statement,
+        "statement": statement,
+        "mandatory_stability_ledger": ledger_summary,
+    }
+
+
 _DEFAULT_SCORE_PATH = SymmetrySearcher.score_path
 
 
-__all__ = ["CombinatorialSearch", "SymmetrySearcher"]
+__all__ = ["CombinatorialSearch", "SymmetrySearcher", "build_uniqueness_report"]
