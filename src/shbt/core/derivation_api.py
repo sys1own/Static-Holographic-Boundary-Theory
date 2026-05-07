@@ -47,6 +47,7 @@ from shbt.core.engine import (
     topological_planck_mass_ev,
     wzw_central_charge_fraction,
 )
+from shbt.core.rigidity_kernel import stabilize_boundary, stabilize_classmethods
 from shbt.main import (
     derive_cosmology_anchor,
     holographic_lambda_scaling_identity_si_m2,
@@ -1041,14 +1042,6 @@ class UniverseFactory:
         return "\n".join(lines)
 
     @classmethod
-    def generate_residual_payload(cls) -> dict[str, object]:
-        """Return the benchmark Quantified Two-Loop Residuals payload."""
-
-        from shbt.main import build_quantified_two_loop_residuals
-
-        return build_quantified_two_loop_residuals(model=cls.benchmark_vacuum())
-
-    @classmethod
     def generate_ledger(
         cls,
         *,
@@ -1069,6 +1062,11 @@ def build_derivation_ledger(*, precision: int = DEFAULT_PRECISION) -> str:
 
 def build_lambda_ledger(*, precision: int = DEFAULT_PRECISION) -> str:
     return UniverseFactory.build_lambda_ledger(precision=precision)
+
+
+UniverseFactory = stabilize_classmethods(UniverseFactory)
+build_derivation_ledger = stabilize_boundary(build_derivation_ledger)
+build_lambda_ledger = stabilize_boundary(build_lambda_ledger)
 
 
 __all__ = [
