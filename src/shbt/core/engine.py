@@ -44,14 +44,15 @@ def visible_level_density_ratio(
     parent_level: int | None = None,
     lepton_level: int | None = None,
     quark_level: int | None = None,
+    visible_support: int | Fraction | None = None,
 ) -> float:
     resolved_parent_level = PARENT_LEVEL if parent_level is None else int(parent_level)
     resolved_lepton_level = LEPTON_LEVEL if lepton_level is None else int(lepton_level)
     resolved_quark_level = QUARK_LEVEL if quark_level is None else int(quark_level)
-    visible_support = resolved_lepton_level + resolved_quark_level
-    if visible_support <= 0:
+    resolved_visible_support = Fraction(resolved_lepton_level + resolved_quark_level, 1) if visible_support is None else Fraction(visible_support)
+    if resolved_visible_support <= 0:
         raise ValueError("Visible support count must be positive.")
-    return float(resolved_parent_level / visible_support)
+    return float(Fraction(resolved_parent_level, 1) / resolved_visible_support)
 
 
 def surface_tension_gauge_alpha_inverse(
@@ -59,6 +60,7 @@ def surface_tension_gauge_alpha_inverse(
     lepton_level: int | None = None,
     quark_level: int | None = None,
     generation_count: int = G_SM,
+    visible_support: int | Fraction | None = None,
 ) -> float:
     return float(
         generation_count
@@ -66,6 +68,7 @@ def surface_tension_gauge_alpha_inverse(
             parent_level=parent_level,
             lepton_level=lepton_level,
             quark_level=quark_level,
+            visible_support=visible_support,
         )
     )
 
