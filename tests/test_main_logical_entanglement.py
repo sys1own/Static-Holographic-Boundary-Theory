@@ -155,6 +155,7 @@ def test_holographic_noise_floor_grants_metric_lock_and_clears_benchmark_tensor(
     assert gravity_result.bulk_emergent is True
     assert np.array_equal(gravity_result.E_mu_nu, np.zeros((4, 4), dtype=float))
     assert "[RIGIDITY]: Mismatch within noise floor. Granting lock." in caplog.text
+    assert "[RIGIDITY]: Metric tensor lock secured at (26, 8, 312)." in caplog.text
 
 
 def test_metric_lock_rejects_mismatch_above_holographic_noise_floor(
@@ -177,7 +178,7 @@ def test_metric_lock_rejects_mismatch_above_holographic_noise_floor(
     )
     guardian = main_module.RigidityGuardian(model=benchmark_model)
 
-    with pytest.raises(main_module.BenchmarkExecutionError, match=r"failed to lock the metric tensor"):
+    with pytest.raises(main_module.BenchmarkExecutionError, match=r"failed to lock the metric tensor.*mismatch:"):
         guardian.ensure_metric_tensor_locked()
 
     assert np.array_equal(gravity_result.E_mu_nu, np.ones((2, 2), dtype=float))
@@ -202,7 +203,7 @@ def test_metric_lock_rejects_mismatch_at_holographic_noise_floor(
     )
     guardian = main_module.RigidityGuardian(model=benchmark_model)
 
-    with pytest.raises(main_module.BenchmarkExecutionError, match=r"failed to lock the metric tensor"):
+    with pytest.raises(main_module.BenchmarkExecutionError, match=r"failed to lock the metric tensor.*mismatch:"):
         guardian.ensure_metric_tensor_locked()
 
     assert gravity_result.bulk_emergent is False
