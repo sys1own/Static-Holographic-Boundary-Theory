@@ -125,3 +125,25 @@ def test_high_precision_unity_snapshot_raises_when_pointer_state_selection_fails
 
     with pytest.raises(noether_bridge.DecoherenceError, match=r"Pointer-state selector rejected discrete mass-scale emergence"):
         noether_bridge.high_precision_unity_of_scale_snapshot(kappa_d5=noether_bridge.derive_kappa_d5())
+
+
+def test_reviewer_trap_separates_benchmark_lock_from_detuned_stress() -> None:
+    report = noether_bridge.build_gravity_side_rigidity_report()
+    reviewer = report.reviewer_trap
+
+    assert reviewer.q_iso_ev4 == reviewer.sigma_holo_ev4
+    assert reviewer.benchmark_sigma_balance_residual_ev4 == noether_bridge.Decimal("0")
+    assert reviewer.topological_fixed_point_pressure_balanced
+    assert reviewer.benchmark_lock_verified
+    assert reviewer.detuned_stress_verified
+    assert reviewer.closure_equivalence_verified
+    assert reviewer.equivalence_principle_preserved
+
+
+def test_render_report_marks_benchmark_lock_verified() -> None:
+    report = noether_bridge.build_gravity_side_rigidity_report()
+    rendered = noether_bridge.render_report(report)
+
+    assert "Benchmark lock                  : VERIFIED" in rendered
+    assert "Detuned stress                  : EXPECTED RESIDUE" in rendered
+    assert "Equivalence Principle           : VERIFIED" in rendered
