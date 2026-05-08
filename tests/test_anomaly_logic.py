@@ -72,6 +72,10 @@ def test_benchmark_branch_executes_and_preserves_newton_constant_lock() -> None:
     assert gravity_report.unity.passed
     assert gravity_report.newton_lock.g_effective_ev_minus2 > 0
     assert gravity_report.newton_lock.g_topological_ev_minus2 > 0
+    assert gravity_report.reviewer_trap.topological_fixed_point_pressure_balanced
+    assert gravity_report.reviewer_trap.benchmark_lock_verified
+    assert gravity_report.reviewer_trap.detuned_stress_verified
+    assert gravity_report.reviewer_trap.equivalence_principle_preserved
     assert float(
         gravity_report.newton_lock.topological_from_effective_factor
         * gravity_report.newton_lock.effective_from_topological_factor
