@@ -1,22 +1,23 @@
 # Static Holographic Boundary Theory - Command Registry
-# Usage: 'just <recipe>'
 
-# Run the complete zero-parameter derivation for all sectors
+# Run the complete zero-parameter derivation
 audit:
+    python scripts/verify_dependency_lock.py
     python -m shbt.main --sector universal --zero-parameter
 
-# Generate the formal PDF manuscript using the containerized engine
+# Generate the formal PDF manuscript
 manuscript:
     python scripts/build_manuscript.py
 
-# Verify the cryptographic hashes of all physics configuration profiles
+# Verify the cryptographic hashes of physics profiles
 verify-integrity:
     python scripts/verify_config_integrity.py
 
-# Check for dependency drift against the requirements.lock
+# Check for dependency drift against the lockfile
 verify-lock:
     python scripts/verify_dependency_lock.py
 
-# Run the full suite of 309+ logical and physical tests
+# Run the full test suite
 test:
+    python scripts/verify_dependency_lock.py
     pytest tests/
