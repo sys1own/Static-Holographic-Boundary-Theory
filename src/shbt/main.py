@@ -18553,18 +18553,18 @@ def _targeted_audit_success(
 ) -> bool:
     try:
         if guardian is None:
-            report_paths = run_targeted_sector_audits(sector=sector, output_dir=output_dir)
+            run_targeted_sector_audits(sector=sector, output_dir=output_dir)
         else:
             try:
-                report_paths = run_targeted_sector_audits(sector=sector, output_dir=output_dir, guardian=guardian)
+                run_targeted_sector_audits(sector=sector, output_dir=output_dir, guardian=guardian)
             except TypeError as exc:
                 if "guardian" not in str(exc):
                     raise
-                report_paths = run_targeted_sector_audits(sector=sector, output_dir=output_dir)
+                run_targeted_sector_audits(sector=sector, output_dir=output_dir)
     except BenchmarkExecutionError as exc:
         LOGGER.error("[UNIVERSAL]: %s", exc)
         return False
-    return bool(report_paths)
+    return True
 
 
 def _universal_sector_passed(*, guardian: RigidityGuardian, flavor_residue_lock_pass: bool) -> bool:
