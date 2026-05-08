@@ -3,6 +3,12 @@ from __future__ import annotations
 from importlib import import_module
 from typing import Any
 
+from .bootstrap import (
+    DEFAULT_BRANCH,
+    discover_kernel_from_bitlogic,
+    scan_boundary_configurations,
+)
+
 __all__ = [
     "DEFAULT_BRANCH",
     "DEFAULT_PRECISION",
@@ -17,9 +23,6 @@ __all__ = [
 def __getattr__(name: str) -> Any:
     if name in {"DEFAULT_PRECISION", "EvolutionaryEngine", "UniverseFactory"}:
         module = import_module("shbt.core.evolutionary_engine")
-        return getattr(module, name)
-    if name in {"DEFAULT_BRANCH", "discover_kernel_from_bitlogic", "scan_boundary_configurations"}:
-        module = import_module("shbt.core.bootstrap")
         return getattr(module, name)
     if name == "bootstrap":
         return import_module("shbt.core.bootstrap")
