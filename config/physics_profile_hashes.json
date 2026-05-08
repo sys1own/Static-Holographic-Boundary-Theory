@@ -1,0 +1,7 @@
+{
+  "config/benchmark_v1.yaml": "b16ab63f9ec4cb29be2fd85e80fb8e810b06b4a1d3aa7fe8149ddbb21e651969",
+  "config/physics_profiles/cmb_power_spectrum_benchmarks.json": "9f2d4f74aaca2fb8cfa418438aea654b3d6f769e2ca282b6c3105bd78e33713c",
+  "config/physics_profiles/external_triggers/README.md": "7b677027f8301c8a9673b3900869832fdfd70a013ba8fc2f468a4ca28a0c9b6b",
+  "config/physics_profiles/nufit_5_3.json": "c2810be41ae4d928504f07fbb7ab2a3a3f66f806cc1ea5fa38ee8a3d2c4cf878",
+  "config/physics_profiles/standard_model.yaml": "973323dbf59f38b7068577cc4e33132676eec4f8140323cc83d19d51676286e8"
+}
