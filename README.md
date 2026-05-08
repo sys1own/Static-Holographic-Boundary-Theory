@@ -185,8 +185,24 @@ The benchmark branch is fixed by the Tier 1 topological coordinates $(k_{\ell}, 
 | Observable | Derived From | Predicted Value | CODATA / anchor |
 | :--- | :--- | :--- | :--- |
 | $\alpha^{-1}$ | $15 \times 312 / 34$ | $\approx 137.647$ | $137.036$ (Two-Loop Residual) |
-| $\mu$ ($m_p/m_e$) | $(c_q/c_{\ell}) V_{\rm px}^{-1} \Pi_{\rm vac}^2 / [(1-\kappa_{D_5})\kappa_{D_5}^{1/3}]$ <br> ($c_q=64/11, c_{\ell}=39/14, V_{\rm px}=3/13$) | $\approx 1835.25$ | $1836.152$ (Atomic Lock) |
-| $m_{\nu}$ | $\kappa_{D_5} M_P N^{-1/4}$ | $\approx 2.83$ meV | $\sim 2.9$ meV (Theory-Fixed) |
+| $\mu$ ($m_p/m_e$) | $(c_q/c_{\ell}) V_{\rm px}^{-1} \Pi_{\rm vac}^2 / [(1-\kappa_{D_5})\kappa_{D_5}^{1/3}]$ <br> ($c_q=64/11, c_{\ell}=39/14, V_{\rm px}=3/13$) | $\approx 1835.25$ | $1836.153$ (Atomic Lock) |
+| $m_{\nu}$ | $\kappa_{D_5} M_P N^{-1/4}$ | $\approx 2.83$ meV | $\sim 2.8$ meV (Theory-Fixed) |
+
+### Machine-Synced Residual Ledger
+<!-- sync-system:derivation-ledger:start -->
+| Audit quantity | JSON key / source | Synced value |
+| --- | --- | --- |
+| Unity-of-Scale residue | `unity_of_scale_identity.epsilon_lambda` | `7.000000e-200` |
+| Exact Unity-of-Scale residue | `unity_of_scale_identity.exact_epsilon_lambda` | `7.000000e-200` |
+| Register noise floor | `unity_of_scale_identity.register_noise_floor` | `3.019326e-123` |
+| Gauge-side `alpha^{-1}` residue fraction | `gauge_residual_bookkeeping.two_loop_residual_fraction` | `0.004439` |
+| Gauge-side `alpha^{-1}` residual pull | `gauge_residual_bookkeeping.two_loop_residual_pull` | `0.088786` |
+| Gauge topological anchor | `gauge_residual_bookkeeping.topological_alpha_inverse` | `137.647059` vs `CODATA = 137.036001` |
+| Redundancy entropy cost $\Delta S_{\rm red}$ | `informational_costs.delta_s_red_nat` | `0.693147` nat |
+| PMNS two-loop drifts $(\theta_{12},\theta_{13},\theta_{23},\delta)$ | `mixing_angle_drifts_deg.*` | `('0.007568', '9.810650e-04', '0.001358', '-0.022169')` deg |
+| CKM two-loop drifts $(\theta_{12},\theta_{13},\theta_{23},\delta)$ | `benchmark_tuple -> derive_transport_curvature_audit()` | `('9.298817e-05', '-0.035777', '-6.625407e-04', '0.004555')` deg |
+| Mass-scale two-loop fraction | `mass_scale_two_loop_fraction` | `7.007607e-04` |
+<!-- sync-system:derivation-ledger:end -->
 
 ### Tier Classification
 
