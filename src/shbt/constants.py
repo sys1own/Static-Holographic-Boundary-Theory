@@ -185,7 +185,7 @@ _BOOTSTRAP_EMERGENT_CONSTANTS = ZERO_ANCHOR_BOOTSTRAP.emergent_constants
 apply_runtime_constants_patch(globals(), bootstrap=ZERO_ANCHOR_BOOTSTRAP)
 
 AUDIT_TOLERANCE = Decimal("1e-38")
-# Residues below this floor are treated as hardware noise rather than theoretical drift.
+# The resolution limit for silicon-based computation of N ≈ 10^122.
 HOLOGRAPHIC_NOISE_FLOOR: float = 1e-15
 TREAT_N_AS_BOUNDARY_CONDITION = True
 
