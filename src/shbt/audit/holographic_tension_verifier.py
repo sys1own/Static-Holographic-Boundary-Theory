@@ -21,11 +21,13 @@ if __package__ in (None, ""):
             break
 
 from shbt.constants import (
-    ATMOSPHERIC_MASS_SPLITTING_NO_EV2,
     LEPTON_LEVEL,
     PARENT_LEVEL,
-    PLANCK2018_LAMBDA_SI_M2,
     QUARK_LEVEL,
+)
+from shbt.verification.comparators import (
+    ATMOSPHERIC_MASS_SPLITTING_NO_EV2,
+    PLANCK2018_LAMBDA_SI_M2,
     SOLAR_MASS_SPLITTING_EV2,
 )
 from shbt.core.noether_bridge import (
