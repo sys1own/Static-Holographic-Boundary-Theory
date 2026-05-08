@@ -15,6 +15,7 @@ __all__ = [
     "EvolutionaryEngine",
     "UniverseFactory",
     "bootstrap",
+    "derivation",
     "discover_kernel_from_bitlogic",
     "scan_boundary_configurations",
 ]
@@ -26,6 +27,8 @@ def __getattr__(name: str) -> Any:
         return getattr(module, name)
     if name == "bootstrap":
         return import_module("shbt.core.bootstrap")
+    if name == "derivation":
+        return import_module("shbt.core.derivation")
     raise AttributeError(f"module 'shbt.core' has no attribute {name!r}")
 
 
