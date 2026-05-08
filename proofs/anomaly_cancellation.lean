@@ -3,6 +3,17 @@
 
 namespace SHBT
 
+/-- 
+## DEFINITION: GKOOrthogonal
+Formally defines the Goddard-Kent-Olive orthogonality gate.
+-/
+def GKOOrthogonal (c_boundary c_bulk : Float) : Bool :=
+  (c_boundary - c_bulk) == 22.0
+
+-- ... rest of your theorem logic ...
+end SHBT
+namespace SHBT
+
 import Mathlib.Data.Real.Basic
 -- ... rest of previous content ...
 
