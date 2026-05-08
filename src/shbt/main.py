@@ -101,6 +101,8 @@ class _SolverStiffnessTimeout(TimeoutError):
 
 SHBT_UNIVERSAL_AUDIT_BANNER = "Static Holographic Boundary Theory: Universal Source Code v1.0"
 TARGET_AUDIT_SECTORS: tuple[str, ...] = ("gravity", "cosmology", "flavor", "rigidity", "complexity")
+UNIVERSAL_AUDIT_SECTOR: Final[str] = "universal"
+CLI_AUDIT_SECTORS: Final[tuple[str, ...]] = TARGET_AUDIT_SECTORS + (UNIVERSAL_AUDIT_SECTOR,)
 SECTOR_AUDIT_MODULES: dict[str, tuple[str, ...]] = {
     "gravity": (
         "shbt.core.noether_bridge",
@@ -18270,9 +18272,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, default=ProjectPaths.RESULTS)
     parser.add_argument(
         "--sector",
-        choices=TARGET_AUDIT_SECTORS,
+        choices=CLI_AUDIT_SECTORS,
         default=None,
-        help="Run only the requested SHBT sector audit module group.",
+        help="Run only the requested SHBT sector audit module group, or 'universal' for the full verifier.",
     )
     parser.add_argument(
         "--residue-check",
@@ -18565,6 +18567,10 @@ def _targeted_audit_success(
     return bool(report_paths)
 
 
+def _universal_sector_passed(*, guardian: RigidityGuardian, flavor_residue_lock_pass: bool) -> bool:
+    return bool(guardian.metric_locked and flavor_residue_lock_pass)
+
+
 def _initialize_zero_parameter_execution_mode() -> object:
     from shbt.core import bootstrap as bootstrap_module
 
@@ -18647,11 +18653,11 @@ def main(argv: list[str] | None = None) -> int:
         print(report_path.read_text(encoding="utf-8"), end="")
         return 0
 
-    if args.sector is not None:
+    if args.sector is not None and args.sector != UNIVERSAL_AUDIT_SECTOR:
         success = _targeted_audit_success(sector=args.sector, output_dir=output_dir, guardian=guardian)
         return 0 if success else 1
 
-    if argv is None and _invoked_via_package_script():
+    if args.sector is None and argv is None and _invoked_via_package_script():
         LOGGER.info("[SECTOR AUDIT]: No sector override supplied; running all SHBT sectors sequentially.")
         success = _targeted_audit_success(sector=None, output_dir=output_dir, guardian=guardian)
         return 0 if success else 1
@@ -20128,6 +20134,11 @@ def main(argv: list[str] | None = None) -> int:
             "The benchmark continues exporting the gravity diagnostics, but the failed curvature-sign constraint now counts against the primary benchmark audit."
         )
     LOGGER.info("")
+    if args.sector == UNIVERSAL_AUDIT_SECTOR:
+        return 0 if _universal_sector_passed(
+            guardian=guardian,
+            flavor_residue_lock_pass=flavor_residue_lock_pass,
+        ) else 1
     return 0
 
 
