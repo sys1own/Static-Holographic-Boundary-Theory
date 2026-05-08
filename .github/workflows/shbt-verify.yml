@@ -63,10 +63,10 @@ jobs:
           python scripts/build_manuscript.py --latex-backend auto --compile-only --output-dir results/
 
       - name: Upload Executable Manuscript PDF
-        # Fixed: Step name now matches the literal string required by the audit suite
         uses: actions/upload-artifact@v4
         with:
           name: universal-source-code-artifacts
           path: |
             results/
             manuscript.pdf
+            results/final/gravity.pdf
