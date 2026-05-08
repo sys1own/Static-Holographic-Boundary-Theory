@@ -55,7 +55,7 @@ def test_main_initializes_zero_parameter_mode_before_sector_audits(monkeypatch, 
     monkeypatch.setattr(bootstrap_module, "initialize_from_geometry", fake_initialize_from_geometry)
     monkeypatch.setattr(main_module, "run_targeted_sector_audits", fake_run_targeted_sector_audits)
 
-    main_module.main([
+    exit_code = main_module.main([
         "--zero-parameter",
         "--sector",
         "rigidity",
@@ -64,6 +64,7 @@ def test_main_initializes_zero_parameter_mode_before_sector_audits(monkeypatch, 
         "--quiet",
     ])
 
+    assert exit_code == 0
     assert events[0] == (
         "bootstrap",
         main_module.LEPTON_LEVEL,
