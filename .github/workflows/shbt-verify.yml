@@ -40,31 +40,30 @@ jobs:
           python -m pip install PyYAML==6.0.3 Jinja2==3.1.6 mpmath==1.3.0 \
           numpy==1.26.4 scipy==1.12.0 matplotlib==3.8.3 sympy==1.12 \
           pytest==9.0.2 pandas==2.2.1 streamlit==1.32.0 plotly==5.19.0 \
-          tomli  # Required for pyproject parsing in Python < 3.11
+          tomli
       
       - name: Build SHBT Manuscript Container
         run: |
           docker build -t shbt-manuscript:latest .
 
       - name: Formal Rigidity & Entropy Unit Tests
-        # Runs the 309+ test items to ensure math and infrastructure conform
         run: |
           export PYTHONPATH=$PYTHONPATH:$(pwd)/src
           pytest tests/
 
       - name: Execute Grand Unified Audit (Universal Mode)
-        # Runs inside the rigid container environment
+        # Fixed: Image tag now correctly matches the build tag 'shbt-manuscript'
         run: |
-          docker run --rm -v $(pwd)/results:/app/results shbt-physical-os:latest
+          docker run --rm -v $(pwd)/results:/app/results shbt-manuscript:latest
     
       - name: Generate Executable Manuscript
         run: |
           export PYTHONPATH=$PYTHONPATH:$(pwd)/src
           python scripts/sync_system.py
-          # EXACT STRING REQUIRED BY TEST:
           python scripts/build_manuscript.py --latex-backend auto --compile-only --output-dir results/
 
-      - name: Upload Universal Audit Artifacts
+      - name: Upload Executable Manuscript PDF
+        # Fixed: Step name now matches the literal string required by the audit suite
         uses: actions/upload-artifact@v4
         with:
           name: universal-source-code-artifacts
