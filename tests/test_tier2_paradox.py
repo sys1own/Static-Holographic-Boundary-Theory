@@ -23,6 +23,13 @@ def test_constants_tier2_table_uses_comparator_namespace() -> None:
     assert "PLANCK2018_LAMBDA_SI_M2" not in tier2
 
 
+def test_universe_factory_tension_audit_accepts_compatibility_kwargs() -> None:
+    audit = UniverseFactory.derive_tension_audit(precision=64, legacy_mode=True)
+
+    assert audit.benchmark_branch == (26, 8, 312)
+    assert audit.degrees_of_freedom == 4
+
+
 def test_universe_factory_exposes_zero_parameter_tension_audit() -> None:
     audit = UniverseFactory.derive_tension_audit()
     labels = {component.label for component in audit.components}
