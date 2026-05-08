@@ -882,6 +882,7 @@ class UniverseFactory:
         cls,
         *,
         precision: int = DEFAULT_PRECISION,
+        **kwargs: object,
     ) -> dict[str, object]:
         from shbt.main import build_quantified_two_loop_residuals
 
@@ -1127,6 +1128,7 @@ class UniverseFactory:
         *,
         kind: Literal["universe", "derivation", "lambda", "cosmological_constant"] = "universe",
         precision: int = DEFAULT_PRECISION,
+        **kwargs: object,
     ) -> str:
         del kwargs
         resolved_precision = max(int(precision), DEFAULT_PRECISION)
