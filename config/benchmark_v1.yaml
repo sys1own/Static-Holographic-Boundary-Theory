@@ -359,7 +359,7 @@ experimental:
       classification: Empirical Matching Ansatz
   data_sources:
     nufit_normal_ordering:
-      value: ../data/nufit_5_3.json
+      value: physics_profiles/nufit_5_3.json
       classification: Empirical Matching Ansatz
   quark_1sigma:
     vus:
