@@ -273,3 +273,71 @@ def test_universal_aggregate_rejects_meaningful_sector_failure(
 
     with pytest.raises(main_module.BenchmarkExecutionError, match=r"Universal audit aggregate lock failed"):
         main_module.run_targeted_sector_audits(sector="complexity", output_dir=tmp_path)
+
+
+def test_main_returns_zero_for_successful_targeted_audit(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(main_module.ProjectPaths, "ensure_dirs", lambda: None)
+    monkeypatch.setattr(main_module, "_ensure_audit_resources", lambda: ())
+    monkeypatch.setattr(main_module, "configure_reporting", lambda **kwargs: None)
+    monkeypatch.setattr(main_module, "_emit_shbt_branding", lambda **kwargs: None)
+    monkeypatch.setattr(
+        main_module,
+        "parse_args",
+        lambda argv=None: SimpleNamespace(
+            manuscript_dir=tmp_path,
+            output_dir=tmp_path,
+            sector="complexity",
+            zero_parameter=False,
+            residue_check=False,
+            audit_generation_3=False,
+            master_transport_audit=False,
+            master_transport_shift=main_module._master_transport.DEFAULT_RIGIDITY_SHIFT_FRACTION,
+            quiet=True,
+            log_file=None,
+        ),
+    )
+    monkeypatch.setattr(
+        main_module,
+        "run_targeted_sector_audits",
+        lambda *, sector, output_dir: (output_dir / f"{sector}_report.txt",),
+    )
+
+    assert main_module.main([]) == 0
+
+
+
+def test_main_returns_one_for_failed_targeted_audit(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(main_module.ProjectPaths, "ensure_dirs", lambda: None)
+    monkeypatch.setattr(main_module, "_ensure_audit_resources", lambda: ())
+    monkeypatch.setattr(main_module, "configure_reporting", lambda **kwargs: None)
+    monkeypatch.setattr(main_module, "_emit_shbt_branding", lambda **kwargs: None)
+    monkeypatch.setattr(
+        main_module,
+        "parse_args",
+        lambda argv=None: SimpleNamespace(
+            manuscript_dir=tmp_path,
+            output_dir=tmp_path,
+            sector="complexity",
+            zero_parameter=False,
+            residue_check=False,
+            audit_generation_3=False,
+            master_transport_audit=False,
+            master_transport_shift=main_module._master_transport.DEFAULT_RIGIDITY_SHIFT_FRACTION,
+            quiet=True,
+            log_file=None,
+        ),
+    )
+
+    def fail_targeted_audit(*, sector: str | None, output_dir: Path) -> tuple[Path, ...]:
+        del sector, output_dir
+        raise main_module.BenchmarkExecutionError("synthetic aggregate failure")
+
+    monkeypatch.setattr(main_module, "run_targeted_sector_audits", fail_targeted_audit)
+
+    assert main_module.main([]) == 1
