@@ -7,6 +7,7 @@ import runpy
 import sys
 from fractions import Fraction
 from pathlib import Path
+from types import ModuleType, SimpleNamespace
 
 import pytest
 
@@ -86,6 +87,59 @@ def test_universe_factory_generates_lambda_ledger() -> None:
     assert ledger.startswith("Lambda Ledger")
     assert "Holographic Surface Tension" in ledger
     assert "Checked-In Benchmark Payloads" in ledger
+
+
+def test_universe_factory_generate_ledger_accepts_compatibility_kwargs(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[int] = []
+
+    def _fake_build_derivation_ledger(cls, *, precision: int = DEFAULT_PRECISION) -> str:
+        calls.append(precision)
+        return f"derivation:{precision}"
+
+    monkeypatch.setattr(derivation_api.UniverseFactory, "build_derivation_ledger", classmethod(_fake_build_derivation_ledger))
+
+    ledger = UniverseFactory.generate_ledger(kind="universe", precision=64, legacy_mode=True)
+
+    assert ledger == "derivation:64"
+    assert calls == [64]
+
+
+def test_universe_factory_generate_residual_payload_accepts_compatibility_kwargs(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_main = ModuleType("shbt.main")
+    fake_main.build_quantified_two_loop_residuals = lambda: {"transport_residuals": {"theta12": 0.125}}
+    monkeypatch.setitem(sys.modules, "shbt.main", fake_main)
+
+    fake_ledger = SimpleNamespace(
+        vacuum=SimpleNamespace(lepton_level=26, quark_level=8, parent_level=312),
+        alpha_surface=SimpleNamespace(
+            alpha_inverse_decimal=137.64705882352942,
+            codata_alpha_inverse=137.035999084,
+        ),
+        mass_bridge=SimpleNamespace(neutrino_floor_ev=0.0008, neutrino_floor_mev=0.8),
+        unity_of_scale=SimpleNamespace(
+            epsilon_lambda=1.2e-122,
+            decimal_tolerance=1.0e-50,
+            register_noise_floor=1.0e-80,
+        ),
+    )
+    fake_lambda_surface = SimpleNamespace(lambda_holo_si_m2=1.0e-52, anchor_lambda_si_m2=1.1e-52)
+
+    monkeypatch.setattr(
+        derivation_api.UniverseFactory,
+        "calculate_physical_ledger",
+        classmethod(lambda cls, *, precision=50: fake_ledger),
+    )
+    monkeypatch.setattr(
+        derivation_api.UniverseFactory,
+        "derive_lambda_surface",
+        classmethod(lambda cls, *, precision=50: fake_lambda_surface),
+    )
+
+    payload = UniverseFactory.generate_residual_payload(precision=64, legacy_mode=True)
+
+    assert payload["artifact"] == "Quantified Two-Loop Residuals"
+    assert payload["benchmark_tuple"] == [26, 8, 312]
+    assert payload["derivation_residues"]["precision"] == 64
 
 
 def test_universe_factory_rejects_unknown_ledger_kind() -> None:
