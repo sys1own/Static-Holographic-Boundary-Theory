@@ -133,7 +133,6 @@ _METRIC_LOCK_FIELDS: Final[tuple[str, ...]] = (
     "lambda_aligned",
     "parity_bit_density_constraint_satisfied",
 )
-HOLOGRAPHIC_NOISE_FLOOR: Final[float] = 1.0e-15
 _BENCHMARK_HIGGS_MATCHING_THRESHOLD_GEV: Final[float] = 7_992_597_724_221.887
 _BENCHMARK_DIRAC_HIGGS_MASS_GEV: Final[float] = 1.0e15
 _BENCHMARK_HIGGS_POLE_MASS_GEV: Final[float] = 125.0
