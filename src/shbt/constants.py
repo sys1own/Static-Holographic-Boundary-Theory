@@ -9,6 +9,19 @@ from typing import Any
 
 from shbt.config_loader import DEFAULT_CONFIG_LOADER
 from shbt.core.bootstrap import apply_runtime_constants_patch, build_zero_anchor_bootstrap, discover_stable_kernel_from_vacuum
+from shbt.verification.comparators import (
+    CODATA_FINE_STRUCTURE_ALPHA_INVERSE as EMPIRICAL_CODATA_FINE_STRUCTURE_ALPHA_INVERSE,
+    CODATA_PROTON_TO_ELECTRON_MASS_RATIO as EMPIRICAL_CODATA_PROTON_TO_ELECTRON_MASS_RATIO,
+    PLANCK2018_ALPHA_EM_INV_MZ as EMPIRICAL_PLANCK2018_ALPHA_EM_INV_MZ,
+    PLANCK2018_ALPHA_S_MZ as EMPIRICAL_PLANCK2018_ALPHA_S_MZ,
+    PLANCK2018_H0_KM_S_MPC as EMPIRICAL_PLANCK2018_H0_KM_S_MPC,
+    PLANCK2018_H0_SIGMA_KM_S_MPC as EMPIRICAL_PLANCK2018_H0_SIGMA_KM_S_MPC,
+    PLANCK2018_LAMBDA_FRACTIONAL_SIGMA as EMPIRICAL_PLANCK2018_LAMBDA_FRACTIONAL_SIGMA,
+    PLANCK2018_LAMBDA_SI_M2 as EMPIRICAL_PLANCK2018_LAMBDA_SI_M2,
+    PLANCK2018_OMEGA_LAMBDA as EMPIRICAL_PLANCK2018_OMEGA_LAMBDA,
+    PLANCK2018_OMEGA_LAMBDA_SIGMA as EMPIRICAL_PLANCK2018_OMEGA_LAMBDA_SIGMA,
+    PLANCK2018_SIN2_THETA_W_MZ as EMPIRICAL_PLANCK2018_SIN2_THETA_W_MZ,
+)
 
 
 @dataclass(frozen=True)
@@ -255,15 +268,28 @@ BENCHMARK_REFERENCE_COSET_CENTRAL_CHARGE_FRACTION = (
 )
 BENCHMARK_REFERENCE_COSET_CENTRAL_CHARGE = float(BENCHMARK_REFERENCE_COSET_CENTRAL_CHARGE_FRACTION)
 
+COMPARATOR_PLANCK2018_H0_KM_S_MPC = EMPIRICAL_PLANCK2018_H0_KM_S_MPC
+COMPARATOR_PLANCK2018_H0_SIGMA_KM_S_MPC = EMPIRICAL_PLANCK2018_H0_SIGMA_KM_S_MPC
+COMPARATOR_PLANCK2018_OMEGA_LAMBDA = EMPIRICAL_PLANCK2018_OMEGA_LAMBDA
+COMPARATOR_PLANCK2018_OMEGA_LAMBDA_SIGMA = EMPIRICAL_PLANCK2018_OMEGA_LAMBDA_SIGMA
+COMPARATOR_PLANCK2018_LAMBDA_SI_M2 = EMPIRICAL_PLANCK2018_LAMBDA_SI_M2
+COMPARATOR_PLANCK2018_LAMBDA_FRACTIONAL_SIGMA = EMPIRICAL_PLANCK2018_LAMBDA_FRACTIONAL_SIGMA
+COMPARATOR_PLANCK2018_ALPHA_EM_INV_MZ = EMPIRICAL_PLANCK2018_ALPHA_EM_INV_MZ
+COMPARATOR_PLANCK2018_SIN2_THETA_W_MZ = EMPIRICAL_PLANCK2018_SIN2_THETA_W_MZ
+COMPARATOR_PLANCK2018_ALPHA_S_MZ = EMPIRICAL_PLANCK2018_ALPHA_S_MZ
+COMPARATOR_CODATA_FINE_STRUCTURE_ALPHA_INVERSE = EMPIRICAL_CODATA_FINE_STRUCTURE_ALPHA_INVERSE
+COMPARATOR_CODATA_PROTON_TO_ELECTRON_MASS_RATIO = EMPIRICAL_CODATA_PROTON_TO_ELECTRON_MASS_RATIO
+
 # Strict benchmark hierarchy
 # --------------------------
 # Tier 1 constants are the branch-fixed discrete coordinates that identify the
 # anomaly-free benchmark cell.
-# Tier 2 constants are external observational boundary conditions used as input
-# anchors; they are not promoted as predictions.
-# Tier 3 constants are derived residues computed once Tier 1 is fixed and Tier
-# 2 is supplied. Numerical tolerances, reporting strings, and artifact
-# filenames remain auxiliary runtime infrastructure and are declared below.
+# Tier 2 constants are external observational comparators disclosed for
+# post-derivation chi^2 conformance audits only; they are not load-bearing
+# inputs to the branch-fixed proof engines.
+# Tier 3 constants are derived residues computed from the integer kernel alone.
+# Numerical tolerances, reporting strings, and artifact filenames remain
+# auxiliary runtime infrastructure and are declared below.
 
 STRICT_BENCHMARK_TIER_DEFINITIONS = (
     BenchmarkConstantTier(
@@ -300,35 +326,35 @@ STRICT_BENCHMARK_TIER_DEFINITIONS = (
     BenchmarkConstantTier(
         identifier="Tier 2",
         title="Observational Boundary Conditions",
-        description="External observational boundary conditions supplied to the benchmark as fixed input anchors.",
+        description="External observational comparators used only for post-derivation chi^2 conformance audits.",
         constants=(
             BenchmarkConstantDefinition(
-                name="PLANCK2018_H0_KM_S_MPC",
-                value=PLANCK2018_H0_KM_S_MPC,
+                name="COMPARATOR_PLANCK2018_H0_KM_S_MPC",
+                value=COMPARATOR_PLANCK2018_H0_KM_S_MPC,
                 legacy_metadata_paths=("physical_constants.planck2018_h0_km_s_mpc",),
                 allowed_legacy_classifications=("Empirical Matching Ansatz", "Geometric Emergence"),
             ),
             BenchmarkConstantDefinition(
-                name="PLANCK2018_H0_SIGMA_KM_S_MPC",
-                value=PLANCK2018_H0_SIGMA_KM_S_MPC,
+                name="COMPARATOR_PLANCK2018_H0_SIGMA_KM_S_MPC",
+                value=COMPARATOR_PLANCK2018_H0_SIGMA_KM_S_MPC,
                 legacy_metadata_paths=("physical_constants.planck2018_h0_sigma_km_s_mpc",),
                 allowed_legacy_classifications=("Empirical Matching Ansatz",),
             ),
             BenchmarkConstantDefinition(
-                name="PLANCK2018_OMEGA_LAMBDA",
-                value=PLANCK2018_OMEGA_LAMBDA,
+                name="COMPARATOR_PLANCK2018_OMEGA_LAMBDA",
+                value=COMPARATOR_PLANCK2018_OMEGA_LAMBDA,
                 legacy_metadata_paths=("physical_constants.planck2018_omega_lambda",),
                 allowed_legacy_classifications=("Empirical Matching Ansatz",),
             ),
             BenchmarkConstantDefinition(
-                name="PLANCK2018_OMEGA_LAMBDA_SIGMA",
-                value=PLANCK2018_OMEGA_LAMBDA_SIGMA,
+                name="COMPARATOR_PLANCK2018_OMEGA_LAMBDA_SIGMA",
+                value=COMPARATOR_PLANCK2018_OMEGA_LAMBDA_SIGMA,
                 legacy_metadata_paths=("physical_constants.planck2018_omega_lambda_sigma",),
                 allowed_legacy_classifications=("Empirical Matching Ansatz",),
             ),
             BenchmarkConstantDefinition(
-                name="PLANCK2018_LAMBDA_SI_M2",
-                value=PLANCK2018_LAMBDA_SI_M2,
+                name="COMPARATOR_PLANCK2018_LAMBDA_SI_M2",
+                value=COMPARATOR_PLANCK2018_LAMBDA_SI_M2,
                 legacy_metadata_paths=(
                     "physical_constants.planck2018_h0_km_s_mpc",
                     "physical_constants.planck2018_omega_lambda",
@@ -338,8 +364,8 @@ STRICT_BENCHMARK_TIER_DEFINITIONS = (
                 allowed_legacy_classifications=("Empirical Matching Ansatz",),
             ),
             BenchmarkConstantDefinition(
-                name="PLANCK2018_LAMBDA_FRACTIONAL_SIGMA",
-                value=PLANCK2018_LAMBDA_FRACTIONAL_SIGMA,
+                name="COMPARATOR_PLANCK2018_LAMBDA_FRACTIONAL_SIGMA",
+                value=COMPARATOR_PLANCK2018_LAMBDA_FRACTIONAL_SIGMA,
                 legacy_metadata_paths=(
                     "physical_constants.planck2018_h0_km_s_mpc",
                     "physical_constants.planck2018_h0_sigma_km_s_mpc",
@@ -349,21 +375,27 @@ STRICT_BENCHMARK_TIER_DEFINITIONS = (
                 allowed_legacy_classifications=("Empirical Matching Ansatz",),
             ),
             BenchmarkConstantDefinition(
-                name="PLANCK2018_ALPHA_EM_INV_MZ",
-                value=PLANCK2018_ALPHA_EM_INV_MZ,
+                name="COMPARATOR_PLANCK2018_ALPHA_EM_INV_MZ",
+                value=COMPARATOR_PLANCK2018_ALPHA_EM_INV_MZ,
                 legacy_metadata_paths=("physical_constants.planck2018_alpha_em_inv_mz",),
                 allowed_legacy_classifications=("Empirical Matching Ansatz",),
             ),
             BenchmarkConstantDefinition(
-                name="PLANCK2018_SIN2_THETA_W_MZ",
-                value=PLANCK2018_SIN2_THETA_W_MZ,
+                name="COMPARATOR_PLANCK2018_SIN2_THETA_W_MZ",
+                value=COMPARATOR_PLANCK2018_SIN2_THETA_W_MZ,
                 legacy_metadata_paths=("physical_constants.planck2018_sin2_theta_w_mz",),
                 allowed_legacy_classifications=("Empirical Matching Ansatz",),
             ),
             BenchmarkConstantDefinition(
-                name="PLANCK2018_ALPHA_S_MZ",
-                value=PLANCK2018_ALPHA_S_MZ,
+                name="COMPARATOR_PLANCK2018_ALPHA_S_MZ",
+                value=COMPARATOR_PLANCK2018_ALPHA_S_MZ,
                 legacy_metadata_paths=("physical_constants.planck2018_alpha_s_mz",),
+                allowed_legacy_classifications=("Empirical Matching Ansatz",),
+            ),
+            BenchmarkConstantDefinition(
+                name="COMPARATOR_CODATA_FINE_STRUCTURE_ALPHA_INVERSE",
+                value=COMPARATOR_CODATA_FINE_STRUCTURE_ALPHA_INVERSE,
+                legacy_metadata_paths=("physical_constants.codata_fine_structure_alpha_inverse",),
                 allowed_legacy_classifications=("Empirical Matching Ansatz",),
             ),
         ),
