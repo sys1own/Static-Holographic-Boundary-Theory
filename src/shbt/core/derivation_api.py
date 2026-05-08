@@ -885,6 +885,7 @@ class UniverseFactory:
     ) -> dict[str, object]:
         from shbt.main import build_quantified_two_loop_residuals
 
+        del kwargs
         resolved_precision = max(int(precision), DEFAULT_PRECISION)
         physical_ledger = cls.calculate_physical_ledger(precision=resolved_precision)
         lambda_surface = cls.derive_lambda_surface(precision=resolved_precision)
@@ -1127,6 +1128,7 @@ class UniverseFactory:
         kind: Literal["universe", "derivation", "lambda", "cosmological_constant"] = "universe",
         precision: int = DEFAULT_PRECISION,
     ) -> str:
+        del kwargs
         resolved_precision = max(int(precision), DEFAULT_PRECISION)
         if kind in {"universe", "derivation"}:
             return cls.build_derivation_ledger(precision=resolved_precision)
@@ -1135,7 +1137,7 @@ class UniverseFactory:
         raise ValueError(f"Unknown ledger kind: {kind}")
 
     @classmethod
-    def derive_tension_audit(cls, *, precision: int = DEFAULT_PRECISION):
+    def derive_tension_audit(cls, *, precision: int = DEFAULT_PRECISION, **kwargs: object):
         """Compare branch-fixed Tier 3 residues against Tier 2 comparators."""
         from shbt.core.derivation import TensionAudit, build_tension_audit, build_tension_component
         from shbt.verification.comparators import (
@@ -1145,6 +1147,7 @@ class UniverseFactory:
             PLANCK2018_LAMBDA_COMPARATOR,
         )
 
+        del kwargs
         resolved_precision = max(int(precision), DEFAULT_PRECISION)
         physical_ledger = cls.calculate_physical_ledger(precision=resolved_precision)
         lambda_surface = cls.derive_lambda_surface(precision=resolved_precision)
