@@ -1,4 +1,4 @@
-# Static Holographic Boundary Theory: 
+# Static Holographic Boundary Theory
 ## Universal Source Code v1.2
 
 Static Holographic Boundary Theory (SHBT) is an executable proof architecture for a **Zero Free Parameter** boundary construction. In SHBT, Standard Model observables are treated as mandatory residues of effective 4D gravity on a finite-capacity horizon, not as outputs of a detached fit sector. The retained construction is anchored to the unique anomaly-free branch $(26, 8, 312)$, and every benchmark artifact in this repository is read as a consequence of that branch-fixed closure.
@@ -127,9 +127,9 @@ The same policy applies across the stack:
 
 The repository includes a production-grade diagnostic stack to ensure the mathematical rigidity of the $(26, 8, 312)$ branch is never compromised by environment drift or manual intervention. These scripts extend the verifier with cryptographic locking, visual moat diagnostics, and formal exception testing.
 
-### Cryptographic Verification (`verify_benchmark_integrity.py`)
+### Cryptographic Verification (`verify_config_integrity.py`)
 
-`verify_benchmark_integrity.py` automatically audits the SHA-256 hash of `benchmark_v1.yaml` against the mandated theoretical benchmark. This check prevents "silent drift" in the 8-observable flavor residues by refusing to treat a modified configuration as the published branch.
+`verify_config_integrity.py` audits the SHA-256 hashes of `config/benchmark_v1.yaml` together with every locked asset under `config/physics_profiles/`, using the checked-in manifest `config/physics_profile_hashes.json`. This check prevents "silent drift" in both the disclosed runtime benchmark and the migrated observational anchors.
 
 ### Topological Visualization (`plot_local_moat.py`)
 
@@ -156,6 +156,16 @@ python scripts/build_manuscript.py
 ```
 
 This orchestrator checks for a local `pdflatex` installation, runs all five Sector Proofs, executes the full Universal Audit, refreshes the manuscript-facing macro export, and compiles `papers/gravity.tex`, yielding `papers/gravity.pdf` when LaTeX is available.
+
+For a lockfile-driven workflow, use:
+
+```bash
+just audit
+just verify-integrity
+just manuscript
+```
+
+`just manuscript` routes the final LaTeX compile through a container runtime (`docker`/`podman`) so the PDF build does not depend on a host TeX installation.
 
 The package entrypoint in `src/shbt/main.py` regenerates the benchmark-facing artifacts, numerical audits, manuscript exports, and reviewer packets from the disclosed branch data. The intended use is verification of a rigid branch-fixed theorem stack, not parameter search.
 
@@ -190,11 +200,14 @@ The benchmark now uses a split configuration model: `config/physics_profiles/sta
 
 - **Tier 1 + geometry-origin source of truth:** `config/physics_profiles/standard_model.yaml`
 - **Auxiliary runtime config:** `config/benchmark_v1.yaml`
+- **Migrated observational assets:** `config/physics_profiles/nufit_5_3.json`, `config/physics_profiles/cmb_power_spectrum_benchmarks.json`, `config/physics_profiles/external_triggers/README.md`
+- **Hash manifest:** `config/physics_profile_hashes.json`
 - **SHA-256 (`config/physics_profiles/standard_model.yaml`):** `973323dbf59f38b7068577cc4e33132676eec4f8140323cc83d19d51676286e8`
-- **SHA-256 (`config/benchmark_v1.yaml`):** `d0cc04539fcdcbab7ca436ae12a36d3e3f06edd1e17c17a19dc7f55d9dd8c122`
+- **SHA-256 (`config/benchmark_v1.yaml`):** `b16ab63f9ec4cb29be2fd85e80fb8e810b06b4a1d3aa7fe8149ddbb21e651969`
+- **Transitive lockfile:** `requirements.lock`
 - **Build backend:** `setuptools.build_meta`
 - **Python requirement:** `>=3.11`
-- **Pinned scientific stack:** `PyYAML==6.0.3`, `Jinja2==3.1.6`, `mpmath==1.3.0`, `numpy==1.26.4`, `scipy==1.12.0`, `matplotlib==3.8.3`, `sympy==1.12`
+- **Pinned scientific stack:** `PyYAML==6.0.3`, `Jinja2==3.1.6`, `mpmath==1.3.0`, `numpy==2.4.1`, `scipy==1.17.0`, `matplotlib==3.10.8`, `pandas==2.3.3`, `plotly==6.5.2`, `sympy==1.14.0` with `streamlit==1.32.0` retained as the optional dashboard extra.
 - **Link Ledger:** `src/shbt/core/evolutionary_engine.py` is the canonical reusable derivation API, while `python scripts/derive_universe.py` remains the compatibility CLI that prints the branch-fixed gauge-density residue `alpha_surf^-1 = 2340/17`; together with the `Derivation Ledger` above, this makes explicit that the benchmark's physical constants are derived residues disclosed against external comparators, not fit parameters reopened by hand.
 - **Paper Sync:** `python scripts/sync_system.py` refreshes the machine-managed derivation table and residual ledger in `README.md`, plus the synchronized audit macros in `papers/physics_constants.tex`, from `results/residuals.json` and `config/physics_profiles/standard_model.yaml`.
 
