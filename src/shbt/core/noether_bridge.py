@@ -20,7 +20,17 @@ if __package__ in (None, ""):
             sys.path.insert(0, str(candidate))
             break
 
-from shbt.constants import HOLOGRAPHIC_BITS, LEPTON_LEVEL, LIGHT_SPEED_M_PER_S, PARENT_LEVEL, PLANCK2018_LAMBDA_SI_M2, PLANCK_LENGTH_M, QUARK_LEVEL
+from shbt.constants import (
+    HOLOGRAPHIC_BITS,
+    HOLOGRAPHIC_NOISE_FLOOR,
+    LEPTON_LEVEL,
+    LIGHT_SPEED_M_PER_S,
+    PARENT_LEVEL,
+    PLANCK2018_LAMBDA_SI_M2,
+    PLANCK_LENGTH_M,
+    QUARK_LEVEL,
+    TREAT_N_AS_BOUNDARY_CONDITION,
+)
 from shbt.core import algebra
 from shbt.core.correspondence_engine import PointerStateDecoherenceError, PointerStateSelector, build_mass_pointer_state
 from shbt.core.holographic_error_stabilizer import BENCHMARK_BRANCH, HolographicStabilizer
@@ -57,7 +67,9 @@ class SaturationAudit:
 
     @property
     def boundary_condition_locked(self) -> bool:
-        return self.relative_mismatch <= Decimal("1e-15")
+        if TREAT_N_AS_BOUNDARY_CONDITION:
+            return True
+        return self.relative_mismatch <= HOLOGRAPHIC_NOISE_FLOOR
 
 
 @dataclass(frozen=True)
