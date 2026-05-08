@@ -28,6 +28,14 @@ def test_resolve_latex_installation_requires_local_backend(monkeypatch: pytest.M
         module.resolve_latex_installation()
 
 
+def test_resolve_container_runtime_requires_container_backend(monkeypatch: pytest.MonkeyPatch) -> None:
+    module = _load_script_module()
+    monkeypatch.setattr(module.shutil, "which", lambda _command: None)
+
+    with pytest.raises(RuntimeError, match=r"No container runtime detected"):
+        module.resolve_container_runtime()
+
+
 def test_discover_compile_targets_orders_standalone_documents(tmp_path: Path) -> None:
     module = _load_script_module()
     manuscript_dir = tmp_path / "papers"
@@ -372,4 +380,133 @@ def test_compile_gravity_manuscript_invokes_pdflatex_subprocess(
             manuscript_dir,
             True,
         )
+    ]
+
+
+def test_compile_gravity_manuscript_in_container_invokes_container_subprocess(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_script_module()
+    manuscript_dir = tmp_path / "papers"
+    manuscript_dir.mkdir()
+    gravity_tex = manuscript_dir / "gravity.tex"
+    gravity_tex.write_text(
+        r"\documentclass{article}\begin{document}gravity\end{document}",
+        encoding="utf-8",
+    )
+
+    recorded_subprocess_calls: list[tuple[tuple[str, ...], bool]] = []
+
+    def fake_run(command, *, check):
+        recorded_subprocess_calls.append((tuple(command), check))
+        (manuscript_dir / "gravity.pdf").write_text("pdf", encoding="utf-8")
+        return None
+
+    monkeypatch.setattr(module.subprocess, "run", fake_run)
+    monkeypatch.setattr(module.os, "getuid", lambda: 1000)
+    monkeypatch.setattr(module.os, "getgid", lambda: 1000)
+
+    compiled_pdf = module.compile_gravity_manuscript_in_container(
+        module.LatexContainerRuntime(engine="docker", command="docker", image="texlive/texlive:latest"),
+        gravity_tex,
+        workdir=manuscript_dir,
+    )
+
+    assert compiled_pdf == manuscript_dir / "gravity.pdf"
+    assert recorded_subprocess_calls == [
+        (
+            (
+                "docker",
+                "run",
+                "--rm",
+                "-u",
+                "1000:1000",
+                "-v",
+                f"{tmp_path}:/workspace",
+                "-w",
+                "/workspace/papers",
+                "texlive/texlive:latest",
+                "pdflatex",
+                "-interaction=nonstopmode",
+                "-halt-on-error",
+                "-file-line-error",
+                "gravity.tex",
+            ),
+            True,
+        )
+    ]
+
+
+def test_build_manuscript_runs_containerized_executable_paper_flow(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_script_module()
+    manuscript_dir = tmp_path / "papers"
+    manuscript_dir.mkdir()
+    output_dir = tmp_path / "proof-results"
+    (manuscript_dir / "gravity.tex").write_text(
+        r"\documentclass{article}\begin{document}gravity\end{document}",
+        encoding="utf-8",
+    )
+
+    recorded_events: list[tuple[object, ...]] = []
+
+    monkeypatch.setattr(
+        module,
+        "run_entire_proof",
+        lambda *, output_dir, manuscript_dir, validate_text: recorded_events.append(
+            ("proof", output_dir, manuscript_dir, validate_text)
+        ),
+    )
+    monkeypatch.setattr(
+        module,
+        "generate_topological_constants",
+        lambda *, precision=module.DERIVATION_DEFAULT_PRECISION: (
+            recorded_events.append(("constants", precision))
+            or module.TopologicalConstants("ledger", 137.0, 0.1, 2.8, 1.0e-199, 1.0e-52)
+        ),
+    )
+    monkeypatch.setattr(
+        module,
+        "synchronize_manuscript_sources",
+        lambda *, output_dir, manuscript_dir: recorded_events.append(("sync", output_dir, manuscript_dir))
+        or (tmp_path / "README.md", manuscript_dir / "physics_constants.tex"),
+    )
+    monkeypatch.setattr(
+        module,
+        "resolve_container_runtime",
+        lambda engine="auto", *, image=module.DEFAULT_LATEX_CONTAINER_IMAGE: (
+            recorded_events.append(("resolve-container", engine, image))
+            or module.LatexContainerRuntime(engine="docker", command="docker", image=image)
+        ),
+    )
+    monkeypatch.setattr(
+        module,
+        "compile_gravity_manuscript_in_container",
+        lambda runtime, document_path, *, workdir: recorded_events.append(
+            ("compile-container", runtime.engine, runtime.image, document_path.name, workdir)
+        )
+        or (workdir / "gravity.pdf"),
+    )
+
+    result = module.build_manuscript(
+        manuscript_dir=manuscript_dir,
+        output_dir=output_dir,
+        latex_backend="container",
+        container_engine="auto",
+        container_image="texlive/texlive:latest",
+        validate_text=False,
+    )
+
+    assert result.latex_backend == "container"
+    assert result.final_pdf == manuscript_dir / "gravity.pdf"
+    assert tuple(path.name for path in result.compiled_pdfs) == ("gravity.pdf",)
+    assert recorded_events == [
+        ("proof", output_dir, manuscript_dir, False),
+        ("constants", module.DERIVATION_DEFAULT_PRECISION),
+        ("sync", output_dir, manuscript_dir),
+        ("resolve-container", "auto", "texlive/texlive:latest"),
+        ("compile-container", "docker", "texlive/texlive:latest", "gravity.tex", manuscript_dir),
     ]
