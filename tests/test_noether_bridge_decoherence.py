@@ -147,6 +147,7 @@ def test_render_report_marks_benchmark_lock_verified() -> None:
     assert "Benchmark lock                  : VERIFIED" in rendered
     assert "Detuned stress                  : EXPECTED RESIDUE" in rendered
     assert "Equivalence Principle           : VERIFIED" in rendered
+    assert "Saturation status              : PASS (within noise floor)" in rendered
 
 
 def test_saturation_audit_treats_reconstructed_n_as_boundary_condition(
@@ -163,6 +164,7 @@ def test_saturation_audit_treats_reconstructed_n_as_boundary_condition(
 
     assert noether_bridge.TREAT_N_AS_BOUNDARY_CONDITION is True
     assert permissive.boundary_condition_locked
+    assert permissive.is_saturated is False
 
     monkeypatch.setattr(noether_bridge, "TREAT_N_AS_BOUNDARY_CONDITION", False)
 
@@ -176,3 +178,16 @@ def test_saturation_audit_treats_reconstructed_n_as_boundary_condition(
     )
 
     assert strict.boundary_condition_locked is False
+
+
+def test_saturation_audit_marks_negligible_mismatch_as_saturated() -> None:
+    saturated = noether_bridge.SaturationAudit(
+        lambda_obs_si_m2=noether_bridge.Decimal("1.0e-52"),
+        lambda_obs_ev2=noether_bridge.Decimal("1.0e-66"),
+        holographic_bits_from_lambda=noether_bridge.Decimal("3.31e122"),
+        configured_holographic_bits=noether_bridge.Decimal("3.31e122"),
+        register_noise_floor=noether_bridge.Decimal("3.0e-123"),
+        relative_mismatch=noether_bridge.Decimal("1.0e-16"),
+    )
+
+    assert saturated.is_saturated
