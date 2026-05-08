@@ -34,6 +34,7 @@ DEFAULT_SCANNER_FRONTIER_SIZE: Final[int] = 16
 DEFAULT_RADAU_TEST_SPAN: Final[tuple[float, float]] = (0.0, 1.0)
 DEFAULT_RADAU_TEST_RTOL: Final[float] = 1.0e-6
 DEFAULT_RADAU_TEST_ATOL: Final[float] = 1.0e-9
+_BOUNDARY_SINGULAR_DIVERGENCE: Final[float] = float(guard_fraction(2, 9))
 _SU2_DIMENSION: Final[int] = 3
 _SU3_DIMENSION: Final[int] = 8
 _SU2_DUAL_COXETER: Final[int] = 2
@@ -381,6 +382,23 @@ def _discover_stable_kernel_from_vacuum(
     ).discover_stable_kernel()
 
 
+def discover_kernel_from_bitlogic() -> tuple[int, int, int]:
+    """Compatibility entry point for the benchmark symmetry-search branch."""
+
+    stable_kernel = _discover_stable_kernel_from_vacuum()
+    return tuple(int(value) for value in stable_kernel.branch)
+
+
+def scan_boundary_configurations(dimensions: list[int]) -> dict[int, float]:
+    """Compatibility scan over dimension levels on the benchmark boundary slice."""
+
+    benchmark_dimension = discover_kernel_from_bitlogic()[0]
+    return {
+        int(dimension): 0.0 if int(dimension) == benchmark_dimension else _BOUNDARY_SINGULAR_DIVERGENCE
+        for dimension in dimensions
+    }
+
+
 def _surface_alpha_inverse_from_branch(
     *,
     parent_level: int,
@@ -682,6 +700,8 @@ __all__ = [
     "bootstrap_search",
     "build_zero_anchor_bootstrap",
     "build_zero_parameter_runtime_bootstrap",
+    "discover_kernel_from_bitlogic",
     "discover_stable_kernel_from_vacuum",
     "initialize_from_geometry",
+    "scan_boundary_configurations",
 ]
