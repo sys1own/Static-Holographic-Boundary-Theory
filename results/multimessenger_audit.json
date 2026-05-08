@@ -138,10 +138,10 @@
     "dataset_label": "BK18+WMAP+Planck public tensor ceiling with archived CMB-S4 design sensitivity",
     "normalized_current_ceiling": 0.18973665961010275,
     "normalized_design_floor": 0.03162277660168379,
-    "normalized_strain_floor": 0.15499114396083483,
-    "observable_tensor_ratio": 0.024022254706288226,
-    "primordial_tensor_ratio": 0.08983158986896989,
-    "tensor_tilt": -0.011228948733621236
+    "normalized_strain_floor": 0.1549911439608333,
+    "observable_tensor_ratio": 0.02402225470628775,
+    "primordial_tensor_ratio": 0.08983158986896811,
+    "tensor_tilt": -0.011228948733621014
   },
   "ligo_virgo_strain": {
     "available": false,
