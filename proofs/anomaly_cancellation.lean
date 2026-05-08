@@ -6,18 +6,9 @@ import Mathlib.Algebra.Group.Basic
 
 namespace SHBT
 
-/-- 
-## DEFINITION: GKOOrthogonal
-Formally defines the Goddard-Kent-Olive orthogonality gate.
--/
 def GKOOrthogonal (c_boundary c_bulk : Float) : Bool :=
   (c_boundary - c_bulk) == 22.0
 
-/-- 
-## THEOREM: gkoOrthogonality26D
-REQUIRED BY AUDIT: Proves the GKO coset construction resolves the conformal 
-anomaly exactly when the central charge c matches the boundary dimension.
--/
 theorem gkoOrthogonality26D 
   (c_boundary : ℝ) 
   (c_bulk : ℝ) 
@@ -30,17 +21,9 @@ theorem gkoOrthogonality26D
   · rw [h_dim, h_target] 
     norm_num 
 
-/-- 
-## AXIOM: anomalyCancellation_of_GKOOrthogonality
-Ensures that GKO-Orthogonality implies total anomaly cancellation.
--/
 axiom anomalyCancellation_of_GKOOrthogonality : 
   ∀ (c_b c_bulk : Float), GKOOrthogonal c_b c_bulk → True
 
-/-- 
-## AXIOM: Metric_Rigidity
-Vanishing of the Bulk Closure Tensor E_μnu at the (26, 8, 312) fixed point.
--/
 axiom metric_rigidity_verified : 
   ∀ (residue : ℝ), residue < 1e-124 → residue = 0
 
