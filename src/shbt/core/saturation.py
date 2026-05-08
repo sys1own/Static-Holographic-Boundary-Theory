@@ -29,7 +29,8 @@ class SaturationAudit:
 
     @property
     def success(self) -> bool:
-        return abs(self.relative_mismatch) < _compat_noise_floor()
+        is_saturated = abs(self.relative_mismatch) < _compat_noise_floor()
+        return is_saturated
 
     @property
     def passed(self) -> bool:
