@@ -18494,6 +18494,15 @@ def run_targeted_sector_audits(*, sector: str | None, output_dir: Path) -> tuple
     return tuple(report_paths)
 
 
+def _targeted_audit_success(*, sector: str | None, output_dir: Path) -> bool:
+    try:
+        report_paths = run_targeted_sector_audits(sector=sector, output_dir=output_dir)
+    except BenchmarkExecutionError as exc:
+        LOGGER.error("[UNIVERSAL]: %s", exc)
+        return False
+    return bool(report_paths)
+
+
 def _initialize_zero_parameter_execution_mode() -> object:
     from shbt.core import bootstrap as bootstrap_module
 
@@ -18530,7 +18539,7 @@ def _initialize_zero_parameter_execution_mode() -> object:
     return geometry_bootstrap
 
 
-def main(argv: list[str] | None = None) -> None:
+def main(argv: list[str] | None = None) -> int:
     """Run the full publication-facing verifier report."""
 
     ProjectPaths.ensure_dirs()
@@ -18549,7 +18558,7 @@ def main(argv: list[str] | None = None) -> None:
 
     if args.residue_check:
         run_residue_check(output_dir=output_dir)
-        return
+        return 0
 
     if args.audit_generation_3:
         guardian.ensure_metric_tensor_locked()
@@ -18563,7 +18572,7 @@ def main(argv: list[str] | None = None) -> None:
             sector_name="rigidity",
             label="generation-3 final lock",
         )
-        return
+        return 0
 
     if args.master_transport_audit:
         report_path = guardian.calculate(
@@ -18574,16 +18583,16 @@ def main(argv: list[str] | None = None) -> None:
             label="master transport audit",
         )
         print(report_path.read_text(encoding="utf-8"), end="")
-        return
+        return 0
 
     if args.sector is not None:
-        run_targeted_sector_audits(sector=args.sector, output_dir=output_dir)
-        return
+        success = _targeted_audit_success(sector=args.sector, output_dir=output_dir)
+        return 0 if success else 1
 
     if argv is None and _invoked_via_package_script():
         LOGGER.info("[SECTOR AUDIT]: No sector override supplied; running all SHBT sectors sequentially.")
-        run_targeted_sector_audits(sector=None, output_dir=output_dir)
-        return
+        success = _targeted_audit_success(sector=None, output_dir=output_dir)
+        return 0 if success else 1
 
     guardian.calculate(
         _write_master_transport_report,
@@ -20057,7 +20066,8 @@ def main(argv: list[str] | None = None) -> None:
             "The benchmark continues exporting the gravity diagnostics, but the failed curvature-sign constraint now counts against the primary benchmark audit."
         )
     LOGGER.info("")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
