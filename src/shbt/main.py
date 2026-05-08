@@ -18500,11 +18500,16 @@ def _write_master_transport_report(*, output_dir: Path, flavor_shift_fraction: f
     return report_path
 
 
-def run_targeted_sector_audits(*, sector: str | None, output_dir: Path) -> tuple[Path, ...]:
+def run_targeted_sector_audits(
+    *,
+    sector: str | None,
+    output_dir: Path,
+    guardian: RigidityGuardian | None = None,
+) -> tuple[Path, ...]:
     _ensure_audit_resources()
     os.makedirs(output_dir, exist_ok=True)
     resolved_sectors = TARGET_AUDIT_SECTORS if sector is None else (sector,)
-    guardian = RigidityGuardian()
+    guardian = RigidityGuardian() if guardian is None else guardian
     report_paths: list[Path] = []
     overall_success = True
     for sector_name in resolved_sectors:
@@ -18538,9 +18543,22 @@ def run_targeted_sector_audits(*, sector: str | None, output_dir: Path) -> tuple
     return tuple(report_paths)
 
 
-def _targeted_audit_success(*, sector: str | None, output_dir: Path) -> bool:
+def _targeted_audit_success(
+    *,
+    sector: str | None,
+    output_dir: Path,
+    guardian: RigidityGuardian | None = None,
+) -> bool:
     try:
-        report_paths = run_targeted_sector_audits(sector=sector, output_dir=output_dir)
+        if guardian is None:
+            report_paths = run_targeted_sector_audits(sector=sector, output_dir=output_dir)
+        else:
+            try:
+                report_paths = run_targeted_sector_audits(sector=sector, output_dir=output_dir, guardian=guardian)
+            except TypeError as exc:
+                if "guardian" not in str(exc):
+                    raise
+                report_paths = run_targeted_sector_audits(sector=sector, output_dir=output_dir)
     except BenchmarkExecutionError as exc:
         LOGGER.error("[UNIVERSAL]: %s", exc)
         return False
@@ -18630,12 +18648,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.sector is not None:
-        success = _targeted_audit_success(sector=args.sector, output_dir=output_dir)
+        success = _targeted_audit_success(sector=args.sector, output_dir=output_dir, guardian=guardian)
         return 0 if success else 1
 
     if argv is None and _invoked_via_package_script():
         LOGGER.info("[SECTOR AUDIT]: No sector override supplied; running all SHBT sectors sequentially.")
-        success = _targeted_audit_success(sector=None, output_dir=output_dir)
+        success = _targeted_audit_success(sector=None, output_dir=output_dir, guardian=guardian)
         return 0 if success else 1
 
     guardian.calculate(
