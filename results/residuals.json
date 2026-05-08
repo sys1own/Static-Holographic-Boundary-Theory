@@ -1,0 +1,147 @@
+{
+  "artifact": "Quantified Two-Loop Residuals",
+  "artifact_filename": "residuals.json",
+  "benchmark_tuple": [
+    26,
+    8,
+    312
+  ],
+  "derivation_residues": {
+    "alpha_inverse_decimal": 137.64705882352942,
+    "benchmark_tuple": [
+      26,
+      8,
+      312
+    ],
+    "codata_alpha_inverse": 137.0360005617913,
+    "decimal_tolerance": 1e-38,
+    "epsilon_lambda": 5.09446962869e-50,
+    "lambda_holo_si_m2": 1.089222982805404e-52,
+    "lambda_obs_si_m2": 1.0892229828054038e-52,
+    "m_nu_ev": 0.0028296163414281753,
+    "m_nu_mev": 2.8296163414281756,
+    "precision": 50,
+    "register_noise_floor": 3.0193257498891486e-123
+  },
+  "gauge_residual_bookkeeping": {
+    "bulk_decoupled": false,
+    "codata_alpha_inverse": 137.0360005617913,
+    "framing_closed": true,
+    "gauge_emergent": true,
+    "geometric_residue_fraction": 0.004439312157926326,
+    "geometric_residue_percent": 0.44393121579263256,
+    "known_transport_gap_note": "Two-Loop Residual: current one-loop transport leaves alpha_surf^-1=137.647058823529 offset from CODATA alpha^-1=137.036000561791 by 0.611058261738.",
+    "modular_gap_alignment_fraction": 0.3035312077244137,
+    "modular_gap_alignment_percent": 30.353120772441372,
+    "modular_gap_scaled_inverse": 95.8668808191101,
+    "physically_inadmissible": false,
+    "topological_alpha_inverse": 137.6470588235294,
+    "topological_mismatch_inverse": 0.6110582617380942,
+    "topological_mismatch_status": "Two-Loop Residual",
+    "topological_stability_pass": true,
+    "two_loop_residual_fraction": 0.004439312157926326,
+    "two_loop_residual_inverse": 0.6110582617380942,
+    "two_loop_residual_percent": 0.44393121579263256,
+    "two_loop_residual_pull": 0.08878624315852651
+  },
+  "informational_costs": {
+    "delta_s_red_nat": 0.6931471805599453,
+    "modularity_limit_rank": 3,
+    "relaxed_proxy_gap": 3.0784497387649554,
+    "required_inverted_rank": 4,
+    "support_deficit": 1
+  },
+  "interpretation": "disclosed_audit_quantity",
+  "mass_scale_two_loop_fraction": 0.0007007607443640616,
+  "mixing_angle_drifts_deg": {
+    "delta_cp": -0.022169035713716676,
+    "theta12": 0.007568216039131866,
+    "theta13": 0.0009810650421096863,
+    "theta23": 0.0013583977506134118
+  },
+  "off_shell_branch_condition": "Any deviation from this benchmark residual export signals an unphysical off-shell branch.",
+  "theoretical_uncertainty_fractions": {
+    "delta_cp": 0.00011247157752136725,
+    "gamma": 0.00018570311005006046,
+    "theta12": 0.00022966807950029557,
+    "theta13": 0.00011386676662153311,
+    "theta23": 3.142844675893042e-05,
+    "vcb": 0.0002674179177197374,
+    "vub": 0.15151590536813858,
+    "vus": 9.452332246769888e-06
+  },
+  "transport_residuals": {
+    "delta_cp": {
+      "absolute_two_loop_shift": 0.022169035713716676,
+      "fractional_residual": 0.00011247157752136725,
+      "reference_value": 197.10789340982635,
+      "sector": "pmns",
+      "signed_two_loop_shift": -0.022169035713716676,
+      "units": "deg"
+    },
+    "gamma": {
+      "absolute_two_loop_shift": 0.009930312114789785,
+      "fractional_residual": 0.00018570311005006046,
+      "reference_value": 53.4741292814797,
+      "sector": "ckm",
+      "signed_two_loop_shift": 0.009930312114789785,
+      "units": "deg"
+    },
+    "theta12": {
+      "absolute_two_loop_shift": 0.007568216039131866,
+      "fractional_residual": 0.00022966807950029557,
+      "reference_value": 32.95284244810401,
+      "sector": "pmns",
+      "signed_two_loop_shift": 0.007568216039131866,
+      "units": "deg"
+    },
+    "theta13": {
+      "absolute_two_loop_shift": 0.0009810650421096863,
+      "fractional_residual": 0.00011386676662153311,
+      "reference_value": 8.615903228116773,
+      "sector": "pmns",
+      "signed_two_loop_shift": 0.0009810650421096863,
+      "units": "deg"
+    },
+    "theta23": {
+      "absolute_two_loop_shift": 0.0013583977506134118,
+      "fractional_residual": 3.142844675893042e-05,
+      "reference_value": 43.22191806145883,
+      "sector": "pmns",
+      "signed_two_loop_shift": 0.0013583977506134118,
+      "units": "deg"
+    },
+    "vcb": {
+      "absolute_two_loop_shift": 1.1450995426501298e-05,
+      "fractional_residual": 0.0002674179177197374,
+      "reference_value": 0.04282059902396784,
+      "sector": "ckm",
+      "signed_two_loop_shift": -1.1450995426501298e-05,
+      "units": "dimensionless"
+    },
+    "vub": {
+      "absolute_two_loop_shift": 0.0006244253605361023,
+      "fractional_residual": 0.15151590536813858,
+      "reference_value": 0.004121186874862639,
+      "sector": "ckm",
+      "signed_two_loop_shift": -0.0006244253605361023,
+      "units": "dimensionless"
+    },
+    "vus": {
+      "absolute_two_loop_shift": 2.113705503126173e-06,
+      "fractional_residual": 9.452332246769888e-06,
+      "reference_value": 0.22361735156405257,
+      "sector": "ckm",
+      "signed_two_loop_shift": 2.113705503126173e-06,
+      "units": "dimensionless"
+    }
+  },
+  "unity_of_scale_identity": {
+    "epsilon_lambda": 7e-200,
+    "exact_epsilon_lambda": 7e-200,
+    "exact_register_noise_floor": 3.0193257498891486e-123,
+    "numerical_residual": 4.440892098500626e-16,
+    "passed": true,
+    "register_noise_floor": 3.0193257498891483e-123
+  }
+}
