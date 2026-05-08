@@ -25,10 +25,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY . .
 
-ENV PYTHONPATH=/app/src
-ENV PATH="/usr/local/bin:${PATH}"
+# Replace the previous ENV block
+ENV SHBT_INTERNAL_LATEX_BACKEND=tectonic
 ENV SHBT_CONTAINERIZED_LATEX=1
-ENV SHBT_CONTAINER=true
 
 RUN tectonic --version
 
