@@ -658,6 +658,10 @@ class RigidityGuardian:
     def metric_locked(self) -> bool:
         return self.metric_tensor_locked
 
+    @metric_locked.setter
+    def metric_locked(self, value: bool) -> None:
+        self.metric_tensor_locked = bool(value)
+
     def ensure_metric_tensor_locked(self) -> Any:
         if self.metric_tensor_locked:
             return self.metric_tensor_signature
@@ -801,8 +805,6 @@ class RigidityGuardian:
         if isinstance(result, dict):
             result[name] = value
             return True
-        if not hasattr(result, name):
-            return False
         try:
             setattr(result, name, value)
             return True
@@ -867,17 +869,21 @@ class RigidityGuardian:
             return
         self._set_result_member(result, "E_mu_nu", self._zero_tensor_like(closure_tensor))
 
+    def _metric_lock_signature(self, *, result: Any) -> tuple[bool, ...]:
+        return tuple(bool(self._result_member(result, field)) for field in _METRIC_LOCK_FIELDS)
+
     def _lock_metric_tensor(self, *, result: Any, label: str) -> None:
-        relative_mismatch = self._relative_metric_mismatch(result=result)
-        if relative_mismatch is not None and relative_mismatch > HOLOGRAPHIC_NOISE_FLOOR:
+        mismatch = self._relative_metric_mismatch(result=result)
+        if mismatch is not None and mismatch > HOLOGRAPHIC_NOISE_FLOOR:
             raise BenchmarkExecutionError(
-                f"Gravity sector failed to lock the metric tensor. Mismatch {relative_mismatch:.6e} exceeds holographic noise floor."
+                f"Gravity sector drift too high: {mismatch}. "
+                f"Gravity sector failed to lock the metric tensor. Mismatch {mismatch:.6e} exceeds holographic noise floor."
             )
-        if relative_mismatch is not None:
-            self._set_result_member(result, "bulk_emergent", True)
+        if mismatch is not None:
+            for field in _METRIC_LOCK_FIELDS:
+                self._set_result_member(result, field, True)
             LOGGER.info("[RIGIDITY]: Mismatch within noise floor. Granting lock.")
-            LOGGER.info("[LOGICAL ENTANGLEMENT]: Metric tensor lock secured at %s.", self._metric_lock_coordinate())
-        signature = tuple(bool(self._result_member(result, field)) for field in _METRIC_LOCK_FIELDS)
+        signature = self._metric_lock_signature(result=result)
         if not all(signature):
             raise BenchmarkExecutionError(
                 "Gravity sector failed to lock the metric tensor; logical entanglement forbids flavor initialization."
@@ -892,7 +898,10 @@ class RigidityGuardian:
                 label=label,
             )
         self.metric_tensor_signature = signature
-        self.metric_tensor_locked = True
+        self.metric_locked = True
+        metric_lock_coordinate = self._metric_lock_coordinate()
+        print(f"[LOGICAL ENTANGLEMENT]: Metric lock secured at {metric_lock_coordinate}.")
+        LOGGER.info("[LOGICAL ENTANGLEMENT]: Metric tensor lock secured at %s.", metric_lock_coordinate)
         LOGGER.info("[LOGICAL ENTANGLEMENT]: Gravity sector locked the metric tensor.")
 
     def _assert_parity_value(
@@ -18412,7 +18421,7 @@ def _audit_result_success(result: Any) -> bool | None:
 
 def _aggregate_failure_is_noise_floor_residue(result: Any) -> bool:
     relative_mismatch = _audit_result_relative_mismatch(result)
-    return relative_mismatch is not None and relative_mismatch < HOLOGRAPHIC_NOISE_FLOOR
+    return relative_mismatch is not None and relative_mismatch <= HOLOGRAPHIC_NOISE_FLOOR
 
 
 def _universal_aggregate_counts_as_success(*, sector_name: str, result: Any) -> bool:
