@@ -43,9 +43,8 @@ jobs:
           tomli  # Required for pyproject parsing in Python < 3.11
       
       - name: Build SHBT Manuscript Container
-        # CRITICAL: This exact step name is required by test_manuscript_containerization.py
         run: |
-          docker build -t shbt-physical-os:latest .
+          docker build -t shbt-manuscript:latest .
 
       - name: Formal Rigidity & Entropy Unit Tests
         # Runs the 309+ test items to ensure math and infrastructure conform
