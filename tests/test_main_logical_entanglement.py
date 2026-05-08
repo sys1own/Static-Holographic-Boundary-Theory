@@ -105,6 +105,7 @@ def test_guardian_rejects_manual_cosmological_constant_tuning(
 
 def test_holographic_noise_floor_grants_metric_lock_and_clears_benchmark_tensor(
     relaxed_guardian_checks: None,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     gravity_result = SimpleNamespace(
         bulk_emergent=False,
@@ -123,12 +124,14 @@ def test_holographic_noise_floor_grants_metric_lock_and_clears_benchmark_tensor(
     )
     guardian = main_module.RigidityGuardian(model=benchmark_model)
 
+    caplog.set_level("INFO")
     result = guardian.ensure_metric_tensor_locked()
 
     assert result is gravity_result
     assert guardian.metric_tensor_signature == (True, True, True, True, True)
     assert gravity_result.bulk_emergent is True
     assert np.array_equal(gravity_result.E_mu_nu, np.zeros((4, 4), dtype=float))
+    assert "[RIGIDITY]: Mismatch within noise floor. Granting lock." in caplog.text
 
 
 def test_metric_lock_rejects_mismatch_above_holographic_noise_floor(
@@ -155,3 +158,28 @@ def test_metric_lock_rejects_mismatch_above_holographic_noise_floor(
         guardian.ensure_metric_tensor_locked()
 
     assert np.array_equal(gravity_result.E_mu_nu, np.ones((2, 2), dtype=float))
+
+
+def test_metric_lock_rejects_mismatch_at_holographic_noise_floor(
+    relaxed_guardian_checks: None,
+) -> None:
+    gravity_result = SimpleNamespace(
+        bulk_emergent=False,
+        torsion_free=True,
+        non_singular_bulk=True,
+        lambda_aligned=True,
+        parity_bit_density_constraint_satisfied=True,
+        relative_mismatch=main_module.HOLOGRAPHIC_NOISE_FLOOR,
+    )
+    benchmark_model = SimpleNamespace(
+        parent_level=main_module.PARENT_LEVEL,
+        lepton_level=main_module.LEPTON_LEVEL,
+        quark_level=main_module.QUARK_LEVEL,
+        verify_bulk_emergence=lambda: gravity_result,
+    )
+    guardian = main_module.RigidityGuardian(model=benchmark_model)
+
+    with pytest.raises(main_module.BenchmarkExecutionError, match=r"failed to lock the metric tensor"):
+        guardian.ensure_metric_tensor_locked()
+
+    assert gravity_result.bulk_emergent is False
