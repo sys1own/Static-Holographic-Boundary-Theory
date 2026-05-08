@@ -1,5 +1,15 @@
 -- Static Holographic Boundary Theory (SHBT) v2.0
 -- Formal Verification: GKO Anomaly Cancellation & Orthogonality
+
+namespace SHBT
+
+import Mathlib.Data.Real.Basic
+-- ... rest of previous content ...
+
+end SHBT
+
+-- Static Holographic Boundary Theory (SHBT) v2.0
+-- Formal Verification: GKO Anomaly Cancellation & Orthogonality
 -- Author: Gemini-SHBT Meta-Compiler
 -- Toolchain: Lean 4
 
