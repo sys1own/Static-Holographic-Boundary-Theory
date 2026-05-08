@@ -32,6 +32,7 @@ from shbt.constants import (
     TREAT_N_AS_BOUNDARY_CONDITION,
 )
 from shbt.core import algebra
+from shbt.core.saturation import SaturationAudit
 from shbt.core.correspondence_engine import PointerStateDecoherenceError, PointerStateSelector, build_mass_pointer_state
 from shbt.core.holographic_error_stabilizer import BENCHMARK_BRANCH, HolographicStabilizer
 from shbt.paths import resolve_resource_path
@@ -54,34 +55,6 @@ class NewtonLockAudit:
     g_topological_ev_minus2: Decimal
     topological_from_effective_factor: Decimal
     effective_from_topological_factor: Decimal
-
-
-@dataclass(frozen=True)
-class SaturationAudit:
-    lambda_obs_si_m2: Decimal
-    lambda_obs_ev2: Decimal
-    holographic_bits_from_lambda: Decimal
-    configured_holographic_bits: Decimal
-    register_noise_floor: Decimal
-    relative_mismatch: Decimal
-
-    @property
-    def success(self) -> bool:
-        return abs(self.relative_mismatch) < Decimal(str(HOLOGRAPHIC_NOISE_FLOOR))
-
-    @property
-    def passed(self) -> bool:
-        return self.success
-
-    @property
-    def is_saturated(self) -> bool:
-        return self.success
-
-    @property
-    def boundary_condition_locked(self) -> bool:
-        if TREAT_N_AS_BOUNDARY_CONDITION:
-            return True
-        return self.is_saturated
 
 
 @dataclass(frozen=True)
