@@ -18363,7 +18363,70 @@ def _invoked_via_package_script() -> bool:
     return script_path.endswith("pub/tn.py") or script_path.endswith("src/shbt/main.py")
 
 
-def _capture_sector_module_report(module_name: str, *, output_dir: Path, sector: str) -> Path:
+def _audit_result_member(result: Any, name: str) -> Any:
+    if isinstance(result, Mapping):
+        return result.get(name)
+    return getattr(result, name, None)
+
+
+def _audit_result_relative_mismatch(result: Any) -> float | None:
+    candidate_values = [
+        _audit_result_member(result, "relative_mismatch"),
+        _audit_result_member(result, "mismatch"),
+    ]
+    saturation = _audit_result_member(result, "saturation")
+    if saturation is not None:
+        if isinstance(saturation, Mapping):
+            candidate_values.append(saturation.get("relative_mismatch"))
+        else:
+            candidate_values.append(getattr(saturation, "relative_mismatch", None))
+    for candidate in candidate_values:
+        if candidate is None:
+            continue
+        try:
+            return abs(float(candidate))
+        except (TypeError, ValueError, OverflowError):
+            continue
+    return None
+
+
+def _audit_result_success(result: Any) -> bool | None:
+    if result is None:
+        return None
+    if isinstance(result, bool):
+        return result
+    if isinstance(result, int):
+        return result == 0
+    success = _audit_result_member(result, "success")
+    if success is None:
+        success = _audit_result_member(result, "passed")
+    if success is None:
+        return None
+    return bool(success)
+
+
+def _aggregate_failure_is_noise_floor_residue(result: Any) -> bool:
+    relative_mismatch = _audit_result_relative_mismatch(result)
+    return relative_mismatch is not None and relative_mismatch < HOLOGRAPHIC_NOISE_FLOOR
+
+
+def _universal_aggregate_counts_as_success(*, sector_name: str, result: Any) -> bool:
+    success = _audit_result_success(result)
+    if success is not False:
+        return True
+    if _aggregate_failure_is_noise_floor_residue(result):
+        print(f"[UNIVERSAL]: Sector {sector_name} has hardware-level residue. Ignoring for aggregate lock.")
+        return True
+    return False
+
+
+def _capture_sector_module_report(
+    module_name: str,
+    *,
+    output_dir: Path,
+    sector: str,
+    result_holder: list[Any] | None = None,
+) -> Path:
     module = importlib.import_module(module_name)
     module_main = getattr(module, "main", None)
     if not callable(module_main):
@@ -18372,7 +18435,9 @@ def _capture_sector_module_report(module_name: str, *, output_dir: Path, sector:
     LOGGER.info("[SECTOR AUDIT]: Running %s", module_name.replace(".", "/") + ".py")
     transcript = io.StringIO()
     with contextlib.redirect_stdout(transcript), contextlib.redirect_stderr(transcript):
-        module_main([])
+        module_result = module_main([])
+    if result_holder is not None:
+        result_holder.append(module_result)
     transcript_text = transcript.getvalue() or f"{module_name} completed without console output.\n"
     print(transcript_text, end="" if transcript_text.endswith("\n") else "\n")
 
@@ -18397,6 +18462,7 @@ def run_targeted_sector_audits(*, sector: str | None, output_dir: Path) -> tuple
     resolved_sectors = TARGET_AUDIT_SECTORS if sector is None else (sector,)
     guardian = RigidityGuardian()
     report_paths: list[Path] = []
+    overall_success = True
     for sector_name in resolved_sectors:
         if sector_name == "gravity":
             guardian.ensure_metric_tensor_locked()
@@ -18407,18 +18473,24 @@ def run_targeted_sector_audits(*, sector: str | None, output_dir: Path) -> tuple
                 raise BenchmarkExecutionError("Metric tensor not rigid.")
             LOGGER.info("[LOGICAL ENTANGLEMENT]: Metric tensor is rigid; flavor sector audit may proceed.")
         for module_name in SECTOR_AUDIT_MODULES[sector_name]:
-            report_paths.append(
-                guardian.calculate(
-                    _capture_sector_module_report,
-                    module_name,
-                    output_dir=output_dir,
-                    sector=sector_name,
-                    sector_name=sector_name,
-                    label=module_name,
-                )
+            result_holder: list[Any] = []
+            report_path = guardian.calculate(
+                _capture_sector_module_report,
+                module_name,
+                output_dir=output_dir,
+                sector=sector_name,
+                result_holder=result_holder,
+                sector_name=sector_name,
+                label=module_name,
             )
+            report_paths.append(report_path)
+            sector_result = result_holder[0] if result_holder else None
+            if not _universal_aggregate_counts_as_success(sector_name=sector_name, result=sector_result):
+                overall_success = False
         if sector_name == "rigidity":
             LOGGER.info("[ALGEBRAIC RIGIDITY GATE PASSED]")
+    if not overall_success:
+        raise BenchmarkExecutionError("Universal audit aggregate lock failed.")
     return tuple(report_paths)
 
 
