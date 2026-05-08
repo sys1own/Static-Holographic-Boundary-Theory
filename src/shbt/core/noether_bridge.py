@@ -69,7 +69,7 @@ class SaturationAudit:
     def boundary_condition_locked(self) -> bool:
         if TREAT_N_AS_BOUNDARY_CONDITION:
             return True
-        return self.relative_mismatch <= HOLOGRAPHIC_NOISE_FLOOR
+        return self.relative_mismatch <= Decimal(str(HOLOGRAPHIC_NOISE_FLOOR))
 
 
 @dataclass(frozen=True)
