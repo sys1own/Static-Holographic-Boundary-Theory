@@ -654,6 +654,10 @@ class RigidityGuardian:
         self.metric_tensor_locked = False
         self.metric_tensor_signature: tuple[bool, ...] | None = None
 
+    @property
+    def metric_locked(self) -> bool:
+        return self.metric_tensor_locked
+
     def ensure_metric_tensor_locked(self) -> Any:
         if self.metric_tensor_locked:
             return self.metric_tensor_signature
@@ -18394,8 +18398,14 @@ def run_targeted_sector_audits(*, sector: str | None, output_dir: Path) -> tuple
     guardian = RigidityGuardian()
     report_paths: list[Path] = []
     for sector_name in resolved_sectors:
-        if sector_name in {"gravity", "flavor"}:
+        if sector_name == "gravity":
             guardian.ensure_metric_tensor_locked()
+        elif sector_name == "flavor":
+            if not guardian.metric_locked:
+                guardian.ensure_metric_tensor_locked()
+            if not guardian.metric_locked:
+                raise BenchmarkExecutionError("Metric tensor not rigid.")
+            LOGGER.info("[LOGICAL ENTANGLEMENT]: Metric tensor is rigid; flavor sector audit may proceed.")
         for module_name in SECTOR_AUDIT_MODULES[sector_name]:
             report_paths.append(
                 guardian.calculate(
