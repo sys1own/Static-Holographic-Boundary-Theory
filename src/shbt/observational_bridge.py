@@ -2,7 +2,7 @@ from __future__ import annotations
 
 """Bridge external transient triggers into SHBT holographic-tension audits.
 
-The bridge ingests JSON and CSV trigger drops from ``data/external_triggers/``
+The bridge ingests JSON and CSV trigger drops from ``config/physics_profiles/external_triggers/``
 and normalizes them into LIGO/JWST observations. High-redshift measurements
 (``z > 10`` by default) are compared against the branch-fixed late-time
 expansion law anchored by ``EvolutionaryEngine`` and the precision cosmology
@@ -273,7 +273,9 @@ class ObservationalBridge:
         high_redshift_floor: Decimal | float | int | str = DEFAULT_HIGH_REDSHIFT_FLOOR,
     ) -> None:
         self.trigger_directory = (
-            resolve_resource_path("data", "external_triggers") if trigger_directory is None else Path(trigger_directory)
+            resolve_resource_path("physics_profiles", "external_triggers")
+            if trigger_directory is None
+            else Path(trigger_directory)
         )
         self.precision = max(int(precision), DEFAULT_PRECISION)
         self.high_redshift_floor = _decimal(high_redshift_floor)
