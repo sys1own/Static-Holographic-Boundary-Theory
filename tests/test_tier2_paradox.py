@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from types import SimpleNamespace
 
 import pytest
 
@@ -72,3 +73,28 @@ def test_gravity_report_exposes_tier2_conformance_audit() -> None:
     assert report.tension_audit.degrees_of_freedom == 2
     assert labels == {"Planck 2018 H0", "Planck 2018 Lambda"}
     assert report.tension_audit.chi_squared >= Decimal("0")
+
+
+def test_universe_factory_tension_audit_uses_calling_class_residues() -> None:
+    class SyntheticUniverseFactory(UniverseFactory):
+        @classmethod
+        def calculate_physical_ledger(cls, *, precision: int = derivation_module.DEFAULT_PRECISION):
+            del cls, precision
+            return SimpleNamespace(
+                vacuum=SimpleNamespace(branch=(1, 2, 3)),
+                alpha_surface=SimpleNamespace(alpha_inverse_decimal=Decimal("111")),
+                proton_ratio=SimpleNamespace(mu_audit=Decimal("222")),
+            )
+
+        @classmethod
+        def derive_lambda_surface(cls, *, precision: int = derivation_module.DEFAULT_PRECISION):
+            del cls, precision
+            return SimpleNamespace(lambda_holo_si_m2=Decimal("333"))
+
+    audit = SyntheticUniverseFactory.derive_tension_audit()
+    predicted = {component.label: component.predicted_value for component in audit.components}
+
+    assert audit.degrees_of_freedom == 4
+    assert predicted["CODATA alpha^-1"] == Decimal("111")
+    assert predicted["CODATA m_p/m_e"] == Decimal("222")
+    assert predicted["Planck 2018 Lambda"] == Decimal("333")
