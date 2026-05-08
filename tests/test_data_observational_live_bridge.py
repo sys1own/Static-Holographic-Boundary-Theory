@@ -12,7 +12,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from data.observational.live_bridge import (
+from shbt.live_h0_bridge import (
     DEFAULT_H0_ADS_FIELDS,
     DEFAULT_JWST_ADS_QUERY,
     SystemDecoherenceWarning,
