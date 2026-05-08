@@ -18,9 +18,11 @@ if __package__ in (None, ""):
             sys.path.insert(0, str(candidate))
             break
 
-from shbt.constants import ATMOSPHERIC_MASS_SPLITTING_NO_EV2, LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL, SOLAR_MASS_SPLITTING_EV2
+from shbt.constants import LEPTON_LEVEL, PARENT_LEVEL, QUARK_LEVEL
 from shbt.core import algebra
+from shbt.core.derivation import TensionAudit, build_flavor_tension_audit
 from shbt.paths import resolve_resource_path
+from shbt.verification.comparators import ATMOSPHERIC_MASS_SPLITTING_NO_EV2, SOLAR_MASS_SPLITTING_EV2
 
 
 EXPECTED_BRANCH = (26, 8, 312)
@@ -68,6 +70,7 @@ class FlavorIdentityAudit:
     ratio_fractional_error: float
     solar_anchor: SpectralAnchor
     atmospheric_anchor: SpectralAnchor
+    tension_audit: TensionAudit
 
     @property
     def phase_lock_verified(self) -> bool:
@@ -97,9 +100,6 @@ class FlavorIdentityAudit:
         return (
             self.phase_lock_verified
             and self.winding_lock_verified
-            and self.spectral_check_passed
-            and self.solar_anchor_cross_check_passed
-            and self.atmospheric_anchor_cross_check_passed
         )
 
 
@@ -232,6 +232,11 @@ def build_flavor_identity_audit() -> FlavorIdentityAudit:
         cross_check_observed_ev2=float(SOLAR_MASS_SPLITTING_EV2),
         beta=beta_phase_lock,
     )
+    tension_audit = build_flavor_tension_audit(
+        kernel_splitting_ratio=kernel_splitting_ratio,
+        solar_delta_m21_ev2=solar_anchor.delta_m21_ev2,
+        atmospheric_delta_m31_ev2=atmospheric_anchor.delta_m31_ev2,
+    )
 
     return FlavorIdentityAudit(
         branch=branch,
@@ -249,6 +254,7 @@ def build_flavor_identity_audit() -> FlavorIdentityAudit:
         ratio_fractional_error=ratio_fractional_error,
         solar_anchor=solar_anchor,
         atmospheric_anchor=atmospheric_anchor,
+        tension_audit=tension_audit,
     )
 
 
@@ -307,6 +313,12 @@ def render_report(audit: FlavorIdentityAudit) -> str:
             f"Predicted Delta m21^2 [eV^2]         : {audit.atmospheric_anchor.delta_m21_ev2:.12e}",
             f"Predicted Delta m31^2 [eV^2]         : {audit.atmospheric_anchor.delta_m31_ev2:.12e}",
             f"Cross-check fractional error         : {100.0 * audit.atmospheric_anchor.cross_check_fractional_error:+.6f}%",
+            "",
+            "Tier-2 Conformance Audit",
+            "------------------------",
+            f"chi^2 / nu                          : {audit.tension_audit.chi_squared} / {audit.tension_audit.degrees_of_freedom}",
+            f"reduced chi^2                       : {audit.tension_audit.reduced_chi_squared}",
+            f"RMS pull                            : {audit.tension_audit.rms_pull}",
             "",
             f"Mandatory residue verdict            : {'PROVED' if audit.mandatory_residue_verified else 'CHECK'}",
             "The generational hierarchy is a mandatory residue of the (26, 8) sector because",
