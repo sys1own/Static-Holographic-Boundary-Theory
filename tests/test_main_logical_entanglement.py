@@ -240,6 +240,66 @@ def test_metric_lock_noise_floor_normalizes_signature_and_unblocks_flavor(
     assert guardian.calculate(lambda: "flavor", sector_name="flavor", label="pmns transport") == "flavor"
 
 
+def test_benchmark_branch_label_still_attempts_metric_lock(
+    monkeypatch: pytest.MonkeyPatch,
+    relaxed_guardian_checks: None,
+    stub_model: SimpleNamespace,
+) -> None:
+    guardian = main_module.RigidityGuardian(model=stub_model)
+    calls: list[str] = []
+
+    def fake_lock_metric_tensor(self: main_module.RigidityGuardian, *, result: object, label: str) -> None:
+        del self, result
+        calls.append(label)
+
+    monkeypatch.setattr(main_module.RigidityGuardian, "_lock_metric_tensor", fake_lock_metric_tensor)
+
+    guardian.calculate(
+        stub_model.verify_bulk_emergence,
+        sector_name="gravity",
+        label="Benchmark branch (26, 8, 312)",
+    )
+
+    assert calls == ["Benchmark branch (26, 8, 312)"]
+
+
+
+def test_detuned_gravity_stress_test_skips_metric_relock_and_preserves_lock(
+    monkeypatch: pytest.MonkeyPatch,
+    relaxed_guardian_checks: None,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    benchmark_model = SimpleNamespace(
+        parent_level=main_module.PARENT_LEVEL,
+        lepton_level=main_module.LEPTON_LEVEL,
+        quark_level=main_module.QUARK_LEVEL,
+    )
+    guardian = main_module.RigidityGuardian(model=benchmark_model)
+    guardian.metric_locked = True
+    guardian.metric_tensor_signature = (True, True, True, True, True)
+
+    def detuned_verify_bulk_emergence() -> SimpleNamespace:
+        return SimpleNamespace(relative_mismatch=1.0, bulk_emergent=False)
+
+    def fail_if_called(self: main_module.RigidityGuardian, *, result: object, label: str) -> None:
+        del self, result, label
+        raise AssertionError("metric relock should be skipped for detuned stress tests")
+
+    monkeypatch.setattr(main_module.RigidityGuardian, "_lock_metric_tensor", fail_if_called)
+
+    result = guardian.calculate(
+        detuned_verify_bulk_emergence,
+        sector_name="gravity",
+        label="detuned stress test (26, 8, 313)",
+    )
+    captured = capsys.readouterr()
+
+    assert result.relative_mismatch == 1.0
+    assert guardian.metric_locked is True
+    assert guardian.metric_tensor_signature == (True, True, True, True, True)
+    assert "falsifiable residue" in captured.out
+
+
 def test_universal_aggregate_ignores_subthreshold_sector_failure(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
