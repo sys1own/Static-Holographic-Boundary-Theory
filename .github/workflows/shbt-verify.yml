@@ -66,6 +66,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: universal-source-code-artifacts
+          if-no-files-found: error
           path: |
             results/
             manuscript.pdf
