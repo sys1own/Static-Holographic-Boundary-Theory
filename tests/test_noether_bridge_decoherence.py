@@ -5,6 +5,7 @@ import pytest
 from shbt.core.correspondence_engine import PointerStateDecoherenceError, PointerStateSelector
 import shbt.core.noether_bridge as noether_bridge
 from shbt.core.holographic_error_stabilizer import BulkChecksumVerification, HolographicStabilizer
+from shbt.core.saturation import SaturationAudit
 
 
 def test_branch_planck_mass_ev_requires_coherent_bulk_checksum() -> None:
@@ -217,3 +218,29 @@ def test_saturation_audit_success_respects_noise_floor_boundary() -> None:
 
     assert sub_threshold.success is True
     assert at_threshold.success is False
+
+
+def test_standalone_saturation_module_uses_noise_floor_success() -> None:
+    threshold = noether_bridge.Decimal(str(noether_bridge.HOLOGRAPHIC_NOISE_FLOOR))
+
+    sub_threshold = SaturationAudit(
+        lambda_obs_si_m2=noether_bridge.Decimal("1.0e-52"),
+        lambda_obs_ev2=noether_bridge.Decimal("1.0e-66"),
+        holographic_bits_from_lambda=noether_bridge.Decimal("3.31e122"),
+        configured_holographic_bits=noether_bridge.Decimal("3.31e122"),
+        register_noise_floor=noether_bridge.Decimal("3.0e-123"),
+        relative_mismatch=threshold / noether_bridge.Decimal("10"),
+    )
+    above_threshold = SaturationAudit(
+        lambda_obs_si_m2=noether_bridge.Decimal("1.0e-52"),
+        lambda_obs_ev2=noether_bridge.Decimal("1.0e-66"),
+        holographic_bits_from_lambda=noether_bridge.Decimal("3.31e122"),
+        configured_holographic_bits=noether_bridge.Decimal("3.31e122"),
+        register_noise_floor=noether_bridge.Decimal("3.0e-123"),
+        relative_mismatch=threshold * noether_bridge.Decimal("10"),
+    )
+
+    assert sub_threshold.success is True
+    assert sub_threshold.passed is True
+    assert sub_threshold.is_saturated is True
+    assert above_threshold.success is False
