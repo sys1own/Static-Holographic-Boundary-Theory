@@ -125,7 +125,6 @@ _SYNC_TOP_LEVEL_PATHS = frozenset(
         ProjectPaths.RESULTS.name,
         ProjectPaths.PAPERS.name,
         ProjectPaths.CONFIG.name,
-        ProjectPaths.DATA.name,
         ProjectPaths.SCRIPTS.name,
         ProjectPaths.SRC.name,
         "README.md",
@@ -218,7 +217,7 @@ def _load_residual_payload(path: Path) -> dict[str, Any]:
     resolved_path = _resolve_project_path(path)
     if not resolved_path.is_file():
         raise FileNotFoundError(
-            f"Residual ledger not found at {resolved_path}. Run `python scripts/export.py` (or the full verifier) to generate results/residuals.json first."
+            f"Residual ledger not found at {resolved_path}. Run the verifier to generate results/residuals.json first."
         )
     payload = json.loads(resolved_path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
