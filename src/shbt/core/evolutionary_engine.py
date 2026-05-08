@@ -9,17 +9,19 @@ the stabilized base factory.
 """
 
 from shbt.core import derivation_api as _derivation_api
+from shbt.core.rigidity_kernel import stabilize_boundary
 
 
-EvolutionaryEngine = _derivation_api.UniverseFactory
 UniverseFactory = _derivation_api.UniverseFactory
+EvolutionaryEngine = UniverseFactory
 
 for _name in _derivation_api.__all__:
-    globals()[_name] = getattr(_derivation_api, _name)
+    _value = getattr(_derivation_api, _name)
+    if _name == "UniverseFactory":
+        globals()[_name] = UniverseFactory
+    elif _name in {"build_derivation_ledger", "build_lambda_ledger"}:
+        globals()[_name] = stabilize_boundary(_value)
+    else:
+        globals()[_name] = _value
 
-globals()["EvolutionaryEngine"] = EvolutionaryEngine
-globals()["UniverseFactory"] = UniverseFactory
-
-del _name
-
-__all__ = list(dict.fromkeys([*_derivation_api.__all__, "EvolutionaryEngine", "UniverseFactory"]))
+__all__ = [*_derivation_api.__all__, "EvolutionaryEngine", "UniverseFactory"]
