@@ -13,6 +13,12 @@ def test_parse_args_accepts_zero_parameter_flag() -> None:
     assert args.zero_parameter is True
 
 
+def test_parse_args_accepts_universal_sector() -> None:
+    args = main_module.parse_args(["--sector", "universal"])
+
+    assert args.sector == "universal"
+
+
 def test_main_initializes_zero_parameter_mode_before_sector_audits(monkeypatch, tmp_path: Path) -> None:
     events: list[tuple[object, ...]] = []
 
