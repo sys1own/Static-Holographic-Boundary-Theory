@@ -95,7 +95,7 @@
   },
   "cmb_anchor": {
     "label": "CMB/GW benchmark",
-    "path": "data/cmb_power_spectrum_benchmarks.json",
+    "path": "config/physics_profiles/cmb_power_spectrum_benchmarks.json",
     "release": "Planck 2018 CMB acoustic-loading proxy with BK18+WMAP+Planck tensor ceiling and archived CMB-S4 design floor"
   },
   "dark_debt": {
@@ -168,7 +168,7 @@
   },
   "nufit_anchor": {
     "label": "NuFIT benchmark",
-    "path": "data/nufit_5_3.json",
+    "path": "config/physics_profiles/nufit_5_3.json",
     "release": "NuFIT 5.3 (2024), normal ordering with SK atmospheric data"
   },
   "observer_horizon": {
