@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import os
 import shutil
 import subprocess
 import sys
@@ -28,12 +29,21 @@ PREFERRED_LATEX_BUILD_ORDER = ("supplementary.tex", "tn.tex", "gravity.tex")
 MANUSCRIPT_TARGET_TEX = "gravity.tex"
 MANUSCRIPT_TARGET_PDF = "gravity.pdf"
 SUPPORTED_LATEX_BACKENDS = ("pdflatex",)
+SUPPORTED_CONTAINER_ENGINES = ("docker", "podman")
+DEFAULT_LATEX_CONTAINER_IMAGE = os.environ.get("SHBT_MANUSCRIPT_CONTAINER_IMAGE", "texlive/texlive:latest")
 
 
 @dataclass(frozen=True)
 class LatexInstallation:
     backend: str
     command: str
+
+
+@dataclass(frozen=True)
+class LatexContainerRuntime:
+    engine: str
+    command: str
+    image: str
 
 
 @dataclass(frozen=True)
@@ -92,6 +102,26 @@ def resolve_latex_installation(backend: str = "auto") -> LatexInstallation:
         )
     raise RuntimeError(
         f"Requested LaTeX backend `{backend}` is not available on PATH. Install it or rerun with `--latex-backend auto`."
+    )
+
+
+def resolve_container_runtime(
+    engine: str = "auto",
+    *,
+    image: str = DEFAULT_LATEX_CONTAINER_IMAGE,
+) -> LatexContainerRuntime:
+    candidates = SUPPORTED_CONTAINER_ENGINES if engine == "auto" else (engine,)
+    for candidate in candidates:
+        command = shutil.which(candidate)
+        if command is not None:
+            return LatexContainerRuntime(engine=candidate, command=command, image=image)
+
+    if engine == "auto":
+        raise RuntimeError(
+            "No container runtime detected. Install `docker` or `podman`, or rerun with `--latex-backend auto` for local pdflatex."
+        )
+    raise RuntimeError(
+        f"Requested container runtime `{engine}` is not available on PATH. Install it or rerun with `--container-engine auto`."
     )
 
 
@@ -186,19 +216,68 @@ def compile_gravity_manuscript(pdflatex_command: str, document_path: Path, *, wo
     return pdf_path
 
 
+def compile_gravity_manuscript_in_container(
+    container_runtime: LatexContainerRuntime,
+    document_path: Path,
+    *,
+    workdir: Path,
+) -> Path:
+    resolved_workdir = Path(workdir).resolve()
+    resolved_document_path = Path(document_path).resolve()
+    if not resolved_document_path.is_file():
+        raise FileNotFoundError(f"Executable-paper source not found: {resolved_document_path}")
+
+    mount_root = resolved_workdir.parent
+    container_workdir = Path("/workspace") / resolved_workdir.relative_to(mount_root)
+    command = [
+        str(container_runtime.command),
+        "run",
+        "--rm",
+    ]
+    if os.name != "nt" and hasattr(os, "getuid") and hasattr(os, "getgid"):
+        command.extend(["-u", f"{os.getuid()}:{os.getgid()}"])
+    command.extend(
+        [
+            "-v",
+            f"{mount_root}:/workspace",
+            "-w",
+            str(container_workdir),
+            container_runtime.image,
+            "pdflatex",
+            "-interaction=nonstopmode",
+            "-halt-on-error",
+            "-file-line-error",
+            resolved_document_path.name,
+        ]
+    )
+    try:
+        subprocess.run(tuple(command), check=True)
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(
+            f"LaTeX compilation failed for {resolved_document_path.name} using container runtime `{container_runtime.engine}`."
+        ) from exc
+
+    pdf_path = resolved_workdir / resolved_document_path.with_suffix(".pdf").name
+    if not pdf_path.is_file():
+        raise FileNotFoundError(f"Expected compiled PDF at {pdf_path}, but it was not created.")
+    return pdf_path
+
+
 def build_manuscript(
     *,
     manuscript_dir: Path = ProjectPaths.PAPERS,
     output_dir: Path = ProjectPaths.RESULTS,
     latex_backend: str = "auto",
+    container_engine: str = "auto",
+    container_image: str = DEFAULT_LATEX_CONTAINER_IMAGE,
     validate_text: bool = False,
 ) -> BuildResult:
     resolved_manuscript_dir = Path(manuscript_dir)
     resolved_output_dir = Path(output_dir)
     latex_artifact_dir = resolved_output_dir / "final"
 
-    if latex_backend not in {"auto", "pdflatex"}:
-        raise ValueError("build_manuscript only supports `pdflatex` for executable-paper generation.")
+    if latex_backend not in {"auto", "pdflatex", "container"}:
+        raise ValueError("build_manuscript only supports `pdflatex` or `container` for executable-paper generation.")
     if not resolved_manuscript_dir.is_dir():
         raise FileNotFoundError(f"Manuscript directory not found: {resolved_manuscript_dir}")
 
@@ -224,32 +303,45 @@ def build_manuscript(
         manuscript_dir=resolved_manuscript_dir,
     )
 
-    try:
-        latex_installation = resolve_latex_installation("pdflatex" if latex_backend == "auto" else latex_backend)
-    except RuntimeError:
-        print("Mathematical verification successful; PDF generation skipped due to missing LaTeX compiler.")
-        return BuildResult(
-            proof_output_dir=resolved_output_dir,
-            latex_artifact_dir=latex_artifact_dir,
-            manuscript_dir=resolved_manuscript_dir,
-            latex_backend=None,
-            compiled_pdfs=(),
-            final_pdf=None,
-        )
-
     target_document = resolved_manuscript_dir / MANUSCRIPT_TARGET_TEX
-    print(f"[build] Compiling executable paper: {_display_path(target_document)}")
-    compiled_pdf = compile_gravity_manuscript(
-        latex_installation.command,
-        target_document,
-        workdir=resolved_manuscript_dir,
-    )
+    if latex_backend == "container":
+        container_runtime = resolve_container_runtime(container_engine, image=container_image)
+        print(
+            f"[build] Compiling executable paper in {container_runtime.engine} container: {_display_path(target_document)}"
+        )
+        compiled_pdf = compile_gravity_manuscript_in_container(
+            container_runtime,
+            target_document,
+            workdir=resolved_manuscript_dir,
+        )
+        resolved_backend = "container"
+    else:
+        try:
+            latex_installation = resolve_latex_installation("pdflatex" if latex_backend == "auto" else latex_backend)
+        except RuntimeError:
+            print("Mathematical verification successful; PDF generation skipped due to missing LaTeX compiler.")
+            return BuildResult(
+                proof_output_dir=resolved_output_dir,
+                latex_artifact_dir=latex_artifact_dir,
+                manuscript_dir=resolved_manuscript_dir,
+                latex_backend=None,
+                compiled_pdfs=(),
+                final_pdf=None,
+            )
+
+        print(f"[build] Compiling executable paper: {_display_path(target_document)}")
+        compiled_pdf = compile_gravity_manuscript(
+            latex_installation.command,
+            target_document,
+            workdir=resolved_manuscript_dir,
+        )
+        resolved_backend = latex_installation.backend
 
     return BuildResult(
         proof_output_dir=resolved_output_dir,
         latex_artifact_dir=latex_artifact_dir,
         manuscript_dir=resolved_manuscript_dir,
-        latex_backend=latex_installation.backend,
+        latex_backend=resolved_backend,
         compiled_pdfs=(compiled_pdf,),
         final_pdf=compiled_pdf,
     )
@@ -259,7 +351,9 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manuscript-dir", type=Path, default=ProjectPaths.PAPERS)
     parser.add_argument("--output-dir", type=Path, default=ProjectPaths.RESULTS)
-    parser.add_argument("--latex-backend", choices=("auto", "pdflatex"), default="auto")
+    parser.add_argument("--latex-backend", choices=("auto", "pdflatex", "container"), default="auto")
+    parser.add_argument("--container-engine", choices=("auto", "docker", "podman"), default="auto")
+    parser.add_argument("--container-image", default=DEFAULT_LATEX_CONTAINER_IMAGE)
     parser.add_argument(
         "--validate-text",
         action="store_true",
@@ -274,6 +368,8 @@ def main(argv: Sequence[str] | None = None) -> None:
         manuscript_dir=args.manuscript_dir.expanduser(),
         output_dir=args.output_dir.expanduser(),
         latex_backend=args.latex_backend,
+        container_engine=args.container_engine,
+        container_image=args.container_image,
         validate_text=args.validate_text,
     )
 
