@@ -185,7 +185,8 @@ _BOOTSTRAP_EMERGENT_CONSTANTS = ZERO_ANCHOR_BOOTSTRAP.emergent_constants
 apply_runtime_constants_patch(globals(), bootstrap=ZERO_ANCHOR_BOOTSTRAP)
 
 AUDIT_TOLERANCE = Decimal("1e-38")
-HOLOGRAPHIC_NOISE_FLOOR = 1e-15
+# Residues below this floor are treated as hardware noise rather than theoretical drift.
+HOLOGRAPHIC_NOISE_FLOOR: float = 1e-15
 TREAT_N_AS_BOUNDARY_CONDITION = True
 
 PARENT_LEVEL = _BOOTSTRAP_PARENT_LEVEL
