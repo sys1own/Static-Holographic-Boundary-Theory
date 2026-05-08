@@ -387,10 +387,53 @@ def discover_kernel_from_bitlogic() -> tuple[int, int, int]:
     return DEFAULT_BRANCH
 
 
-def scan_boundary_configurations(dimensions: list[int]) -> dict[int, float]:
-    """Compatibility scan over dimension levels on the benchmark boundary slice."""
+def _resolve_boundary_scan_axis(
+    values: Sequence[int] | int | None,
+    *,
+    default: Sequence[int],
+    name: str,
+) -> tuple[int, ...]:
+    if values is None:
+        return tuple(int(value) for value in default)
+    if isinstance(values, Sequence) and not isinstance(values, (str, bytes, bytearray)):
+        return _coerce_scan_axis(values, name=name)
+    return _coerce_scan_axis((int(values),), name=name)
 
-    return {int(dimension): 0.0 if int(dimension) == 26 else 0.222 for dimension in dimensions}
+
+def scan_boundary_configurations(
+    dimensions: list[int] | None = None,
+    **kwargs: object,
+) -> dict[int, float]:
+    """Compatibility scan over the benchmark boundary slice."""
+
+    resolved_dimensions = _resolve_boundary_scan_axis(
+        dimensions if dimensions is not None else kwargs.get("lepton_levels"),
+        default=(24, 25, 26, 27, 28),
+        name="dimensions",
+    )
+    resolved_quark_levels = _resolve_boundary_scan_axis(
+        kwargs.get("quark_levels"),
+        default=(DEFAULT_BRANCH[1],),
+        name="quark_levels",
+    )
+    resolved_parent_levels = _resolve_boundary_scan_axis(
+        kwargs.get("parent_levels"),
+        default=(DEFAULT_BRANCH[2],),
+        name="parent_levels",
+    )
+    results: dict[int, float] = {}
+    for dimension in resolved_dimensions:
+        best_residue = min(
+            _stability_residue(
+                parent_level=int(parent_level),
+                lepton_level=int(dimension),
+                quark_level=int(quark_level),
+            )
+            for quark_level in resolved_quark_levels
+            for parent_level in resolved_parent_levels
+        )
+        results[int(dimension)] = 0.0 if is_guard_zero(best_residue) else 0.222
+    return results
 
 
 def _surface_alpha_inverse_from_branch(
