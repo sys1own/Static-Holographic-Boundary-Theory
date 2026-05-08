@@ -66,10 +66,14 @@ class SaturationAudit:
     relative_mismatch: Decimal
 
     @property
+    def is_saturated(self) -> bool:
+        return abs(self.relative_mismatch) < Decimal(str(HOLOGRAPHIC_NOISE_FLOOR))
+
+    @property
     def boundary_condition_locked(self) -> bool:
         if TREAT_N_AS_BOUNDARY_CONDITION:
             return True
-        return self.relative_mismatch <= Decimal(str(HOLOGRAPHIC_NOISE_FLOOR))
+        return self.is_saturated
 
 
 @dataclass(frozen=True)
@@ -749,6 +753,11 @@ def render_report(report: GravitySideRigidityReport) -> str:
         "----------------",
         f"Configured HOLOGRAPHIC_BITS     : {_format_decimal_scientific(report.saturation.configured_holographic_bits)}",
         f"Relative mismatch               : {_format_decimal_scientific(report.saturation.relative_mismatch)}",
+        (
+            "Saturation status              : PASS (within noise floor)"
+            if report.saturation.is_saturated
+            else "Saturation status              : FAIL"
+        ),
         "N is reconstructed from the observed cosmological constant, so it enters as an Observational Boundary Condition rather than a fit parameter.",
     ]
     return "\n".join(lines)
