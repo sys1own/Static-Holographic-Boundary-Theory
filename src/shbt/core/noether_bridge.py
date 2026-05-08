@@ -26,12 +26,14 @@ from shbt.constants import (
     LEPTON_LEVEL,
     LIGHT_SPEED_M_PER_S,
     PARENT_LEVEL,
+    PLANCK2018_H0_KM_S_MPC,
     PLANCK2018_LAMBDA_SI_M2,
     PLANCK_LENGTH_M,
     QUARK_LEVEL,
     TREAT_N_AS_BOUNDARY_CONDITION,
 )
 from shbt.core import algebra
+from shbt.core.derivation import TensionAudit, build_gravity_tension_audit
 from shbt.core.saturation import SaturationAudit
 from shbt.core.correspondence_engine import PointerStateDecoherenceError, PointerStateSelector, build_mass_pointer_state
 from shbt.core.holographic_error_stabilizer import BENCHMARK_BRANCH, HolographicStabilizer
@@ -157,6 +159,7 @@ class GravitySideRigidityReport:
     saturation: SaturationAudit
     unity: UnityOfScaleAudit
     reviewer_trap: ReviewerTrapAudit
+    tension_audit: TensionAudit
 
 
 @dataclass(frozen=True)
@@ -672,6 +675,10 @@ def build_gravity_side_rigidity_report(
         detuned_branch=detuned_branch,
         precision=precision,
     )
+    tension_audit = build_gravity_tension_audit(
+        lambda_holo_si_m2=saturation.lambda_obs_si_m2,
+        h0_km_s_mpc=PLANCK2018_H0_KM_S_MPC,
+    )
     return GravitySideRigidityReport(
         branch=benchmark_branch,
         detuned_branch=detuned_branch,
@@ -679,6 +686,7 @@ def build_gravity_side_rigidity_report(
         saturation=saturation,
         unity=unity,
         reviewer_trap=reviewer,
+        tension_audit=tension_audit,
     )
 
 
@@ -739,7 +747,13 @@ def render_report(report: GravitySideRigidityReport) -> str:
             if report.saturation.is_saturated
             else "Saturation status              : FAIL"
         ),
-        "N is reconstructed from the observed cosmological constant, so it enters as an Observational Boundary Condition rather than a fit parameter.",
+        "N is reconstructed from the branch-fixed surface-tension residue; empirical Lambda enters only through the Tier-2 conformance audit.",
+        "",
+        "Tier-2 Conformance Audit",
+        "------------------------",
+        f"chi^2 / nu                       : {_format_decimal_scientific(report.tension_audit.chi_squared)} / {report.tension_audit.degrees_of_freedom}",
+        f"reduced chi^2                    : {_format_decimal_scientific(report.tension_audit.reduced_chi_squared)}",
+        f"RMS pull                         : {_format_decimal_scientific(report.tension_audit.rms_pull)}",
     ]
     return "\n".join(lines)
 
