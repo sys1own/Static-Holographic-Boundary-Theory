@@ -865,13 +865,9 @@ class RigidityGuardian:
 
     def _lock_metric_tensor(self, *, result: Any, label: str) -> None:
         relative_mismatch = self._relative_metric_mismatch(result=result)
-        if relative_mismatch is not None and relative_mismatch <= HOLOGRAPHIC_NOISE_FLOOR:
+        if relative_mismatch is not None and relative_mismatch < HOLOGRAPHIC_NOISE_FLOOR:
             self._set_result_member(result, "bulk_emergent", True)
-            LOGGER.info(
-                "[LOGICAL ENTANGLEMENT]: Relative mismatch %.3e is within the holographic noise floor %.1e.",
-                relative_mismatch,
-                HOLOGRAPHIC_NOISE_FLOOR,
-            )
+            LOGGER.info("[RIGIDITY]: Mismatch within noise floor. Granting lock.")
         signature = tuple(bool(self._result_member(result, field)) for field in _METRIC_LOCK_FIELDS)
         if not all(signature):
             raise BenchmarkExecutionError(
