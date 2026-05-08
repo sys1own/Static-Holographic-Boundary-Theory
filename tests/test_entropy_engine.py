@@ -22,6 +22,7 @@ def test_entropy_engine_turns_static_loading_into_dynamic_temporal_audit() -> No
     assert audit.arrow_of_time_established is True
     assert audit.bulk_boundary_causal_loop_closed is True
     assert audit.time_is_computational_overhead is True
+    assert audit.temporal_overhead_identity_holds is True
     assert audit.self_resolution_complete is True
     assert audit.statement == "Time is the computational overhead of the universe's self-resolution."
 
@@ -63,3 +64,9 @@ def test_entropy_engine_report_mentions_causal_loop_and_overhead_language() -> N
     assert "Bulk-boundary causal loop         : True" in report
     assert "Time is computational overhead    : True" in report
     assert "Time is modeled as the iterative entropic overhead of holographic self-resolution." in report
+
+
+def test_entropy_engine_audit_materializes_time_axiom_on_initialization() -> None:
+    audit = build_entropy_engine_audit()
+
+    assert audit.__dict__["time_is_computational_overhead"] is True
