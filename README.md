@@ -1,5 +1,5 @@
-# Static Holographic Boundary Theory
-## Universal Source Code v1.1
+# Static Holographic Boundary Theory: 
+## Universal Source Code v1.0
 
 Static Holographic Boundary Theory (SHBT) is an executable proof architecture for a **Zero Free Parameter** boundary construction. In SHBT, Standard Model observables are treated as mandatory residues of effective 4D gravity on a finite-capacity horizon, not as outputs of a detached fit sector. The retained construction is anchored to the unique anomaly-free branch $(26, 8, 312)$, and every benchmark artifact in this repository is read as a consequence of that branch-fixed closure.
 
@@ -65,6 +65,7 @@ This repository treats that chain as a theorem to be audited, not as an ansatz t
 - `src/shbt/audit/` — publication-facing audit modules and artifact generators.
 - `scripts/` — standalone derivation and utility scripts such as `derive_universe.py` (a compatibility CLI over `src/shbt/core/evolutionary_engine.py`), `derive_lambda.py`, `derive_proton_ratio.py`, `plot_local_moat.py`, `map_rigidity_landscape.py`, `sync_system.py`, and `build_manuscript.py` for one-command proof execution, rigidity visualization, and manuscript PDF compilation.
 - `papers/` — manuscript sources and TeX-side exports, including `tn.tex`, `gravity.tex`, `supplementary.tex`, and `physics_constants.tex`.
+- `proofs/` — consolidated Lean 4 proof obligations and theorem skeletons for external machine verification.
 - `tests/` — integrity checks, moat stress tests, and formal anomaly regression tests.
 - `config/` — locked benchmark YAML configuration.
 - `results/` — generated audit artifacts and benchmark diagnostics when the verifier is run.
