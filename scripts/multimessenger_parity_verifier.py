@@ -31,7 +31,7 @@ from shbt.paths import ProjectPaths, resolve_resource_path
 
 
 DEFAULT_PRECISION = 50
-DEFAULT_CMB_BENCHMARK_PATH = resolve_resource_path("data", "cmb_power_spectrum_benchmarks.json")
+DEFAULT_CMB_BENCHMARK_PATH = resolve_resource_path("physics_profiles", "cmb_power_spectrum_benchmarks.json")
 DEFAULT_MULTIMESSENGER_AUDIT_PATH = ProjectPaths.RESULTS / "multimessenger_audit.json"
 DEFAULT_GWOSC_API_BASE_URL = "https://gwosc.org/api/v2"
 DEFAULT_GWOSC_TIMEOUT_SECONDS = 2.5
@@ -571,7 +571,7 @@ def build_dark_sector_candidate_audits(
 
 
 def load_nufit_anchor() -> DatasetAnchor:
-    nufit_path = resolve_resource_path("data", "nufit_5_3.json")
+    nufit_path = resolve_resource_path("physics_profiles", "nufit_5_3.json")
     payload = _load_json(nufit_path)
     return DatasetAnchor(
         label="NuFIT benchmark",
@@ -582,7 +582,7 @@ def load_nufit_anchor() -> DatasetAnchor:
 
 def load_cmb_benchmark(*, path: Path | None = None) -> tuple[DatasetAnchor, CMBBenchmark]:
     benchmark_path = (
-        resolve_resource_path("data", "cmb_power_spectrum_benchmarks.json") if path is None else Path(path)
+        resolve_resource_path("physics_profiles", "cmb_power_spectrum_benchmarks.json") if path is None else Path(path)
     )
     payload = _load_json(benchmark_path)
     cmb_payload = dict(payload.get("cmb_power_spectrum", {}))
@@ -1268,7 +1268,7 @@ def render_multimessenger_report(audit: MultimessengerParityAudit) -> str:
             f"Executable Proof                 : {'PASS' if audit.executable_proof_pass else 'CHECK'}",
             (
                 "The Topological Ghost debt is mapped into the CMB acoustic peak ladder loaded "
-                "from data/cmb_power_spectrum_benchmarks.json."
+                "from config/physics_profiles/cmb_power_spectrum_benchmarks.json."
             ),
             (
                 "Global cosmological patterns are therefore audited as mandatory residues of the "
