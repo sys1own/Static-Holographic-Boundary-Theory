@@ -73,6 +73,22 @@ def test_targeted_flavor_audit_locks_gravity_before_module(
     assert len(report_paths) == len(main_module.SECTOR_AUDIT_MODULES["flavor"])
 
 
+def test_targeted_flavor_audit_requires_rigid_metric_signal(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    relaxed_guardian_checks: None,
+) -> None:
+    monkeypatch.setattr(main_module, "_ensure_audit_resources", lambda: ())
+    monkeypatch.setattr(
+        main_module.RigidityGuardian,
+        "ensure_metric_tensor_locked",
+        lambda self: setattr(self, "metric_tensor_signature", (True, True, True, True, True)) or self.metric_tensor_signature,
+    )
+
+    with pytest.raises(main_module.BenchmarkExecutionError, match=r"Metric tensor not rigid"):
+        main_module.run_targeted_sector_audits(sector="flavor", output_dir=tmp_path)
+
+
 def test_guardian_rejects_manual_higgs_tuning(
     relaxed_guardian_checks: None,
     stub_model: SimpleNamespace,
