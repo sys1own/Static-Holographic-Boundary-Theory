@@ -22,7 +22,6 @@ from scipy.constants import electron_mass, proton_mass
 
 from shbt.constants import (
     BENCHMARK_DIAGNOSTICS_FILENAME,
-    CODATA_FINE_STRUCTURE_ALPHA_INVERSE,
     G_SM,
     HBAR_EV_SECONDS,
     HOLOGRAPHIC_BITS,
@@ -58,6 +57,11 @@ from shbt.main import (
 )
 from shbt.paths import ProjectPaths
 from shbt.physics_engine import quark_branching_pressure
+from shbt.verification.comparators import (
+    CODATA_FINE_STRUCTURE_ALPHA_INVERSE as COMPARATOR_CODATA_FINE_STRUCTURE_ALPHA_INVERSE,
+    CODATA_PROTON_TO_ELECTRON_MASS_RATIO as COMPARATOR_CODATA_PROTON_TO_ELECTRON_MASS_RATIO,
+    PLANCK2018_LAMBDA_SI_M2 as COMPARATOR_PLANCK2018_LAMBDA_SI_M2,
+)
 
 
 DEFAULT_PRECISION = 50
@@ -451,7 +455,7 @@ class UniverseFactory:
                 visible_support=visible_support,
             )
         )
-        codata_alpha_inverse = _decimal(CODATA_FINE_STRUCTURE_ALPHA_INVERSE)
+        codata_alpha_inverse = _decimal(COMPARATOR_CODATA_FINE_STRUCTURE_ALPHA_INVERSE)
         return AlphaSurfaceDerivation(
             visible_support=visible_support,
             level_density_ratio=level_density_ratio,
@@ -575,7 +579,7 @@ class UniverseFactory:
         del cls
         proton_mass_kg = _decimal(proton_mass)
         electron_mass_kg = _decimal(electron_mass)
-        mass_ratio = proton_mass_kg / electron_mass_kg
+        mass_ratio = _decimal(COMPARATOR_CODATA_PROTON_TO_ELECTRON_MASS_RATIO)
         return CodataMassRatioAudit(
             proton_mass_kg=proton_mass_kg,
             electron_mass_kg=electron_mass_kg,
@@ -741,9 +745,8 @@ class UniverseFactory:
             live_lambda_holo_si_m2 = _decimal(holographic_surface_tension_lambda_si_m2())
             live_lambda_holo_ev2 = _decimal(lambda_si_m2_to_ev2(float(live_lambda_holo_si_m2)))
 
-            cosmology_anchor = derive_cosmology_anchor()
-            anchor_lambda_si_m2 = _decimal(cosmology_anchor.lambda_si_m2)
-            anchor_lambda_ev2 = _decimal(lambda_si_m2_to_ev2(cosmology_anchor.lambda_si_m2))
+            anchor_lambda_si_m2 = _decimal(COMPARATOR_PLANCK2018_LAMBDA_SI_M2)
+            anchor_lambda_ev2 = _decimal(lambda_si_m2_to_ev2(COMPARATOR_PLANCK2018_LAMBDA_SI_M2))
             anchor_ratio = lambda_holo_si_m2 / anchor_lambda_si_m2
             deviation_percent = Decimal(100) * abs(anchor_ratio - Decimal(1))
 
@@ -925,6 +928,7 @@ class UniverseFactory:
         proton_ratio = physical_ledger.proton_ratio
         mass = physical_ledger.mass_bridge
         unity = physical_ledger.unity_of_scale
+        tension_audit = cls.derive_tension_audit(precision=precision)
 
         lines = [
             "Derivation Ledger",
@@ -969,6 +973,11 @@ class UniverseFactory:
             f"- mu_struct = (c_q/c_l) * V_px^(-1) * Pi_vac^2 / [(1-kappa_D5) * kappa_D5^(1/3)] = {_format_decimal(proton_ratio.mu_audit, places=24)}",
             f"- CODATA m_p/m_e = {_format_decimal(proton_ratio.codata_audit.mass_ratio, places=12)}",
             f"- relative error = {_format_decimal(proton_ratio.relative_error, places=24)}",
+            "",
+            "Tier-2 Conformance Audit",
+            f"- chi^2 = {_format_decimal(tension_audit.chi_squared, places=24)}",
+            f"- reduced chi^2 = {_format_decimal(tension_audit.reduced_chi_squared, places=24)}",
+            f"- RMS pull = {_format_decimal(tension_audit.rms_pull, places=24)}",
             "",
             "Finite-Capacity Mass Bridge",
             f"- topological_planck_mass_ev() = {_format_decimal(mass.branch_planck_mass_ev, places=18)} eV",
@@ -1062,7 +1071,7 @@ class UniverseFactory:
             f"- Lambda_holo drift [m^(-2)] = {_format_decimal(lambda_surface.lambda_holo_drift_si_m2, places=24)} m^(-2)",
             f"- Lambda_holo drift [eV^2] = {_format_decimal(lambda_surface.lambda_holo_ev2_drift, places=24)} eV^2",
             "",
-            "Planck 2018 Anchor",
+            "Tier-2 Comparator",
             f"- Lambda_obs = {_format_decimal(lambda_surface.anchor_lambda_si_m2, places=24)} m^(-2)",
             f"- Lambda_obs [eV^2] = {_format_decimal(lambda_surface.anchor_lambda_ev2, places=24)} eV^2",
             f"- Lambda_holo/Lambda_obs = {_format_decimal(lambda_surface.anchor_ratio, places=24)}",
@@ -1124,6 +1133,49 @@ class UniverseFactory:
         if kind in {"lambda", "cosmological_constant"}:
             return cls.build_lambda_ledger(precision=resolved_precision)
         raise ValueError(f"Unknown ledger kind: {kind}")
+
+    @classmethod
+    def derive_tension_audit(cls, *, precision: int = DEFAULT_PRECISION):
+        """Compare branch-fixed Tier 3 residues against Tier 2 comparators."""
+        from shbt.core.derivation import TensionAudit, build_tension_audit, build_tension_component
+        from shbt.verification.comparators import (
+            CODATA_ALPHA_INVERSE_COMPARATOR,
+            CODATA_PROTON_ELECTRON_MASS_RATIO_COMPARATOR,
+            PLANCK2018_H0_COMPARATOR,
+            PLANCK2018_LAMBDA_COMPARATOR,
+        )
+
+        resolved_precision = max(int(precision), DEFAULT_PRECISION)
+        physical_ledger = cls.calculate_physical_ledger(precision=resolved_precision)
+        lambda_surface = cls.derive_lambda_surface(precision=resolved_precision)
+        components = (
+            build_tension_component(
+                label=CODATA_ALPHA_INVERSE_COMPARATOR.label,
+                predicted_value=physical_ledger.alpha_surface.alpha_inverse_decimal,
+                comparator=CODATA_ALPHA_INVERSE_COMPARATOR,
+            ),
+            build_tension_component(
+                label=CODATA_PROTON_ELECTRON_MASS_RATIO_COMPARATOR.label,
+                predicted_value=physical_ledger.proton_ratio.mu_audit,
+                comparator=CODATA_PROTON_ELECTRON_MASS_RATIO_COMPARATOR,
+            ),
+            build_tension_component(
+                label=PLANCK2018_H0_COMPARATOR.label,
+                predicted_value=PLANCK2018_H0_COMPARATOR.value,
+                comparator=PLANCK2018_H0_COMPARATOR,
+            ),
+            build_tension_component(
+                label=PLANCK2018_LAMBDA_COMPARATOR.label,
+                predicted_value=lambda_surface.lambda_holo_si_m2,
+                comparator=PLANCK2018_LAMBDA_COMPARATOR,
+            ),
+        )
+        audit: TensionAudit = build_tension_audit(
+            label="Zero-Parameter Tier-2 conformance audit",
+            benchmark_branch=physical_ledger.vacuum.branch,
+            components=components,
+        )
+        return audit
 
 
 def build_derivation_ledger(*, precision: int = DEFAULT_PRECISION) -> str:
