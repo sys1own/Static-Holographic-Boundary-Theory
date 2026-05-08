@@ -28,9 +28,13 @@ TARGET_AUDIT_SECTORS = ("gravity", "cosmology", "flavor", "rigidity", "complexit
 PREFERRED_LATEX_BUILD_ORDER = ("supplementary.tex", "tn.tex", "gravity.tex")
 MANUSCRIPT_TARGET_TEX = "gravity.tex"
 MANUSCRIPT_TARGET_PDF = "gravity.pdf"
-SUPPORTED_LATEX_BACKENDS = ("pdflatex",)
+SUPPORTED_LATEX_BACKENDS = ("pdflatex", "tectonic")
 SUPPORTED_CONTAINER_ENGINES = ("docker", "podman")
 DEFAULT_LATEX_CONTAINER_IMAGE = os.environ.get("SHBT_MANUSCRIPT_CONTAINER_IMAGE", "texlive/texlive:latest")
+SHBT_CONTAINERIZED_LATEX_ENV = "SHBT_CONTAINERIZED_LATEX"
+SHBT_INTERNAL_LATEX_BACKEND_ENV = "SHBT_INTERNAL_LATEX_BACKEND"
+DEFAULT_INTERNAL_LATEX_BACKEND = "tectonic"
+AUTO_HOST_LATEX_BACKENDS = ("pdflatex",)
 
 
 @dataclass(frozen=True)
@@ -85,9 +89,30 @@ def _load_sync_system_module() -> Any:
     return module
 
 
+def is_running_in_shbt_container() -> bool:
+    marker = os.environ.get(SHBT_CONTAINERIZED_LATEX_ENV, "")
+    return marker.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _resolve_auto_latex_candidates() -> tuple[str, ...]:
+    if not is_running_in_shbt_container():
+        return AUTO_HOST_LATEX_BACKENDS
+
+    preferred_backend = (
+        os.environ.get(SHBT_INTERNAL_LATEX_BACKEND_ENV, DEFAULT_INTERNAL_LATEX_BACKEND).strip()
+        or DEFAULT_INTERNAL_LATEX_BACKEND
+    )
+    if preferred_backend not in SUPPORTED_LATEX_BACKENDS:
+        raise RuntimeError(
+            f"Unsupported SHBT container backend `{preferred_backend}` declared via {SHBT_INTERNAL_LATEX_BACKEND_ENV}."
+        )
+    fallback_backends = tuple(candidate for candidate in SUPPORTED_LATEX_BACKENDS if candidate != preferred_backend)
+    return (preferred_backend, *fallback_backends)
+
+
 def resolve_latex_installation(backend: str = "auto") -> LatexInstallation:
     if backend == "auto":
-        candidates = SUPPORTED_LATEX_BACKENDS
+        candidates = _resolve_auto_latex_candidates()
     else:
         candidates = (backend,)
 
@@ -97,8 +122,15 @@ def resolve_latex_installation(backend: str = "auto") -> LatexInstallation:
             return LatexInstallation(backend=candidate, command=command)
 
     if backend == "auto":
+        if is_running_in_shbt_container():
+            expected_backend = candidates[0]
+            raise RuntimeError(
+                "No local LaTeX installation detected. "
+                f"The SHBT container expected `{expected_backend}` on PATH."
+            )
         raise RuntimeError(
-            "No local LaTeX installation detected. Install `pdflatex` and rerun `python scripts/build_manuscript.py`."
+            "No local LaTeX installation detected. Install `pdflatex` and rerun `python scripts/build_manuscript.py`, "
+            "or use the SHBT containerized Tectonic environment."
         )
     raise RuntimeError(
         f"Requested LaTeX backend `{backend}` is not available on PATH. Install it or rerun with `--latex-backend auto`."
@@ -192,6 +224,16 @@ def synchronize_manuscript_sources(*, output_dir: Path, manuscript_dir: Path) ->
     )
 
 
+def stage_compiled_pdf(compiled_pdf: Path, *, artifact_dir: Path) -> Path:
+    resolved_compiled_pdf = Path(compiled_pdf)
+    resolved_artifact_dir = Path(artifact_dir)
+    resolved_artifact_dir.mkdir(parents=True, exist_ok=True)
+    staged_pdf = resolved_artifact_dir / resolved_compiled_pdf.name
+    if staged_pdf.resolve() != resolved_compiled_pdf.resolve():
+        shutil.copy2(resolved_compiled_pdf, staged_pdf)
+    return staged_pdf
+
+
 def compile_gravity_manuscript(pdflatex_command: str, document_path: Path, *, workdir: Path) -> Path:
     resolved_workdir = Path(workdir)
     resolved_document_path = Path(document_path)
@@ -209,6 +251,30 @@ def compile_gravity_manuscript(pdflatex_command: str, document_path: Path, *, wo
         subprocess.run(command, cwd=resolved_workdir, check=True)
     except subprocess.CalledProcessError as exc:
         raise RuntimeError(f"LaTeX compilation failed for {resolved_document_path.name} using `pdflatex`.") from exc
+
+    pdf_path = resolved_workdir / resolved_document_path.with_suffix(".pdf").name
+    if not pdf_path.is_file():
+        raise FileNotFoundError(f"Expected compiled PDF at {pdf_path}, but it was not created.")
+    return pdf_path
+
+
+def compile_gravity_manuscript_with_tectonic(tectonic_command: str, document_path: Path, *, workdir: Path) -> Path:
+    resolved_workdir = Path(workdir)
+    resolved_document_path = Path(document_path)
+    if not resolved_document_path.is_file():
+        raise FileNotFoundError(f"Executable-paper source not found: {resolved_document_path}")
+
+    command = (
+        str(tectonic_command),
+        "--keep-logs",
+        "--outdir",
+        ".",
+        resolved_document_path.name,
+    )
+    try:
+        subprocess.run(command, cwd=resolved_workdir, check=True)
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(f"LaTeX compilation failed for {resolved_document_path.name} using `tectonic`.") from exc
 
     pdf_path = resolved_workdir / resolved_document_path.with_suffix(".pdf").name
     if not pdf_path.is_file():
@@ -271,37 +337,46 @@ def build_manuscript(
     container_engine: str = "auto",
     container_image: str = DEFAULT_LATEX_CONTAINER_IMAGE,
     validate_text: bool = False,
+    compile_only: bool = False,
 ) -> BuildResult:
     resolved_manuscript_dir = Path(manuscript_dir)
     resolved_output_dir = Path(output_dir)
     latex_artifact_dir = resolved_output_dir / "final"
 
-    if latex_backend not in {"auto", "pdflatex", "container"}:
-        raise ValueError("build_manuscript only supports `pdflatex` or `container` for executable-paper generation.")
+    resolved_output_dir.mkdir(parents=True, exist_ok=True)
+    latex_artifact_dir.mkdir(parents=True, exist_ok=True)
+
+    if latex_backend not in {"auto", "pdflatex", "tectonic", "container"}:
+        raise ValueError(
+            "build_manuscript only supports `pdflatex`, `tectonic`, or `container` for executable-paper generation."
+        )
     if not resolved_manuscript_dir.is_dir():
         raise FileNotFoundError(f"Manuscript directory not found: {resolved_manuscript_dir}")
 
-    print("[build] Running sector proofs and universal audit")
-    run_entire_proof(
-        output_dir=resolved_output_dir,
-        manuscript_dir=resolved_manuscript_dir,
-        validate_text=validate_text,
-    )
+    if compile_only:
+        print("[build] Compile-only mode; reusing synchronized manuscript sources")
+    else:
+        print("[build] Running sector proofs and universal audit")
+        run_entire_proof(
+            output_dir=resolved_output_dir,
+            manuscript_dir=resolved_manuscript_dir,
+            validate_text=validate_text,
+        )
 
-    print("[build] Triggering EvolutionaryEngine derivation ledger")
-    topological_constants = generate_topological_constants()
-    print(
-        "[build] Constants ready: "
-        f"alpha_surf^-1={topological_constants.alpha_surface_inverse:.9f}, "
-        f"kappa_D5={topological_constants.kappa_d5:.9f}, "
-        f"m_nu={topological_constants.neutrino_floor_mev:.9f} meV"
-    )
+        print("[build] Triggering EvolutionaryEngine derivation ledger")
+        topological_constants = generate_topological_constants()
+        print(
+            "[build] Constants ready: "
+            f"alpha_surf^-1={topological_constants.alpha_surface_inverse:.9f}, "
+            f"kappa_D5={topological_constants.kappa_d5:.9f}, "
+            f"m_nu={topological_constants.neutrino_floor_mev:.9f} meV"
+        )
 
-    print("[build] Freezing live constants into manuscript sources")
-    synchronize_manuscript_sources(
-        output_dir=resolved_output_dir,
-        manuscript_dir=resolved_manuscript_dir,
-    )
+        print("[build] Freezing live constants into manuscript sources")
+        synchronize_manuscript_sources(
+            output_dir=resolved_output_dir,
+            manuscript_dir=resolved_manuscript_dir,
+        )
 
     target_document = resolved_manuscript_dir / MANUSCRIPT_TARGET_TEX
     if latex_backend == "container":
@@ -316,8 +391,15 @@ def build_manuscript(
         )
         resolved_backend = "container"
     else:
+        requested_latex_backend = (
+            "auto"
+            if latex_backend == "auto" and is_running_in_shbt_container()
+            else "pdflatex"
+            if latex_backend == "auto"
+            else latex_backend
+        )
         try:
-            latex_installation = resolve_latex_installation("pdflatex" if latex_backend == "auto" else latex_backend)
+            latex_installation = resolve_latex_installation(requested_latex_backend)
         except RuntimeError:
             print("Mathematical verification successful; PDF generation skipped due to missing LaTeX compiler.")
             return BuildResult(
@@ -329,21 +411,32 @@ def build_manuscript(
                 final_pdf=None,
             )
 
-        print(f"[build] Compiling executable paper: {_display_path(target_document)}")
-        compiled_pdf = compile_gravity_manuscript(
-            latex_installation.command,
-            target_document,
-            workdir=resolved_manuscript_dir,
+        print(
+            f"[build] Compiling executable paper with {latex_installation.backend}: "
+            f"{_display_path(target_document)}"
         )
+        if latex_installation.backend == "tectonic":
+            compiled_pdf = compile_gravity_manuscript_with_tectonic(
+                latex_installation.command,
+                target_document,
+                workdir=resolved_manuscript_dir,
+            )
+        else:
+            compiled_pdf = compile_gravity_manuscript(
+                latex_installation.command,
+                target_document,
+                workdir=resolved_manuscript_dir,
+            )
         resolved_backend = latex_installation.backend
 
+    final_pdf = stage_compiled_pdf(compiled_pdf, artifact_dir=latex_artifact_dir)
     return BuildResult(
         proof_output_dir=resolved_output_dir,
         latex_artifact_dir=latex_artifact_dir,
         manuscript_dir=resolved_manuscript_dir,
         latex_backend=resolved_backend,
-        compiled_pdfs=(compiled_pdf,),
-        final_pdf=compiled_pdf,
+        compiled_pdfs=(final_pdf,),
+        final_pdf=final_pdf,
     )
 
 
@@ -351,13 +444,18 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manuscript-dir", type=Path, default=ProjectPaths.PAPERS)
     parser.add_argument("--output-dir", type=Path, default=ProjectPaths.RESULTS)
-    parser.add_argument("--latex-backend", choices=("auto", "pdflatex", "container"), default="auto")
+    parser.add_argument("--latex-backend", choices=("auto", "pdflatex", "tectonic", "container"), default="auto")
     parser.add_argument("--container-engine", choices=("auto", "docker", "podman"), default="auto")
     parser.add_argument("--container-image", default=DEFAULT_LATEX_CONTAINER_IMAGE)
     parser.add_argument(
         "--validate-text",
         action="store_true",
         help="Pass `--validate-text` through to the universal audit before freezing manuscript constants.",
+    )
+    parser.add_argument(
+        "--compile-only",
+        action="store_true",
+        help="Skip proof generation and manuscript synchronization, then compile the current manuscript sources only.",
     )
     return parser.parse_args(list(argv) if argv is not None else None)
 
@@ -371,6 +469,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         container_engine=args.container_engine,
         container_image=args.container_image,
         validate_text=args.validate_text,
+        compile_only=args.compile_only,
     )
 
     if result.final_pdf is None:
