@@ -66,8 +66,16 @@ class SaturationAudit:
     relative_mismatch: Decimal
 
     @property
-    def is_saturated(self) -> bool:
+    def success(self) -> bool:
         return abs(self.relative_mismatch) < Decimal(str(HOLOGRAPHIC_NOISE_FLOOR))
+
+    @property
+    def passed(self) -> bool:
+        return self.success
+
+    @property
+    def is_saturated(self) -> bool:
+        return self.success
 
     @property
     def boundary_condition_locked(self) -> bool:
