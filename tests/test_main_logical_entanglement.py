@@ -210,6 +210,36 @@ def test_metric_lock_accepts_mismatch_at_holographic_noise_floor(
     assert guardian.metric_tensor_signature == (True, True, True, True, True)
 
 
+def test_metric_lock_noise_floor_normalizes_signature_and_unblocks_flavor(
+    relaxed_guardian_checks: None,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    gravity_result = SimpleNamespace(
+        relative_mismatch=main_module.HOLOGRAPHIC_NOISE_FLOOR / 10.0,
+    )
+    benchmark_model = SimpleNamespace(
+        parent_level=main_module.PARENT_LEVEL,
+        lepton_level=main_module.LEPTON_LEVEL,
+        quark_level=main_module.QUARK_LEVEL,
+        verify_bulk_emergence=lambda: gravity_result,
+    )
+    guardian = main_module.RigidityGuardian(model=benchmark_model)
+
+    result = guardian.ensure_metric_tensor_locked()
+    captured = capsys.readouterr()
+
+    assert result is gravity_result
+    assert guardian.metric_locked is True
+    assert guardian.metric_tensor_signature == (True, True, True, True, True)
+    assert gravity_result.bulk_emergent is True
+    assert gravity_result.torsion_free is True
+    assert gravity_result.non_singular_bulk is True
+    assert gravity_result.lambda_aligned is True
+    assert gravity_result.parity_bit_density_constraint_satisfied is True
+    assert "Metric lock secured at (26, 8, 312)." in captured.out
+    assert guardian.calculate(lambda: "flavor", sector_name="flavor", label="pmns transport") == "flavor"
+
+
 def test_universal_aggregate_ignores_subthreshold_sector_failure(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -232,6 +262,41 @@ def test_universal_aggregate_ignores_subthreshold_sector_failure(
                 SimpleNamespace(
                     success=False,
                     relative_mismatch=main_module.HOLOGRAPHIC_NOISE_FLOOR / 10.0,
+                )
+            )
+        return output_dir / f"{sector}_report.txt"
+
+    monkeypatch.setattr(main_module, "_capture_sector_module_report", fake_capture_sector_module_report)
+
+    report_paths = main_module.run_targeted_sector_audits(sector="complexity", output_dir=tmp_path)
+    captured = capsys.readouterr()
+
+    assert report_paths == (tmp_path / "complexity_report.txt",)
+    assert "hardware-level residue" in captured.out
+
+
+def test_universal_aggregate_ignores_exact_noise_floor_sector_failure(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    relaxed_guardian_checks: None,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(main_module, "_ensure_audit_resources", lambda: ())
+    monkeypatch.setitem(main_module.SECTOR_AUDIT_MODULES, "complexity", ("shbt.sectors.complexity_sector",))
+
+    def fake_capture_sector_module_report(
+        module_name: str,
+        *,
+        output_dir: Path,
+        sector: str,
+        result_holder: list[object] | None = None,
+    ) -> Path:
+        del module_name
+        if result_holder is not None:
+            result_holder.append(
+                SimpleNamespace(
+                    success=False,
+                    relative_mismatch=main_module.HOLOGRAPHIC_NOISE_FLOOR,
                 )
             )
         return output_dir / f"{sector}_report.txt"
