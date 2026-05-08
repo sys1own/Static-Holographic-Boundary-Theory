@@ -40,6 +40,7 @@ from scipy.optimize import brentq
 from scipy.stats import chi2 as _chi2_distribution
 
 from shbt import constants as _constants
+from shbt.constants import HOLOGRAPHIC_NOISE_FLOOR
 from shbt import physics_engine
 from shbt import reporting as presentation_reporting
 from shbt import reporting_engine
