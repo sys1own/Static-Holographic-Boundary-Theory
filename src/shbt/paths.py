@@ -7,8 +7,9 @@ class ProjectPaths:
     # Target: Static-Holographic-Boundary-Theory-main/
     ROOT = Path(__file__).resolve().parents[2]
     SRC = ROOT / "src"
-    DATA = ROOT / "data"
     CONFIG = ROOT / "config"
+    PHYSICS_PROFILES = CONFIG / "physics_profiles"
+    EXTERNAL_TRIGGERS = PHYSICS_PROFILES / "external_triggers"
     SCRIPTS = ROOT / "scripts"
     PAPERS = ROOT / "papers"
     RESULTS = ROOT / "results"
@@ -32,8 +33,8 @@ def resolve_resource_path(resource_type: str, filename: str | None = None) -> Pa
     """
 
     if filename is not None:
-        if resource_type == "data":
-            return ProjectPaths.DATA / filename
+        if resource_type in {"data", "physics_profiles"}:
+            return ProjectPaths.PHYSICS_PROFILES / filename
         if resource_type == "config":
             return ProjectPaths.CONFIG / filename
         return ProjectPaths.ROOT / filename
