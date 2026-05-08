@@ -78,7 +78,7 @@ def test_multimessenger_report_is_automated_physical_audit() -> None:
     assert "Dark Sector Candidate Audits" in report
     assert "LIGO/Virgo Strain Benchmark" in report
     assert "TT peak 1 [m=1]" in report
-    assert "data/cmb_power_spectrum_benchmarks.json" in report
+    assert "config/physics_profiles/cmb_power_spectrum_benchmarks.json" in report
 
 
 def test_cmb_benchmark_bundle_includes_peak_position_ladder() -> None:
