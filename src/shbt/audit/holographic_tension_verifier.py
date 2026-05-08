@@ -353,6 +353,11 @@ def render_report(audit: TensionSaturationAudit) -> str:
         f"epsilon_lambda                   : {_format_decimal_scientific(audit.unity.epsilon_lambda)}",
         f"register floor                   : {_format_decimal_scientific(audit.unity.register_noise_floor)}",
         f"Unity closure                    : {'PASS' if audit.unity.passed else 'FAIL'}",
+        (
+            "Saturation status               : PASS (within noise floor)"
+            if audit.saturation.is_saturated
+            else "Saturation status               : FAIL"
+        ),
         "",
         "Scale Trap Defense",
         "------------------",
