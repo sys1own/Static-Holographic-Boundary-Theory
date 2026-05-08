@@ -190,4 +190,30 @@ def test_saturation_audit_marks_negligible_mismatch_as_saturated() -> None:
         relative_mismatch=noether_bridge.Decimal("1.0e-16"),
     )
 
+    assert saturated.success is True
+    assert saturated.passed is True
     assert saturated.is_saturated
+
+
+def test_saturation_audit_success_respects_noise_floor_boundary() -> None:
+    threshold = noether_bridge.Decimal(str(noether_bridge.HOLOGRAPHIC_NOISE_FLOOR))
+
+    sub_threshold = noether_bridge.SaturationAudit(
+        lambda_obs_si_m2=noether_bridge.Decimal("1.0e-52"),
+        lambda_obs_ev2=noether_bridge.Decimal("1.0e-66"),
+        holographic_bits_from_lambda=noether_bridge.Decimal("3.31e122"),
+        configured_holographic_bits=noether_bridge.Decimal("3.31e122"),
+        register_noise_floor=noether_bridge.Decimal("3.0e-123"),
+        relative_mismatch=threshold / noether_bridge.Decimal("10"),
+    )
+    at_threshold = noether_bridge.SaturationAudit(
+        lambda_obs_si_m2=noether_bridge.Decimal("1.0e-52"),
+        lambda_obs_ev2=noether_bridge.Decimal("1.0e-66"),
+        holographic_bits_from_lambda=noether_bridge.Decimal("3.31e122"),
+        configured_holographic_bits=noether_bridge.Decimal("3.31e122"),
+        register_noise_floor=noether_bridge.Decimal("3.0e-123"),
+        relative_mismatch=threshold,
+    )
+
+    assert sub_threshold.success is True
+    assert at_threshold.success is False
