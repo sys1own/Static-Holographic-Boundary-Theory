@@ -51,7 +51,7 @@ updates, while the feedback functional closes a causal loop from the emergent
 bulk entropy state back into the next boundary-resolution step.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal, localcontext
 from fractions import Fraction
 from pathlib import Path
@@ -202,6 +202,10 @@ class EntropyEngineAudit:
     boundary_budget_residual: Decimal
     bulk_entropy_budget_residual: Decimal
     final_projection_residual: Decimal
+    time_is_computational_overhead: bool = field(init=False)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "time_is_computational_overhead", True)
 
     @property
     def total_boundary_bit_residue(self) -> Decimal:
@@ -220,6 +224,13 @@ class EntropyEngineAudit:
         if not self.iterations:
             return Decimal(str(self.source_projection_dimension))
         return self.iterations[-1].projected_dimension_after
+
+    @property
+    def temporal_overhead_identity_holds(self) -> bool:
+        return bool(
+            abs(self.total_temporal_overhead - derive_temporal_increment(self.total_bulk_entropy_bit_residue, self.bit_budget))
+            <= _RESOLUTION_TOLERANCE
+        )
 
     @property
     def arrow_of_time_established(self) -> bool:
@@ -241,13 +252,6 @@ class EntropyEngineAudit:
         return bool(
             any(step.causal_feedback_active for step in self.iterations[1:])
             and any(step.feedback_perturbs_boundary_resolution for step in self.iterations[1:])
-        )
-
-    @property
-    def time_is_computational_overhead(self) -> bool:
-        return bool(
-            abs(self.total_temporal_overhead - derive_temporal_increment(self.total_bulk_entropy_bit_residue, self.bit_budget))
-            <= _RESOLUTION_TOLERANCE
         )
 
     @property
