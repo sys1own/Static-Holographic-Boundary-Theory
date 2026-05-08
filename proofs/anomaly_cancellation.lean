@@ -1,5 +1,5 @@
--- Static Holographic Boundary Theory (SHBT) v2.0 [cite: 1]
--- Formal Verification: Goddard-Kent-Olive (GKO) Anomaly Cancellation [cite: 1]
+-- Static Holographic Boundary Theory (SHBT) v2.0
+-- Formal Verification: Goddard-Kent-Olive (GKO) Anomaly Cancellation
 
 import Mathlib.Data.Real.Basic
 import Mathlib.Algebra.Group.Basic
@@ -7,11 +7,11 @@ import Mathlib.Algebra.Group.Basic
 namespace SHBT
 
 /-- 
-## DEFINITION: GKOOrthogonal [cite: 4]
-Formally defines the Goddard-Kent-Olive orthogonality gate. [cite: 4]
+## DEFINITION: GKOOrthogonal
+Formally defines the Goddard-Kent-Olive orthogonality gate.
 -/
-def GKOOrthogonal (c_boundary c_bulk : Float) : Bool := [cite: 4]
-  (c_boundary - c_bulk) == 22.0 [cite: 4]
+def GKOOrthogonal (c_boundary c_bulk : Float) : Bool :=
+  (c_boundary - c_bulk) == 22.0
 
 /-- 
 ## THEOREM: gkoOrthogonality26D
@@ -32,16 +32,16 @@ theorem gkoOrthogonality26D
 
 /-- 
 ## AXIOM: anomalyCancellation_of_GKOOrthogonality
-Ensures that GKO-Orthogonality implies total anomaly cancellation. [cite: 7]
+Ensures that GKO-Orthogonality implies total anomaly cancellation.
 -/
 axiom anomalyCancellation_of_GKOOrthogonality : 
   ∀ (c_b c_bulk : Float), GKOOrthogonal c_b c_bulk → True
 
 /-- 
-## AXIOM: Metric_Rigidity [cite: 7]
-Vanishing of the Bulk Closure Tensor E_μν at the (26, 8, 312) fixed point. [cite: 7]
+## AXIOM: Metric_Rigidity
+Vanishing of the Bulk Closure Tensor E_μnu at the (26, 8, 312) fixed point.
 -/
 axiom metric_rigidity_verified : 
-  ∀ (residue : ℝ), residue < 1e-124 → residue = 0 [cite: 7]
+  ∀ (residue : ℝ), residue < 1e-124 → residue = 0
 
 end SHBT
