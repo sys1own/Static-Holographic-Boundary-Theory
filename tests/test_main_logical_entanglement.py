@@ -180,6 +180,65 @@ def test_main_package_universal_mode_passes_shared_guardian(
     assert guardians[0] is not None
 
 
+def test_universal_sector_passes_with_locked_metric_and_flavor_residue() -> None:
+    guardian = main_module.RigidityGuardian()
+    guardian.metric_locked = True
+
+    assert main_module._universal_sector_passed(
+        guardian=guardian,
+        flavor_residue_lock_pass=True,
+    ) is True
+
+
+
+def test_main_universal_sector_skips_targeted_audit_shortcut(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    class Sentinel(RuntimeError):
+        pass
+
+    monkeypatch.setattr(main_module.ProjectPaths, "ensure_dirs", lambda: None)
+    monkeypatch.setattr(main_module, "_ensure_audit_resources", lambda: ())
+    monkeypatch.setattr(main_module, "configure_reporting", lambda **kwargs: None)
+    monkeypatch.setattr(main_module, "_emit_shbt_branding", lambda **kwargs: None)
+    monkeypatch.setattr(main_module, "_invoked_via_package_script", lambda: True)
+    monkeypatch.setattr(
+        main_module,
+        "parse_args",
+        lambda argv=None: SimpleNamespace(
+            manuscript_dir=tmp_path,
+            output_dir=tmp_path,
+            sector="universal",
+            zero_parameter=False,
+            residue_check=False,
+            audit_generation_3=False,
+            master_transport_audit=False,
+            master_transport_shift=main_module._master_transport.DEFAULT_RIGIDITY_SHIFT_FRACTION,
+            quiet=True,
+            log_file=None,
+            seed=main_module.DEFAULT_RANDOM_SEED,
+            seed_audit=False,
+            seed_audit_count=main_module.SEED_AUDIT_SAMPLE_COUNT,
+            referee_audit=False,
+            validate_text=False,
+        ),
+    )
+    monkeypatch.setattr(
+        main_module,
+        "_targeted_audit_success",
+        lambda **kwargs: (_ for _ in ()).throw(AssertionError("targeted shortcut should not run for universal sector")),
+    )
+    monkeypatch.setattr(
+        main_module,
+        "verify_runtime_algebraic_isolation",
+        lambda **kwargs: (_ for _ in ()).throw(Sentinel("entered full universal flow")),
+    )
+
+    with pytest.raises(Sentinel, match="entered full universal flow"):
+        main_module.main(None)
+
+
 def test_guardian_rejects_manual_higgs_tuning(
     relaxed_guardian_checks: None,
     stub_model: SimpleNamespace,
