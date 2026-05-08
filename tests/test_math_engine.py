@@ -131,3 +131,38 @@ def test_math_engine_guard_sum_and_zero_check_are_rationally_exact() -> None:
     assert module.is_guard_zero(guarded_sum - Fraction(1, 1)) is True
     assert module.is_guard_zero(Fraction(1, 10**module.PRECISION_GUARD)) is True
     assert module.is_guard_zero(Fraction(1, 10 ** (module.PRECISION_GUARD - 1))) is False
+
+
+def test_math_engine_guard_interval_returns_closed_bounds() -> None:
+    module = _load_math_engine()
+
+    interval = module.guard_interval((Decimal("1e-125"), Decimal("2e-125")))
+
+    assert interval.low == Decimal("1e-125")
+    assert interval.high == Decimal("2e-125")
+    assert interval.as_tuple() == (Decimal("1e-125"), Decimal("2e-125"))
+
+
+def test_math_engine_interval_apply_bounds_transcendentals() -> None:
+    module = _load_math_engine()
+
+    sqrt_two = module.interval_apply("sqrt", 2)
+    squared = module.interval_mul(sqrt_two, sqrt_two)
+
+    assert sqrt_two.low < sqrt_two.high
+    assert squared.contains(2)
+
+
+def test_math_engine_residue_intervals_report_moat_containment() -> None:
+    module = _load_math_engine()
+
+    small_residue = module.residue_interval((Decimal("-1e-125"), Decimal("1e-125")), 0)
+    large_residue = module.residue_interval((Decimal("-1e-123"), Decimal("1e-123")), 0)
+    absolute_small_residue = module.absolute_residue_interval((Decimal("-1e-125"), Decimal("1e-125")), 0)
+
+    assert small_residue.low <= Decimal("-1e-125")
+    assert small_residue.high >= Decimal("1e-125")
+    assert absolute_small_residue.contains(0)
+    assert absolute_small_residue.high >= Decimal("1e-125")
+    assert module.moat_contains(small_residue) is True
+    assert module.moat_contains(large_residue) is False
