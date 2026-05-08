@@ -21,12 +21,13 @@ if __package__ in (None, ""):
 
 from shbt.constants import PLANCK2018_LAMBDA_SI_M2
 from shbt.core.noether_bridge import load_c_dark_completion_fraction
+from shbt.verification.comparators import PLANCK2018_H0_KM_S_MPC as COMPARATOR_PLANCK2018_H0_KM_S_MPC
 from shbt.paths import resolve_resource_path
 
 
 DEFAULT_PRECISION = 50
 DEFAULT_REDSHIFTS = (Decimal("0"), Decimal("0.5"), Decimal("1"), Decimal("2"), Decimal("10"), Decimal("1100"))
-FALLBACK_H0_CMB_ANCHOR_KM_S_MPC = Decimal("67.4")
+FALLBACK_H0_CMB_ANCHOR_KM_S_MPC = Decimal(str(COMPARATOR_PLANCK2018_H0_KM_S_MPC))
 BENCHMARK_GRADIENT_REFERENCE_KM_S_MPC = Decimal("4.80")
 BENCHMARK_LOCAL_REFERENCE_KM_S_MPC = Decimal("72.2")
 
