@@ -869,9 +869,15 @@ class RigidityGuardian:
 
     def _lock_metric_tensor(self, *, result: Any, label: str) -> None:
         relative_mismatch = self._relative_metric_mismatch(result=result)
-        if relative_mismatch is not None and relative_mismatch < HOLOGRAPHIC_NOISE_FLOOR:
-            self._set_result_member(result, "bulk_emergent", True)
-            LOGGER.info("[RIGIDITY]: Mismatch within noise floor. Granting lock.")
+        if relative_mismatch is not None:
+            if relative_mismatch < HOLOGRAPHIC_NOISE_FLOOR:
+                self._set_result_member(result, "bulk_emergent", True)
+                LOGGER.info("[RIGIDITY]: Mismatch within noise floor. Granting lock.")
+                LOGGER.info("[RIGIDITY]: Metric tensor lock secured at %s.", self._metric_lock_coordinate())
+            else:
+                raise BenchmarkExecutionError(
+                    f"Gravity sector failed to lock the metric tensor (mismatch: {relative_mismatch:.6e})."
+                )
         signature = tuple(bool(self._result_member(result, field)) for field in _METRIC_LOCK_FIELDS)
         if not all(signature):
             raise BenchmarkExecutionError(
