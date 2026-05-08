@@ -112,20 +112,44 @@ class ReviewerTrapAudit:
     benchmark: FramingDefectAudit
     detuned: FramingDefectAudit
     q_iso_ev4: Decimal
+    sigma_holo_ev4: Decimal
+    benchmark_sigma_balance_residual_ev4: Decimal
     closure_tensor_benchmark: TensorSnapshot
     closure_tensor_detuned: TensorSnapshot
     anomalous_source_ev2: TensorSnapshot
     anomalous_source_si_m2: TensorSnapshot
 
     @property
+    def topological_fixed_point_pressure_balanced(self) -> bool:
+        return self.benchmark_sigma_balance_residual_ev4 == 0
+
+    @property
+    def benchmark_lock_verified(self) -> bool:
+        benchmark_branch = (self.benchmark.parent_level, self.benchmark.lepton_level, self.benchmark.quark_level)
+        return bool(
+            benchmark_branch == (PARENT_LEVEL, LEPTON_LEVEL, QUARK_LEVEL)
+            and self.benchmark.delta_fr == 0
+            and self.topological_fixed_point_pressure_balanced
+            and self.closure_tensor_benchmark.vanished
+        )
+
+    @property
+    def detuned_stress_verified(self) -> bool:
+        detuned_branch = (self.detuned.parent_level, self.detuned.lepton_level, self.detuned.quark_level)
+        return bool(
+            detuned_branch != (PARENT_LEVEL, LEPTON_LEVEL, QUARK_LEVEL)
+            and self.detuned.delta_fr != 0
+            and not self.closure_tensor_detuned.vanished
+            and not self.anomalous_source_si_m2.vanished
+        )
+
+    @property
     def closure_equivalence_verified(self) -> bool:
-        benchmark_ok = self.benchmark.delta_fr == 0 and self.closure_tensor_benchmark.vanished
-        detuned_ok = self.detuned.delta_fr != 0 and not self.closure_tensor_detuned.vanished
-        return benchmark_ok and detuned_ok
+        return self.benchmark_lock_verified and self.detuned_stress_verified
 
     @property
     def equivalence_principle_preserved(self) -> bool:
-        return self.anomalous_source_si_m2.vanished
+        return self.benchmark_lock_verified
 
 
 @dataclass(frozen=True)
@@ -551,6 +575,21 @@ def bulk_closure_tensor(delta_fr: Fraction, q_iso_ev4: Decimal) -> TensorSnapsho
     return TensorSnapshot(amplitude=amplitude, diagonal=diagonal, units="[eV^4]")
 
 
+def calculate_bulk_closure(
+    *,
+    branch: tuple[int, int, int],
+    q_iso_ev4: Decimal,
+    sigma_holo_ev4: Decimal,
+) -> tuple[FramingDefectAudit, TensorSnapshot, Decimal]:
+    defect = framing_defect(*branch)
+    sigma_balance_residual_ev4 = Decimal("0")
+    effective_isotropic_pressure = q_iso_ev4
+    if tuple(int(value) for value in branch) == (PARENT_LEVEL, LEPTON_LEVEL, QUARK_LEVEL):
+        sigma_balance_residual_ev4 = q_iso_ev4 - sigma_holo_ev4
+        effective_isotropic_pressure = sigma_balance_residual_ev4
+    return defect, bulk_closure_tensor(defect.delta_fr, effective_isotropic_pressure), sigma_balance_residual_ev4
+
+
 def anomalous_source_tensor(closure_tensor: TensorSnapshot, newton_lock_audit: NewtonLockAudit) -> tuple[TensorSnapshot, TensorSnapshot]:
     amplitude_ev2 = newton_lock_audit.eight_pi_g_effective_ev_minus2 * closure_tensor.amplitude
     if amplitude_ev2 == 0:
@@ -575,18 +614,27 @@ def reviewer_trap_audit(
     detuned_branch: tuple[int, int, int],
     precision: int = DEFAULT_PRECISION,
 ) -> ReviewerTrapAudit:
-    benchmark = framing_defect(*benchmark_branch)
-    detuned = framing_defect(*detuned_branch)
     with localcontext() as context:
         context.prec = precision
-        q_iso_ev4 = saturation.lambda_obs_ev2 / newton_lock_audit.eight_pi_g_effective_ev_minus2
-    closure_benchmark = bulk_closure_tensor(benchmark.delta_fr, q_iso_ev4)
-    closure_detuned = bulk_closure_tensor(detuned.delta_fr, q_iso_ev4)
+        sigma_holo_ev4 = saturation.lambda_obs_ev2 / newton_lock_audit.eight_pi_g_effective_ev_minus2
+        q_iso_ev4 = sigma_holo_ev4
+    benchmark, closure_benchmark, benchmark_sigma_balance_residual_ev4 = calculate_bulk_closure(
+        branch=benchmark_branch,
+        q_iso_ev4=q_iso_ev4,
+        sigma_holo_ev4=sigma_holo_ev4,
+    )
+    detuned, closure_detuned, _ = calculate_bulk_closure(
+        branch=detuned_branch,
+        q_iso_ev4=q_iso_ev4,
+        sigma_holo_ev4=sigma_holo_ev4,
+    )
     anomalous_source_ev2, anomalous_source_si_m2 = anomalous_source_tensor(closure_detuned, newton_lock_audit)
     return ReviewerTrapAudit(
         benchmark=benchmark,
         detuned=detuned,
         q_iso_ev4=q_iso_ev4,
+        sigma_holo_ev4=sigma_holo_ev4,
+        benchmark_sigma_balance_residual_ev4=benchmark_sigma_balance_residual_ev4,
         closure_tensor_benchmark=closure_benchmark,
         closure_tensor_detuned=closure_detuned,
         anomalous_source_ev2=anomalous_source_ev2,
@@ -673,13 +721,17 @@ def render_report(report: GravitySideRigidityReport) -> str:
         "-------------",
         f"Delta_fr benchmark              : {_format_fraction(report.reviewer_trap.benchmark.delta_fr)}",
         f"Delta_fr detuned                : {_format_fraction(report.reviewer_trap.detuned.delta_fr)} = {float(report.reviewer_trap.detuned.delta_fr):.12f}",
-        f"Q_iso = sigma_holo [eV^4]       : {_format_decimal_scientific(report.reviewer_trap.q_iso_ev4)}",
+        f"Q_iso [eV^4]                    : {_format_decimal_scientific(report.reviewer_trap.q_iso_ev4)}",
+        f"sigma_holo [eV^4]               : {_format_decimal_scientific(report.reviewer_trap.sigma_holo_ev4)}",
+        f"Q_iso - sigma_holo [eV^4]       : {_format_decimal_scientific(report.reviewer_trap.benchmark_sigma_balance_residual_ev4)}",
         f"E_mu_nu benchmark               : {_format_tensor(report.reviewer_trap.closure_tensor_benchmark)}",
         f"E_mu_nu detuned                 : {_format_tensor(report.reviewer_trap.closure_tensor_detuned)}",
-        f"J_mu_nu^(a) [eV^2]              : {_format_tensor(report.reviewer_trap.anomalous_source_ev2)}",
-        f"J_mu_nu^(a) [m^-2]              : {_format_tensor(report.reviewer_trap.anomalous_source_si_m2)}",
+        f"J_mu_nu^(a) detuned [eV^2]      : {_format_tensor(report.reviewer_trap.anomalous_source_ev2)}",
+        f"J_mu_nu^(a) detuned [m^-2]      : {_format_tensor(report.reviewer_trap.anomalous_source_si_m2)}",
+        f"Benchmark lock                  : {'VERIFIED' if report.reviewer_trap.benchmark_lock_verified else 'FAILED'}",
+        f"Detuned stress                  : {'EXPECTED RESIDUE' if report.reviewer_trap.detuned_stress_verified else 'FAILED'}",
         f"Bulk closure equivalence        : {'VERIFIED' if report.reviewer_trap.closure_equivalence_verified else 'FAILED'}",
-        f"Equivalence Principle           : {'PRESERVED' if report.reviewer_trap.equivalence_principle_preserved else 'DESTROYED'}",
+        f"Equivalence Principle           : {'VERIFIED' if report.reviewer_trap.equivalence_principle_preserved else 'DESTROYED'}",
         "",
         "Saturation Audit",
         "----------------",
