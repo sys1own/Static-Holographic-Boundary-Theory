@@ -96,6 +96,90 @@ def test_targeted_flavor_audit_requires_rigid_metric_signal(
         main_module.run_targeted_sector_audits(sector="flavor", output_dir=tmp_path)
 
 
+def test_sequential_targeted_audits_share_guardian_state(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    relaxed_guardian_checks: None,
+) -> None:
+    monkeypatch.setattr(main_module, "_ensure_audit_resources", lambda: ())
+    guardian = main_module.RigidityGuardian()
+    lock_events: list[str] = []
+
+    def fake_ensure_metric_tensor_locked(self: main_module.RigidityGuardian) -> tuple[bool, ...]:
+        lock_events.append("gravity")
+        self.metric_locked = True
+        self.metric_tensor_signature = (True, True, True, True, True)
+        return self.metric_tensor_signature
+
+    def fake_capture_sector_module_report(
+        module_name: str,
+        *,
+        output_dir: Path,
+        sector: str,
+        result_holder: list[object] | None = None,
+    ) -> Path:
+        if result_holder is not None:
+            result_holder.append(SimpleNamespace(success=True))
+        return output_dir / f"{sector}_{module_name.rsplit('.', 1)[-1]}.txt"
+
+    monkeypatch.setattr(main_module.RigidityGuardian, "ensure_metric_tensor_locked", fake_ensure_metric_tensor_locked)
+    monkeypatch.setattr(main_module, "_capture_sector_module_report", fake_capture_sector_module_report)
+
+    main_module.run_targeted_sector_audits(sector="gravity", output_dir=tmp_path, guardian=guardian)
+    main_module.run_targeted_sector_audits(sector="flavor", output_dir=tmp_path, guardian=guardian)
+
+    assert lock_events == ["gravity"]
+    assert guardian.metric_locked is True
+    assert guardian.metric_tensor_signature == (True, True, True, True, True)
+
+
+
+def test_main_package_universal_mode_passes_shared_guardian(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    guardians: list[main_module.RigidityGuardian | None] = []
+
+    monkeypatch.setattr(main_module.ProjectPaths, "ensure_dirs", lambda: None)
+    monkeypatch.setattr(main_module, "_ensure_audit_resources", lambda: ())
+    monkeypatch.setattr(main_module, "configure_reporting", lambda **kwargs: None)
+    monkeypatch.setattr(main_module, "_emit_shbt_branding", lambda **kwargs: None)
+    monkeypatch.setattr(main_module, "_invoked_via_package_script", lambda: True)
+    monkeypatch.setattr(
+        main_module,
+        "parse_args",
+        lambda argv=None: SimpleNamespace(
+            manuscript_dir=tmp_path,
+            output_dir=tmp_path,
+            sector=None,
+            zero_parameter=False,
+            residue_check=False,
+            audit_generation_3=False,
+            master_transport_audit=False,
+            master_transport_shift=main_module._master_transport.DEFAULT_RIGIDITY_SHIFT_FRACTION,
+            quiet=True,
+            log_file=None,
+        ),
+    )
+
+    def fake_targeted_audit_success(
+        *,
+        sector: str | None,
+        output_dir: Path,
+        guardian: main_module.RigidityGuardian | None = None,
+    ) -> bool:
+        assert sector is None
+        assert output_dir == tmp_path
+        guardians.append(guardian)
+        return True
+
+    monkeypatch.setattr(main_module, "_targeted_audit_success", fake_targeted_audit_success)
+
+    assert main_module.main(None) == 0
+    assert len(guardians) == 1
+    assert guardians[0] is not None
+
+
 def test_guardian_rejects_manual_higgs_tuning(
     relaxed_guardian_checks: None,
     stub_model: SimpleNamespace,
