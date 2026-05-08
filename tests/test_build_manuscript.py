@@ -28,6 +28,19 @@ def test_resolve_latex_installation_requires_local_backend(monkeypatch: pytest.M
         module.resolve_latex_installation()
 
 
+def test_resolve_latex_installation_prefers_internal_tectonic_inside_shbt_container(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_script_module()
+    monkeypatch.setenv(module.SHBT_CONTAINERIZED_LATEX_ENV, "1")
+    monkeypatch.setenv(module.SHBT_INTERNAL_LATEX_BACKEND_ENV, "tectonic")
+    monkeypatch.setattr(module.shutil, "which", lambda command: command if command == "tectonic" else None)
+
+    installation = module.resolve_latex_installation()
+
+    assert installation == module.LatexInstallation(backend="tectonic", command="tectonic")
+
+
 def test_resolve_container_runtime_requires_container_backend(monkeypatch: pytest.MonkeyPatch) -> None:
     module = _load_script_module()
     monkeypatch.setattr(module.shutil, "which", lambda _command: None)
@@ -268,8 +281,9 @@ def test_build_manuscript_runs_executable_paper_flow(
     )
 
     assert result.latex_backend == "pdflatex"
-    assert result.final_pdf == manuscript_dir / "gravity.pdf"
+    assert result.final_pdf == output_dir / "final" / "gravity.pdf"
     assert tuple(path.name for path in result.compiled_pdfs) == ("gravity.pdf",)
+    assert result.final_pdf.read_text(encoding="utf-8") == "pdf"
     assert recorded_events == [
         ("proof", output_dir, manuscript_dir, True),
         ("constants", module.DERIVATION_DEFAULT_PRECISION),
@@ -383,6 +397,46 @@ def test_compile_gravity_manuscript_invokes_pdflatex_subprocess(
     ]
 
 
+def test_compile_gravity_manuscript_with_tectonic_invokes_subprocess(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_script_module()
+    manuscript_dir = tmp_path / "papers"
+    manuscript_dir.mkdir()
+    gravity_tex = manuscript_dir / "gravity.tex"
+    gravity_tex.write_text(
+        r"\documentclass{article}\begin{document}gravity\end{document}",
+        encoding="utf-8",
+    )
+
+    recorded_subprocess_calls: list[tuple[tuple[str, ...], Path, bool]] = []
+
+    def fake_run(command, *, cwd, check):
+        recorded_subprocess_calls.append((tuple(command), cwd, check))
+        (manuscript_dir / "gravity.pdf").write_text("pdf", encoding="utf-8")
+        return None
+
+    monkeypatch.setattr(module.subprocess, "run", fake_run)
+
+    compiled_pdf = module.compile_gravity_manuscript_with_tectonic("tectonic", gravity_tex, workdir=manuscript_dir)
+
+    assert compiled_pdf == manuscript_dir / "gravity.pdf"
+    assert recorded_subprocess_calls == [
+        (
+            (
+                "tectonic",
+                "--keep-logs",
+                "--outdir",
+                ".",
+                "gravity.tex",
+            ),
+            manuscript_dir,
+            True,
+        )
+    ]
+
+
 def test_compile_gravity_manuscript_in_container_invokes_container_subprocess(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -438,6 +492,64 @@ def test_compile_gravity_manuscript_in_container_invokes_container_subprocess(
     ]
 
 
+def test_build_manuscript_compile_only_uses_internal_tectonic_inside_shbt_container(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_script_module()
+    manuscript_dir = tmp_path / "papers"
+    manuscript_dir.mkdir()
+    output_dir = tmp_path / "proof-results"
+    gravity_tex = manuscript_dir / "gravity.tex"
+    gravity_tex.write_text(
+        r"\documentclass{article}\begin{document}gravity\end{document}",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setenv(module.SHBT_CONTAINERIZED_LATEX_ENV, "1")
+    monkeypatch.setenv(module.SHBT_INTERNAL_LATEX_BACKEND_ENV, "tectonic")
+    monkeypatch.setattr(module, "run_entire_proof", lambda **_kwargs: pytest.fail("compile-only should skip proofs"))
+    monkeypatch.setattr(
+        module,
+        "generate_topological_constants",
+        lambda **_kwargs: pytest.fail("compile-only should skip constant regeneration"),
+    )
+    monkeypatch.setattr(
+        module,
+        "synchronize_manuscript_sources",
+        lambda **_kwargs: pytest.fail("compile-only should skip manuscript sync"),
+    )
+    monkeypatch.setattr(module.shutil, "which", lambda command: command if command == "tectonic" else None)
+
+    recorded_compile_calls: list[tuple[str, str, Path]] = []
+
+    def fake_compile(command: str, document_path: Path, *, workdir: Path) -> Path:
+        recorded_compile_calls.append((command, document_path.name, workdir))
+        pdf_path = workdir / "gravity.pdf"
+        pdf_path.write_text("pdf", encoding="utf-8")
+        return pdf_path
+
+    monkeypatch.setattr(module, "compile_gravity_manuscript_with_tectonic", fake_compile)
+    monkeypatch.setattr(
+        module,
+        "compile_gravity_manuscript",
+        lambda *_args, **_kwargs: pytest.fail("compile-only container path should not use pdflatex"),
+    )
+
+    result = module.build_manuscript(
+        manuscript_dir=manuscript_dir,
+        output_dir=output_dir,
+        latex_backend="auto",
+        compile_only=True,
+    )
+
+    assert result.latex_backend == "tectonic"
+    assert result.final_pdf == output_dir / "final" / "gravity.pdf"
+    assert tuple(path.name for path in result.compiled_pdfs) == ("gravity.pdf",)
+    assert result.final_pdf.read_text(encoding="utf-8") == "pdf"
+    assert recorded_compile_calls == [("tectonic", "gravity.tex", manuscript_dir)]
+
+
 def test_build_manuscript_runs_containerized_executable_paper_flow(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -482,14 +594,13 @@ def test_build_manuscript_runs_containerized_executable_paper_flow(
             or module.LatexContainerRuntime(engine="docker", command="docker", image=image)
         ),
     )
-    monkeypatch.setattr(
-        module,
-        "compile_gravity_manuscript_in_container",
-        lambda runtime, document_path, *, workdir: recorded_events.append(
-            ("compile-container", runtime.engine, runtime.image, document_path.name, workdir)
-        )
-        or (workdir / "gravity.pdf"),
-    )
+    def fake_compile_in_container(runtime, document_path: Path, *, workdir: Path) -> Path:
+        recorded_events.append(("compile-container", runtime.engine, runtime.image, document_path.name, workdir))
+        pdf_path = workdir / "gravity.pdf"
+        pdf_path.write_text("pdf", encoding="utf-8")
+        return pdf_path
+
+    monkeypatch.setattr(module, "compile_gravity_manuscript_in_container", fake_compile_in_container)
 
     result = module.build_manuscript(
         manuscript_dir=manuscript_dir,
@@ -501,7 +612,7 @@ def test_build_manuscript_runs_containerized_executable_paper_flow(
     )
 
     assert result.latex_backend == "container"
-    assert result.final_pdf == manuscript_dir / "gravity.pdf"
+    assert result.final_pdf == output_dir / "final" / "gravity.pdf"
     assert tuple(path.name for path in result.compiled_pdfs) == ("gravity.pdf",)
     assert recorded_events == [
         ("proof", output_dir, manuscript_dir, False),
