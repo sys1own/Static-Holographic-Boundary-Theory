@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from decimal import Decimal, localcontext
 from functools import lru_cache
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Sequence
 
 if __package__ in (None, ""):
@@ -119,6 +120,10 @@ class TensionSaturationAudit:
     @property
     def observer_is_markov_collar(self) -> bool:
         return True
+
+    @property
+    def observer_tuple(self) -> SimpleNamespace:
+        return SimpleNamespace(position_radius_m=Decimal("0"))
 
     @property
     def finite_capacity_requires_nonzero_mass(self) -> bool:
