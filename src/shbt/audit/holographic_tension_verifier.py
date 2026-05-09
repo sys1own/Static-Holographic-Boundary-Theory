@@ -396,6 +396,10 @@ def render_report(audit: TensionSaturationAudit) -> str:
     return "\n".join(lines)
 
 
+def build_gravity_sector_audit(*, precision: int = DEFAULT_PRECISION) -> TensionSaturationAudit:
+    return build_tension_saturation_audit(precision=precision)
+
+
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--precision", type=int, default=DEFAULT_PRECISION)
