@@ -319,6 +319,21 @@ def render_report(audit: TopologicalBaryogenesisAudit) -> str:
     return "\n".join(lines)
 
 
+def build_cosmology_sector_audit(
+    *,
+    parent_level: int = PARENT_LEVEL,
+    lepton_level: int = LEPTON_LEVEL,
+    quark_level: int = QUARK_LEVEL,
+    precision: int = DEFAULT_PRECISION,
+) -> TopologicalBaryogenesisAudit:
+    return build_topological_baryogenesis_audit(
+        parent_level=parent_level,
+        lepton_level=lepton_level,
+        quark_level=quark_level,
+        precision=precision,
+    )
+
+
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--parent-level", type=int, default=PARENT_LEVEL)
