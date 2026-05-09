@@ -122,8 +122,23 @@ class TensionSaturationAudit:
         return True
 
     @property
+    def horizon_limit(self) -> SimpleNamespace:
+        local_horizon_area_m2 = (Decimal("12") * PI) / self.saturation.lambda_obs_si_m2
+        return SimpleNamespace(
+            local_horizon_area_m2=local_horizon_area_m2,
+            horizon_area_m2=local_horizon_area_m2,
+            patch_area_m2=local_horizon_area_m2,
+        )
+
+    @property
     def observer_tuple(self) -> SimpleNamespace:
-        return SimpleNamespace(position_radius_m=Decimal("0"))
+        local_horizon_area_m2 = self.horizon_limit.local_horizon_area_m2
+        return SimpleNamespace(
+            position_radius_m=Decimal("0"),
+            local_horizon_area_m2=local_horizon_area_m2,
+            horizon_area_m2=local_horizon_area_m2,
+            patch_area_m2=local_horizon_area_m2,
+        )
 
     @property
     def finite_capacity_requires_nonzero_mass(self) -> bool:
