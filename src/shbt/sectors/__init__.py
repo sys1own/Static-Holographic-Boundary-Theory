@@ -7,13 +7,9 @@ _EXPORT_MODULES = {
     "BiologicalComplexityAudit": "shbt.sectors.complexity",
     "BiologicalInformationProcessingAudit": "shbt.sectors.complexity",
     "BiologicalIsomorphism": "shbt.sectors.complexity",
-    "BoundaryRenderPatch": "shbt.sectors.gravity",
     "ComplexitySectorAudit": "shbt.sectors.complexity_sector",
     "DnaErrorCorrectionAudit": "shbt.sectors.complexity",
     "FibonacciPhyllotaxisAudit": "shbt.sectors.complexity",
-    "GravitySectorAudit": "shbt.sectors.gravity",
-    "MarkovCollar": "shbt.sectors.gravity",
-    "ObserverTuple": "shbt.sectors.gravity",
     "PrimeSyncAudit": "shbt.sectors.complexity_sector",
     "PrimeSyncWindow": "shbt.sectors.complexity_sector",
     "ShannonEntropyLimitAudit": "shbt.sectors.complexity_sector",
@@ -21,11 +17,6 @@ _EXPORT_MODULES = {
     "build_biological_complexity_report": "shbt.sectors.complexity",
     "build_complexity_sector_audit": "shbt.sectors.complexity_sector",
     "build_complexity_sector_report": "shbt.sectors.complexity_sector",
-    "build_gravity_sector_audit": "shbt.sectors.gravity",
-    "build_gravity_sector_report": "shbt.sectors.gravity",
-    "build_markov_collar": "shbt.sectors.gravity",
-    "derive_gravitational_acceleration": "shbt.sectors.gravity",
-    "render_boundary_on_observer_horizon": "shbt.sectors.gravity",
 }
 
 __all__ = sorted(_EXPORT_MODULES)
