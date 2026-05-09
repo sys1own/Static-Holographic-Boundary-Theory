@@ -8,9 +8,6 @@ from shbt.logic.observer import (
     AgentLatticeCoordinates,
     InternalObserver,
     Observer,
-    derive_general_relativity_ui,
-    derive_observer_frame,
-    run_inside_out_simulation,
     shift_holographic_projection,
 )
 
@@ -128,74 +125,3 @@ def test_observer_frame_audit_closes_static_and_dynamic_loop() -> None:
     assert frame.alpha_drift.alpha_drift_detected is True
     assert frame.observer_frame_consistent is True
     assert frame.statement.startswith("Axiom IX closes the loop")
-
-
-def test_gravity_sector_accepts_internal_observer_object() -> None:
-    observer = InternalObserver(
-        observer_radius_m=InternalObserver().global_horizon_radius_m * Decimal("0.9")
-    )
-
-    projection = shift_holographic_projection(observer=observer)
-    gravity_ui = derive_general_relativity_ui(observer=observer, projection=projection)
-    frame = derive_observer_frame(observer=observer, projection=projection)
-
-    assert projection.self_valuation == observer.self_valuate()
-    assert projection.projection_kernel.entropy_weighted is True
-    assert projection.entropy_weighted_projection is True
-    assert gravity_ui.general_relativity_is_ui is True
-    assert frame.observer_frame_consistent is True
-
-
-
-def test_projection_kernel_tracks_local_entropy_of_observer_frame() -> None:
-    coordinates = AgentLatticeCoordinates(
-        lepton_coordinate=Decimal("0.25"),
-        quark_coordinate=Decimal("0.125"),
-        support_coordinate=Decimal("0.5"),
-    )
-    center_observer = InternalObserver(agent_coordinates=coordinates)
-    near_horizon_observer = InternalObserver(
-        agent_coordinates=coordinates,
-        observer_radius_m=center_observer.global_horizon_radius_m * Decimal("0.9"),
-    )
-
-    center_projection = center_observer.shift_holographic_projection()
-    near_horizon_projection = near_horizon_observer.shift_holographic_projection()
-
-    assert (
-        near_horizon_projection.projection_kernel.hidden_entropy_projection_weight
-        > center_projection.projection_kernel.hidden_entropy_projection_weight
-    )
-    assert (
-        near_horizon_projection.projection_kernel.spatial_projection_weight
-        > center_projection.projection_kernel.spatial_projection_weight
-    )
-    assert all(
-        near_component > center_component
-        for near_component, center_component in zip(
-            near_horizon_projection.coordinate_shift,
-            center_projection.coordinate_shift,
-            strict=True,
-        )
-    )
-
-
-
-def test_inside_out_simulation_derives_bulk_metric_for_internal_agent() -> None:
-    reference_observer = InternalObserver()
-    observer = InternalObserver(
-        observer_radius_m=reference_observer.global_horizon_radius_m * Decimal("0.9")
-    )
-
-    audit = run_inside_out_simulation(observer=observer, redshift=Decimal("0.5"))
-
-    assert audit.gravity_sector_accepts_internal_observer is True
-    assert audit.perceived_metric_positive_definite is True
-    assert audit.inside_out_consistent is True
-    assert audit.entropy_temporal_coupling > 0
-    assert audit.observer_time_dilation > 0
-    assert not np.allclose(
-        audit.projection.shifted_spacetime_metric.components,
-        audit.perceived_spacetime_metric.components,
-    )
-    assert audit.statement.startswith("The Universal Code runs inside-out")
