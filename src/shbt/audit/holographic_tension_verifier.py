@@ -113,6 +113,10 @@ class TensionSaturationAudit:
     verdict: str
 
     @property
+    def branch(self) -> tuple[int, int, int]:
+        return self.benchmark_branch
+
+    @property
     def finite_capacity_requires_nonzero_mass(self) -> bool:
         return (
             self.saturation.boundary_condition_locked
