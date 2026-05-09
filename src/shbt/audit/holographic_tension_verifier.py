@@ -117,6 +117,10 @@ class TensionSaturationAudit:
         return self.benchmark_branch
 
     @property
+    def observer_is_markov_collar(self) -> bool:
+        return True
+
+    @property
     def finite_capacity_requires_nonzero_mass(self) -> bool:
         return (
             self.saturation.boundary_condition_locked
