@@ -537,6 +537,10 @@ def render_report(audit: SolverNecessityAudit) -> str:
     return "\n".join(lines)
 
 
+def build_flavor_sector_audit(*, rk45_time_limit_seconds: float = 0.25) -> SolverNecessityAudit:
+    return build_solver_necessity_audit(rk45_time_limit_seconds=rk45_time_limit_seconds)
+
+
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
