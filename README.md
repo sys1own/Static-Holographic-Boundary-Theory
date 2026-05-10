@@ -219,7 +219,7 @@ The benchmark now uses a split configuration model: `config/physics_profiles/sta
 - **Migrated observational assets:** `config/physics_profiles/nufit_5_3.json`, `config/physics_profiles/cmb_power_spectrum_benchmarks.json`, `config/physics_profiles/external_triggers/README.md`
 - **Hash manifest:** `config/physics_profile_hashes.json`
 - **SHA-256 (`config/physics_profiles/standard_model.yaml`):** `973323dbf59f38b7068577cc4e33132676eec4f8140323cc83d19d51676286e8`
-- **SHA-256 (`config/benchmark_v1.yaml`):** `b16ab63f9ec4cb29be2fd85e80fb8e810b06b4a1d3aa7fe8149ddbb21e651969`
+- **SHA-256 (`config/benchmark_v1.yaml`):** `cb206d34524354bafb880be93d665194f0e2763c5cd5712d382ae666852de0e3`
 - **Transitive lockfile:** `requirements.lock`
 - **Build backend:** `setuptools.build_meta`
 - **Python requirement:** `>=3.11`
