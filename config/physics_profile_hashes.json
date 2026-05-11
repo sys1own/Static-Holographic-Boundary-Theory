@@ -4,6 +4,6 @@
   "config/physics_profiles/external_triggers/README.md": "7b677027f8301c8a9673b3900869832fdfd70a013ba8fc2f468a4ca28a0c9b6b",
   "config/physics_profiles/nufit_5_3.json": "ad7e8e165158ff3672bc094a05f0fb1eaf6868d30208d0605aaba4d703fe916b",
   "config/physics_profiles/standard_model.yaml": "973323dbf59f38b7068577cc4e33132676eec4f8140323cc83d19d51676286e8",
-  "proofs/anomaly_cancellation.lean": "ef0ed00f3aaf799d3e53a4ed4b7de059f55bfd654919ce1c9b84deb12a45384f",
+  "proofs/anomaly_cancellation.lean": "f31209d20bdde0f121d219836c0c1dc6ae11e918056c0555604d74655ed99939",
   "requirements.lock": "112eb9adcf37573d664eead1e12784d2a8e38e1c12533caf66d9d51972c25c49"
 }
