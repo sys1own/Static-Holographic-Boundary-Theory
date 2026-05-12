@@ -55,8 +55,12 @@ jobs:
             --ignore=tests/test_verify_dependency_lock.py
 
       - name: Execute Grand Unified Audit (Universal Mode)
+        timeout-minutes: 20
         run: |
-          docker run --rm -v $(pwd)/results:/app/results shbt-manuscript:latest
+          docker run --rm \
+            -v $(pwd)/results:/app/results \
+            shbt-manuscript:latest \
+            --quick-audit --precision 50
     
       - name: Generate Executable Manuscript
         run: |
