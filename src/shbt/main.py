@@ -103,6 +103,7 @@ SHBT_UNIVERSAL_AUDIT_BANNER = "Static Holographic Boundary Theory: Universal Sou
 TARGET_AUDIT_SECTORS: tuple[str, ...] = ("gravity", "cosmology", "flavor", "rigidity", "complexity")
 UNIVERSAL_AUDIT_SECTOR: Final[str] = "universal"
 CLI_AUDIT_SECTORS: Final[tuple[str, ...]] = TARGET_AUDIT_SECTORS + (UNIVERSAL_AUDIT_SECTOR,)
+QUICK_AUDIT_VEV_ALIGNMENT_SAMPLE_COUNT: Final[int] = 3
 SECTOR_AUDIT_MODULES: dict[str, tuple[str, ...]] = {
     "gravity": (
         "shbt.core.noether_bridge",
@@ -18303,6 +18304,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Boot from zero numerical constants via topological extraction.",
     )
     parser.add_argument("--seed", type=int, default=DEFAULT_RANDOM_SEED, help="Seed for stochastic transport and VEV ensemble audits.")
+    parser.add_argument(
+        "--quick-audit",
+        action="store_true",
+        help="Use a three-sample VEV alignment smoke sweep for CI latency-sensitive audits.",
+    )
     parser.add_argument("--seed-audit", action="store_true", help="Run the stochastic pipeline across an ensemble of seeds and report relative variance.")
     parser.add_argument("--seed-audit-count", type=int, default=SEED_AUDIT_SAMPLE_COUNT, help="Number of seeds to include when --seed-audit is enabled.")
     parser.add_argument(
@@ -18623,6 +18629,10 @@ def main(argv: list[str] | None = None) -> int:
         _initialize_zero_parameter_execution_mode()
 
     guardian = RigidityGuardian(model=DEFAULT_TOPOLOGICAL_VACUUM)
+    quick_audit_enabled = bool(getattr(args, "quick_audit", False))
+    vev_alignment_sample_count = (
+        QUICK_AUDIT_VEV_ALIGNMENT_SAMPLE_COUNT if quick_audit_enabled else VEV_ALIGNMENT_SWEEP_SAMPLE_COUNT
+    )
 
     if args.residue_check:
         run_residue_check(output_dir=output_dir)
@@ -18822,6 +18832,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     mass_ratio_stability_audit = guardian.calculate(
         vacuum.derive_mass_ratio_stability_audit,
+        sample_count=vev_alignment_sample_count,
         seed=args.seed,
         sector_name="flavor",
         label="mass-ratio stability",
