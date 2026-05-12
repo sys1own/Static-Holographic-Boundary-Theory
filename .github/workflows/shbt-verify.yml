@@ -57,10 +57,11 @@ jobs:
       - name: Execute Grand Unified Audit (Universal Mode)
         timeout-minutes: 20
         run: |
+          # Explicitly calling the module prevents the 'executable not found' error
           docker run --rm \
             -v $(pwd)/results:/app/results \
             shbt-manuscript:latest \
-            --quick-audit --precision 50
+            python -m shbt.main --quick-audit --precision 50
     
       - name: Generate Executable Manuscript
         run: |
