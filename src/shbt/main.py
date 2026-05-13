@@ -18309,6 +18309,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Use a three-sample VEV alignment smoke sweep for CI latency-sensitive audits.",
     )
+    parser.add_argument(
+        "--precision",
+        type=int,
+        default=124,
+        help="Decimal precision requested by CI wrappers; retained for compatibility with sector audits.",
+    )
     parser.add_argument("--seed-audit", action="store_true", help="Run the stochastic pipeline across an ensemble of seeds and report relative variance.")
     parser.add_argument("--seed-audit-count", type=int, default=SEED_AUDIT_SAMPLE_COUNT, help="Number of seeds to include when --seed-audit is enabled.")
     parser.add_argument(
